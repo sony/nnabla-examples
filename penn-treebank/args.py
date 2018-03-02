@@ -13,8 +13,7 @@
 # limitations under the License.
 
 
-
-#def get_args(monitor_path='tmp.monitor', max_iter=10000, model_save_path=None, learning_rate=1e-3, batch_size=128, weight_decay=0, description=None):
+# def get_args(monitor_path='tmp.monitor', max_iter=10000, model_save_path=None, learning_rate=1e-3, batch_size=128, weight_decay=0, description=None):
 def get_args():
     """
     Get command line arguments.
@@ -37,8 +36,8 @@ def get_args():
     parser.add_argument("--num-steps", "-n", type=int, default=35)
     parser.add_argument("--state-size", "-t", type=int, default=650)
     parser.add_argument("--num-layers", "-a", type=int, default=2)
-    parser.add_argument("--gradient-clipping-max-norm", "-g", type=int, default=0.25)
+    parser.add_argument("--gradient-clipping-max-norm",
+                        "-g", type=int, default=0.25)
 
     args = parser.parse_args()
     return args
-
