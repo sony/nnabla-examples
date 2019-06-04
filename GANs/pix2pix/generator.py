@@ -34,7 +34,7 @@ def label_to_image(label):
     ret[:, :, :, 2] = 255
     for b in range(0, label.shape[0]):
         for c in range(0, label.shape[1]):
-            ret[b, :, :, 0] += np.uint8(15 * (12 - c - .5) * label[b, c, :, :]) 
+            ret[b, :, :, 0] += np.uint8(15 * (12 - c - .5) * label[b, c, :, :])
         ret[b] = np.asarray(Image.fromarray(ret[b], mode='HSV').convert('RGB'))
     ret = ret.transpose(0, 3, 1, 2)
     return ret
