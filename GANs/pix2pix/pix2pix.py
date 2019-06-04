@@ -107,7 +107,7 @@ def train(generator, discriminator, patch_gan, solver_gen, solver_dis,
             pix2pix_vis = np.stack([
                 label_to_image(x_val.d),
                 normalize_image(fake_val.d)], axis=1).reshape((-1, ) + fake.shape[1:])
-            monitors['fake'].add(i, pix2pix_vis)
+            monitors['fake'].add(i, np.clip(np.divide(pix2pix_vis, 255.0), 0.0, 1.0))
             i += 1
     # save parameters of generator
     save_path = os.path.join(
