@@ -1,7 +1,7 @@
 ARG CUDA_VER=10.0
 ARG CUDNN_VER=7
 
-FROM nvidia/cuda:${CUDA_VER}-cudnn${CUDNN_VER}-runtime-ubuntu16.04
+FROM nvidia/cuda:${CUDA_VER}-cudnn${CUDNN_VER}-runtime-ubuntu18.04
 
 ARG PYTHON_VER=3.7
 ARG CUDA_VER=10.0
@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libopenmpi-dev \
     openmpi-bin \
+    ssh \
     && rm -rf /var/lib/apt/lists/*
 
 RUN umask 0 \
@@ -26,7 +27,7 @@ RUN umask 0 \
     && conda install -y opencv jupyter
 
 RUN umask 0 \
-    && pip install nnabla-ext-cuda`echo $CUDA_VER | sed 's/\.//g'`-nccl2-ubuntu16
+    && pip install nnabla-ext-cuda`echo $CUDA_VER | sed 's/\.//g'`-nccl2-mpi2-1-1
 
 RUN umask 0 \
     && pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/${CUDA_VER} nvidia-dali==${DALI_VER}
