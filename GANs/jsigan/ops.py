@@ -74,7 +74,8 @@ def res_block(x, out_ch, name):
 
 def dyn_2d_filter(x, lf_2d, k_sz):
     with nn.parameter_scope('Dynamic_2D_Filtering'):
-        f_localexpand = nn.Variable.from_numpy_array(np.eye(k_sz[0] * k_sz[1], k_sz[0] * k_sz[1]))
+        f_localexpand = nn.Variable.from_numpy_array(
+            np.eye(k_sz[0] * k_sz[1], k_sz[0] * k_sz[1]))
         f_localexpand = F.reshape(f_localexpand,
                                   (k_sz[0], k_sz[1], 1, k_sz[0] * k_sz[1]))  # (9,9,1,81))
         f_localexpand = F.transpose(f_localexpand, (3, 0, 1, 2))  # (81,9,9,1))
@@ -95,7 +96,8 @@ def dyn_2d_up_operation(x, lf_2d, k_sz, sf=2):
     with nn.parameter_scope("Dynamic_2D_Upsampling"):
         y = []
         sz = lf_2d.shape
-        lf_2d_new = F.reshape(lf_2d, (sz[0], sz[1], sz[2], k_sz[0] * k_sz[0], sf ** 2))
+        lf_2d_new = F.reshape(
+            lf_2d, (sz[0], sz[1], sz[2], k_sz[0] * k_sz[0], sf ** 2))
         lf_2d_new = F.softmax(lf_2d_new, axis=3)
         for ch in range(3):  # loop over YUV channels
             # apply dynamic filtering operation
@@ -114,9 +116,11 @@ def dyn_sep_up_operation(x, dr_k_v, dr_k_h, k_sz, sf):
     '''
     sz = x.shape
     pad = k_sz // 2  # local filter pad size
-    out_v = nn.Variable((sz[0], sz[1], sz[2], sz[3] * sf ** 2))  # [B, H, W, C*sf*sf]
+    # [B, H, W, C*sf*sf]
+    out_v = nn.Variable((sz[0], sz[1], sz[2], sz[3] * sf ** 2))
     out_v.data.zero()
-    out_h = nn.Variable((sz[0], sz[1], sz[2], sz[3] * sf ** 2))  # [B, H, W, C*sf*sf]
+    # [B, H, W, C*sf*sf]
+    out_h = nn.Variable((sz[0], sz[1], sz[2], sz[3] * sf ** 2))
     out_h.data.zero()
     img_pad = F.pad(x, (0, 0, pad, pad, 0, 0, 0, 0))
     img_pad_y = F.reshape(img_pad[:, :, :, 0],
@@ -142,8 +146,10 @@ def dyn_sep_up_operation(x, dr_k_v, dr_k_h, k_sz, sf):
 
     # depth to space upsampling (YUV)
     out = depth_to_space(out_h[:, :, :, 0:sf ** 2], sf)
-    out = F.concatenate(out, depth_to_space(out_h[:, :, :, sf ** 2:2 * sf ** 2], sf), axis=3)
-    out = F.concatenate(out, depth_to_space(out_h[:, :, :, 2 * sf ** 2:3 * sf ** 2], sf), axis=3)
+    out = F.concatenate(out, depth_to_space(
+        out_h[:, :, :, sf ** 2:2 * sf ** 2], sf), axis=3)
+    out = F.concatenate(out, depth_to_space(
+        out_h[:, :, :, 2 * sf ** 2:3 * sf ** 2], sf), axis=3)
     return out
 
 
@@ -200,7 +206,8 @@ def model(img, sf):
                     n4 = res_block(n4, ch, 'res_block/%d' % i)
             n4 = F.relu(n4, inplace=True)
 
-            n4 = F.relu(conv_2d(n4, ch * sf * sf, kernel=(3, 3), name='conv/1'), inplace=True)
+            n4 = F.relu(conv_2d(n4, ch * sf * sf, kernel=(3, 3),
+                                name='conv/1'), inplace=True)
             # (1,100,170,1024) -> (1,100,170,4,4,64) -> (1,100,4,170,4,64)
             # pixel shuffle
             n4 = depth_to_space(n4, sf)
@@ -240,9 +247,11 @@ def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True,
             pad_right = pad - pad_left
 
             if pad_type == 'zero':
-                x = F.pad(x, (0, 0, pad_top, pad_bottom, pad_left, pad_right, 0, 0))
+                x = F.pad(x, (0, 0, pad_top, pad_bottom,
+                              pad_left, pad_right, 0, 0))
             if pad_type == 'reflect':
-                x = F.pad(x, (0, 0, pad_top, pad_bottom, pad_left, pad_right, 0, 0), mode='reflect')
+                x = F.pad(x, (0, 0, pad_top, pad_bottom, pad_left,
+                              pad_right, 0, 0), mode='reflect')
 
         def apply_w(w):
             return PF.spectral_norm(w, dim=0)
@@ -258,18 +267,20 @@ def dis_block(n, c, i, train=True):
     out = conv(n, channels=c, kernel=4, stride=2, pad=1, use_bias=False,
                scope='d_conv/' + str(2 * i + 2))
     out_fm = F.leaky_relu(
-        PF.batch_normalization(out, axes=[3], batch_stat=train, name='d_bn/' + str(2 * i + 1)),
+        PF.batch_normalization(
+            out, axes=[3], batch_stat=train, name='d_bn/' + str(2 * i + 1)),
         alpha=0.2)
 
     out = conv(out_fm, channels=c * 2, kernel=3, stride=1, pad=1, use_bias=False,
                scope='d_conv/' + str(2 * i + 3))
     out = F.leaky_relu(
-        PF.batch_normalization(out, axes=[3], batch_stat=train, name='d_bn/' + str(2 * i + 2)),
+        PF.batch_normalization(
+            out, axes=[3], batch_stat=train, name='d_bn/' + str(2 * i + 2)),
         alpha=0.2)
     return out, out_fm
 
 
-def discriminator_fm(x, scope="Discriminator_FM"):
+def discriminator_fm(x, sf, scope="Discriminator_FM"):
     with nn.parameter_scope(scope):
         fm_list = []
         ch = 32
@@ -279,14 +290,25 @@ def discriminator_fm(x, scope="Discriminator_FM"):
             ch = ch * 2
             fm_list.append(out_fm)
         n = F.leaky_relu(PF.batch_normalization(
-            conv(n, channels=ch, kernel=4, stride=2, pad=1, use_bias=False, scope='d_conv/10'),
+            conv(n, channels=ch, kernel=4, stride=2,
+                 pad=1, use_bias=False, scope='d_conv/10'),
             axes=[3], batch_stat=True, name='d_bn/9'), alpha=0.2,
             inplace=True)
-        n = F.leaky_relu(PF.batch_normalization(
-            conv(n, channels=ch, kernel=5, stride=1, use_bias=False, scope='d_conv/11'),
-            axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2, inplace=True)
+
+        if sf == 1:
+            n = F.leaky_relu(PF.batch_normalization(
+                conv(n, channels=ch, kernel=5, stride=1,
+                     pad=1, use_bias=False, scope='d_conv/11'),
+                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2, inplace=True)
+        else:
+            n = F.leaky_relu(PF.batch_normalization(
+                conv(n, channels=ch, kernel=5, stride=1,
+                     use_bias=False, scope='d_conv/11'),
+                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2, inplace=True)
+
         n = PF.batch_normalization(
-            conv(n, channels=1, kernel=1, stride=1, use_bias=False, scope='d_conv/12'),
+            conv(n, channels=1, kernel=1, stride=1,
+                 use_bias=False, scope='d_conv/12'),
             axes=[3], batch_stat=True, name='d_bn/11')
 
         out_logit = n
@@ -295,15 +317,19 @@ def discriminator_fm(x, scope="Discriminator_FM"):
 
 
 def discriminator_loss(real, fake):
-    real_loss = F.mean(F.relu(1.0 - (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
-    fake_loss = F.mean(F.relu(1.0 + (fake - F.reshape(F.mean(real), (1, 1, 1, 1)))))
+    real_loss = F.mean(
+        F.relu(1.0 - (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
+    fake_loss = F.mean(
+        F.relu(1.0 + (fake - F.reshape(F.mean(real), (1, 1, 1, 1)))))
     l_d = real_loss + fake_loss
     return l_d
 
 
 def generator_loss(real, fake):
-    real_loss = F.mean(F.relu(1.0 + (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
-    fake_loss = F.mean(F.relu(1.0 - (fake - F.reshape(F.mean(real), (1, 1, 1, 1)))))
+    real_loss = F.mean(
+        F.relu(1.0 + (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
+    fake_loss = F.mean(
+        F.relu(1.0 - (fake - F.reshape(F.mean(real), (1, 1, 1, 1)))))
     l_g = real_loss + fake_loss
     return l_g
 
@@ -321,12 +347,14 @@ def gan_model(label_ph, pred, conf):
     """
     Define GAN model with adversarial and discriminator losses and their orchestration
     """
-    """ Define Discriminator """
-    _, d_real_logits, d_real_fm_list = discriminator_fm(label_ph, scope="Discriminator_FM")
+    # Define Discriminator
+    _, d_real_logits, d_real_fm_list = discriminator_fm(
+        label_ph, conf.scaling_factor, scope="Discriminator_FM")
     # output of D for fake images
-    _, d_fake_logits, d_fake_fm_list = discriminator_fm(pred, scope="Discriminator_FM")
+    _, d_fake_logits, d_fake_fm_list = discriminator_fm(
+        pred, conf.scaling_factor, scope="Discriminator_FM")
 
-    """ Define Detail Discriminator """
+    # Define Detail Discriminator
     # compute the detail layers for the dicriminator (reuse)
     base_gt = guided_filter(label_ph, 5, 0.01)
     detail_gt = F.div2(label_ph, base_gt + 1e-15)
@@ -335,13 +363,15 @@ def gan_model(label_ph, pred, conf):
 
     # detail layer output of D for real images
     _, d_detail_real_logits, d_detail_real_fm_list = \
-        discriminator_fm(detail_gt, scope="Discriminator_Detail")
+        discriminator_fm(detail_gt, conf.scaling_factor,
+                         scope="Discriminator_Detail")
 
     # detail layer output of D for fake images
     _, d_detail_fake_logits, d_detail_fake_fm_list = \
-        discriminator_fm(detail_pred, scope="Discriminator_Detail")
+        discriminator_fm(detail_pred, conf.scaling_factor,
+                         scope="Discriminator_Detail")
 
-    """ Loss """
+    # Loss
     # original GAN (hinge GAN)
     d_adv_loss = discriminator_loss(d_real_logits, d_fake_logits)
     d_adv_loss.persistent = True
@@ -350,10 +380,10 @@ def gan_model(label_ph, pred, conf):
 
     # detail GAN (hinge GAN)
     d_detail_adv_loss = conf.detail_lambda * \
-                        discriminator_loss(d_detail_real_logits, d_detail_fake_logits)
+        discriminator_loss(d_detail_real_logits, d_detail_fake_logits)
     d_detail_adv_loss.persistent = True
     g_detail_adv_loss = conf.detail_lambda * \
-                        generator_loss(d_detail_real_logits, d_detail_fake_logits)
+        generator_loss(d_detail_real_logits, d_detail_fake_logits)
     g_detail_adv_loss.persistent = True
 
     # feature matching (FM) loss

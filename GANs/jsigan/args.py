@@ -21,32 +21,31 @@ def get_config():
     Get command line arguments.
     Arguments set the default values of command line arguments
     """
-
     parser = argparse.ArgumentParser(description='JSIGAN')
     parser.add_argument('--cfg', default="./config.yaml")
     args, _ = parser.parse_known_args()
 
     conf = read_yaml(args.cfg)
 
-    parser.add_argument('--lr_sdr_test', default=conf.data.lr_sdr_test,
+    parser.add_argument('--lr_sdr_test', type=str, default="datasets/",
                         help='The directory of the input data, for testing')
-    parser.add_argument('--hr_hdr_test', default=conf.data.hr_hdr_test,
+    parser.add_argument('--hr_hdr_test', type=str, default="datasets/",
                         help='The directory of the input data, for testing')
-    parser.add_argument('--lr_sdr_train', default=conf.data.lr_sdr_train,
+    parser.add_argument('--lr_sdr_train', type=str, default="datasets/",
                         help='The directory of the input data, for training')
-    parser.add_argument('--hr_hdr_train', default=conf.data.hr_hdr_train,
-                        help='The directory of the input data, for train')
-    parser.add_argument('--scaling_factor', default=conf.scaling_factor,
+    parser.add_argument('--hr_hdr_train', type=str, default="datasets/",
+                        help='The directory of the input data, for training')
+    parser.add_argument('--scaling_factor', type=int, default=4,
                         help='LR to HR scaling factor')
-    parser.add_argument('--pre_trained_model', default=conf.pre_trained_model,
-                    help='Path of the pre trained weights')
-    parser.add_argument('--output_dir', default=conf.output_dir,
-                    help='Path to save weight files during training')
-    parser.add_argument('--jsigan', default=conf.jsigan,
-                    help='True if training the GAN network, False otherwise')
-    parser.add_argument('--save_images', default=conf.save_images,
-                    help='Set to True to save predicted images during inference, set to False to save time')
-                    
+    parser.add_argument('--pre_trained_model', type=str, default="models/",
+                        help='Path of the pre trained weights')
+    parser.add_argument('--output_dir', type=str, default="models/",
+                        help='Path to save weight files during training')
+    parser.add_argument('--jsigan', action='store_true', default=False,
+                        help='If True, GAN network will be trained, False otherwise')
+    parser.add_argument('--save_images', action='store_true', default=False,
+                        help='If True, images will be saved during inference; False to save time')
+
     args = parser.parse_args()
 
     conf.data.lr_sdr_test = args.lr_sdr_test
@@ -57,6 +56,6 @@ def get_config():
     conf.pre_trained_model = args.pre_trained_model
     conf.output_dir = args.output_dir
     conf.jsigan = args.jsigan
-    conf.save_images = args.save_images 
+    conf.save_images = args.save_images
 
     return conf

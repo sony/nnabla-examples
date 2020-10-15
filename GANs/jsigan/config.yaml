@@ -4,15 +4,15 @@ nnabla_context:
   type_config: float
 
 data:
-  lr_sdr_test: ./data/test/testset_SDR_x4.mat
-  hr_hdr_test: ./data/test/testset_HDR.mat
+  lr_sdr_test:  ./data/test/testset_SDR_x4.mat
+  hr_hdr_test:  ./data/test/testset_HDR.mat
   lr_sdr_train: ./data/train/SDR_youtube_80_x4.mat
   hr_hdr_train: ./data/train/HDR_youtube_80.mat
   val_data_size: 500
   d_name_test: SDR_YUV
   l_name_test: HDR_YUV
-  d_name_train: SDR_data
-  l_name_train: HDR_data
+  d_name_train:  SDR_data
+  l_name_train:  HDR_data
 
 test_patch: 6
 scaling_factor: 4
@@ -24,7 +24,7 @@ test_img_dir: ./test_images
 output_dir: ./model
 pre_trained_model: None
 detail_lambda: 0.5
-jsigan: True
+jsigan: False
 save_images: True
 rec_lambda: 1.0
 adv_lambda: 1

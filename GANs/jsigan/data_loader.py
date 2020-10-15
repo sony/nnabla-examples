@@ -2,7 +2,7 @@
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#  may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -23,6 +23,7 @@ def read_mat_file(data_fname, label_fname, data_name, label_name, train):
     """
     read training data from .mat file
     """
+    #import pdb; pdb.set_trace()
     data_file = h5py.File(data_fname, 'r')
     label_file = h5py.File(label_fname, 'r')
     data = data_file[data_name][()]

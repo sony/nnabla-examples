@@ -32,7 +32,7 @@ def setup_monitor(conf, monitor):
     jsi_monitor = {'rec_loss': MonitorSeries('rec_loss', monitor, interval=conf.monitor_interval),
                    'psnr': MonitorSeries('psnr', monitor, interval=conf.monitor_interval),
                    'lr': MonitorSeries('learning_rate', monitor,
-                                               interval=conf.monitor_interval),
+                                       interval=conf.monitor_interval),
                    'g_final_loss': MonitorSeries('g_final_loss', monitor,
                                                  interval=conf.monitor_interval),
                    'd_final_fm_loss': MonitorSeries('d_final_fm_loss', monitor,
@@ -44,11 +44,11 @@ def setup_monitor(conf, monitor):
                    'g_detail_adv_loss': MonitorSeries('g_detail_adv_loss', monitor,
                                                       interval=conf.monitor_interval),
                    'fm_loss': MonitorSeries('fm_loss', monitor,
-                                                    interval=conf.monitor_interval),
+                                            interval=conf.monitor_interval),
                    'fm_detail_loss': MonitorSeries('fm_detail_loss', monitor,
                                                    interval=conf.monitor_interval),
                    'time': MonitorTimeElapsed("Training time per epoch", monitor,
-                                                      interval=conf.monitor_interval)}
+                                              interval=conf.monitor_interval)}
     return jsi_monitor
 
 
@@ -62,15 +62,22 @@ def main():
     print("#GPU Count: ", comm.n_procs)
 
     data_iterator_train = jsi_iterator(conf.batch_size, conf, train=True)
-    d_t = nn.Variable((conf.batch_size, 160 / conf.scaling_factor, 160 / conf.scaling_factor, 3),
-                      need_grad=True)
-    l_t = nn.Variable((conf.batch_size, 160, 160, 3), need_grad=True)
+    if conf.scaling_factor == 1:
+        d_t = nn.Variable((conf.batch_size, 80, 80, 3),
+                          need_grad=True)
+        l_t = nn.Variable((conf.batch_size, 80, 80, 3), need_grad=True)
+
+    else:
+        d_t = nn.Variable((conf.batch_size, 160 / conf.scaling_factor, 160 / conf.scaling_factor, 3),
+                          need_grad=True)
+        l_t = nn.Variable((conf.batch_size, 160, 160, 3), need_grad=True)
 
     if comm.n_procs > 1:
         data_iterator_train = data_iterator_train.slice(
             rng=None, num_of_slices=comm.n_procs, slice_pos=comm.rank)
 
-    monitor_path = './nnmonitor' + str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    monitor_path = './nnmonitor' + \
+        str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 
     monitor = Monitor(monitor_path)
     jsi_monitor = setup_monitor(conf, monitor)
@@ -116,7 +123,8 @@ def main():
 
     if conf.jsigan:
         solver_disc_fm = S.Adam(alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
-        solver_disc_detail = S.Adam(alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
+        solver_disc_detail = S.Adam(
+            alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
         with nn.parameter_scope("Discriminator_FM"):
             solver_disc_fm.set_parameters(nn.get_parameters())
         with nn.parameter_scope("Discriminator_Detail"):
@@ -197,14 +205,20 @@ def main():
 
             if comm.rank == 0:
                 if conf.jsigan:
-                    jsi_monitor['g_final_loss'].add(iteration, g_final_loss.d.copy())
-                    jsi_monitor['g_adv_loss'].add(iteration, net_gan.g_adv_loss.d.copy())
+                    jsi_monitor['g_final_loss'].add(
+                        iteration, g_final_loss.d.copy())
+                    jsi_monitor['g_adv_loss'].add(
+                        iteration, net_gan.g_adv_loss.d.copy())
                     jsi_monitor['g_detail_adv_loss'].add(iteration,
                                                          net_gan.g_detail_adv_loss.d.copy())
-                    jsi_monitor['d_final_fm_loss'].add(iteration, d_final_fm_loss.d.copy())
-                    jsi_monitor['d_final_detail_loss'].add(iteration, d_final_detail_loss.d.copy())
-                    jsi_monitor['fm_loss'].add(iteration, net_gan.fm_loss.d.copy())
-                    jsi_monitor['fm_detail_loss'].add(iteration, net_gan.fm_detail_loss.d.copy())
+                    jsi_monitor['d_final_fm_loss'].add(
+                        iteration, d_final_fm_loss.d.copy())
+                    jsi_monitor['d_final_detail_loss'].add(
+                        iteration, d_final_detail_loss.d.copy())
+                    jsi_monitor['fm_loss'].add(
+                        iteration, net_gan.fm_loss.d.copy())
+                    jsi_monitor['fm_detail_loss'].add(
+                        iteration, net_gan.fm_detail_loss.d.copy())
                     jsi_monitor['lr'].add(iteration, lr_gan)
 
         if comm.rank == 0:
