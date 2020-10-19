@@ -57,7 +57,8 @@ class TacotronTrainer(ABC):
         self.one_epoch_valid = dataloader['valid'].size // hparams.batch_size
         self.placeholder = dict()
         self.optimizer = optimizer
-        self.monitor = ProgressMeter(self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
+        self.monitor = ProgressMeter(
+            self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
         hparams.save(os.path.join(hparams.output_path, 'settings.json'))
 
     def update_graph(self, key='train'):
@@ -89,7 +90,8 @@ class TacotronTrainer(ABC):
         n_prior = int(3000 / (hp.sr * 0.5) * (hp.n_fft//2 + 1))
 
         l_mel = criteria(o_mel, x_mel).apply(persistent=True)
-        l_mag = 0.5*criteria(o_mag, t_mag) + 0.5 * criteria(o_mag[..., :n_prior], t_mag[..., :n_prior])
+        l_mag = 0.5*criteria(o_mag, t_mag) + 0.5 * \
+            criteria(o_mag[..., :n_prior], t_mag[..., :n_prior])
         l_mag.persistent = True
 
         l_net = (l_mel + l_mag).apply(persistent=True)
@@ -120,7 +122,8 @@ class TacotronTrainer(ABC):
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
                 if i % (self.hparams.print_frequency) == 0:
-                    self.monitor.display(i, ['train/l_mel', 'train/l_mag', 'train/l_net'])
+                    self.monitor.display(
+                        i, ['train/l_mel', 'train/l_mag', 'train/l_net'])
             for i in trange(self.one_epoch_valid, disable=self.hparams.comm.rank > 0):
                 self.valid_on_batch()
             self.callback_on_epoch_end()
@@ -130,7 +133,7 @@ class TacotronTrainer(ABC):
     def train_on_batch(self):
         r"""Updates the model parameters."""
         batch_size = self.hparams.batch_size
-        p,  dl = self.placeholder['train'], self.dataloader['train']
+        p, dl = self.placeholder['train'], self.dataloader['train']
         self.optimizer.zero_grad()
         if self.hparams.comm.n_procs > 1:
             self.hparams.event.default_stream_synchronize()
@@ -141,7 +144,8 @@ class TacotronTrainer(ABC):
         self.monitor.update('train/l_mag', p['l_mag'].d.copy(), batch_size)
         self.monitor.update('train/l_net', p['l_net'].d.copy(), batch_size)
         if self.hparams.comm.n_procs > 1:
-            self.hparams.comm.all_reduce(self._grads, division=True, inplace=False)
+            self.hparams.comm.all_reduce(
+                self._grads, division=True, inplace=False)
             self.hparams.event.add_default_stream_event()
         self.optimizer.update()
 
@@ -160,27 +164,33 @@ class TacotronTrainer(ABC):
 
     def callback_on_epoch_end(self):
         if self.hparams.comm.n_procs > 1:
-            self.hparams.comm.all_reduce([self.loss], division=True, inplace=False)
+            self.hparams.comm.all_reduce(
+                [self.loss], division=True, inplace=False)
         self.loss.data /= self.dataloader['valid'].size
         if self.hparams.comm.rank == 0:
             p, hp = self.placeholder['train'], self.hparams
             self.monitor.info(f'valid/loss={self.loss.data[0]:.5f}\n')
             if self.cur_epoch % hp.epochs_per_checkpoint == 0:
                 path = os.path.join(hp.output_path, 'output', f'epoch_{self.cur_epoch}')
-                Path(path, parents=True, exist_ok=True).mkdir(parents=True, exist_ok=True)
+                Path(path, parents=True, exist_ok=True).mkdir(
+                    parents=True, exist_ok=True)
                 # write attention and spectrogram outputs
                 for k in ('o_att', 'o_mel', 'o_mag'):
                     p[k].forward(clear_buffer=True)
                     data = p[k].d[0].copy()
                     save_image(
-                        data=data.reshape((-1, hp.n_mels)).T if k == 'o_mel' else data.T,
+                        data=data.reshape(
+                            (-1, hp.n_mels)).T if k == 'o_mel' else data.T,
                         path=os.path.join(path, k + '.png'),
-                        label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else ('Frame', 'Channel'),
-                        title={'o_att': 'Attention', 'o_mel': 'Mel spectrogram', 'o_mag': 'Spectrogram'}[k],
+                        label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else (
+                            'Frame', 'Channel'),
+                        title={
+                            'o_att': 'Attention', 'o_mel': 'Mel spectrogram', 'o_mag': 'Spectrogram'}[k],
                         figsize=(6, 5) if k == 'o_att' else (6, 3)
                     )
                 wave = synthesize_from_spec(p['o_mag'].d[0].copy(), hp)
-                wavfile.write(os.path.join(path, 'sample.wav'), rate=hp.sr, data=wave)  # write a sample
+                wavfile.write(os.path.join(path, 'sample.wav'),
+                              rate=hp.sr, data=wave)  # write a sample
                 self.model.save_parameters(os.path.join(path, f'model_{self.cur_epoch}.h5'))
         self.loss.zero()
 

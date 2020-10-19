@@ -27,11 +27,22 @@ See [NNabla CUDA extension package installation guild](https://nnabla.readthedoc
 
 ## Train
 ```bash
-python train.py --device-id <device id> --context "cudnn"
+python train.py --device-id <device id> \
+                --context "cudnn"
 ```
 If you have multiple GPUs, then 
 ```bash
-mpirun -n <number of GPUs> python main.py --device-id <list of GPUs> --context "cudnn"
+mpirun -n <number of GPUs> python main.py \
+    --device-id <list of GPUs>
+    --context "cudnn"
+```
+## Test
+```bash
+python synthesize.py --device-id <device id> \
+    --context "cudnn" \
+    --f-model <model file> \
+    --f-text <text file> \
+    --f-output <output file>
 ```
 
 The pretrained model can be downloaded from [here]().

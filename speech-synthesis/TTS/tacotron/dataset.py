@@ -48,7 +48,8 @@ class LJSpeechDataSource(DataSource):
         with open(path, encoding='utf-8') as f:
             for line in f:
                 inputs = line.strip().split('|')
-                waves.append(os.path.join(hparams.data_dir, 'wavs', '%s.wav' % inputs[0]))
+                waves.append(os.path.join(hparams.data_dir,
+                                          'wavs', '%s.wav' % inputs[0]))
                 texts.append(inputs[2])
         # split data
         n = len(waves)
@@ -96,7 +97,8 @@ class LJSpeechDataSource(DataSource):
             assert lin_len <= seq_len  # sanitary check
 
             if 'linear' in self._variables:
-                post_linear = self._padding(linear.T, (seq_len, linear.shape[0]))
+                post_linear = self._padding(
+                    linear.T, (seq_len, linear.shape[0]))
                 post_linear = audio.normalize(post_linear, hp)
                 np.save(os.path.join(self._path, 'linear', basename), post_linear)
 
@@ -136,7 +138,8 @@ class LJSpeechDataSource(DataSource):
         All reults will be saved into disk at the same data folder.
         """
         for f in self._variables:
-            Path(os.path.join(self._path, f)).mkdir(parents=True, exist_ok=True)
+            Path(os.path.join(self._path, f)).mkdir(
+                parents=True, exist_ok=True)
 
         for i in tqdm(range(self._size)):
             linear, w = self._get_spectrograms(i)

@@ -35,7 +35,8 @@ def conv1d(inputs, kernel_size, channels, activation, is_training, scope):
         nn.Variable: Output variable.
     """
     if kernel_size % 2 == 0:
-        inputs = F.pad(inputs, (0,)*5 + (1,), mode='constant', constant_value=0)
+        inputs = F.pad(inputs, (0,)*5 + (1,),
+                       mode='constant', constant_value=0)
     with nn.parameter_scope(scope):
         out = PF.convolution(inputs, channels, kernel=(kernel_size,),
                              pad=((kernel_size-1)//2,), with_bias=False)
@@ -211,12 +212,16 @@ def Bahdanau_attention(query, values, out_features, scope):
         nn.Variable: The attention weight vector.
     """
     with nn.parameter_scope(scope):
-        x = PF.affine(query, out_features, base_axis=2, with_bias=False, name='query')
-        y = PF.affine(values, out_features, base_axis=2, with_bias=False, name='values')
+        x = PF.affine(query, out_features, base_axis=2,
+                      with_bias=False, name='query')
+        y = PF.affine(values, out_features, base_axis=2,
+                      with_bias=False, name='values')
         # scores of shape (B, T, 1)
-        scores = PF.affine(F.tanh(x + y), 1, base_axis=2, with_bias=False, name='scores')
+        scores = PF.affine(F.tanh(x + y), 1, base_axis=2,
+                           with_bias=False, name='scores')
         # attention_weights of shape (B, 1, T)
-        attention_weights = F.softmax(scores, axis=1).reshape((query.shape[0], 1, -1))
+        attention_weights = F.softmax(
+            scores, axis=1).reshape((query.shape[0], 1, -1))
         # context_vector shape after sum == (B, 1, C)
         context_vector = F.batch_matmul(attention_weights, values)
 

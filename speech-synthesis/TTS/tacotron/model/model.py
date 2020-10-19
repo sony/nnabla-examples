@@ -103,7 +103,8 @@ class Decoder(Module):
 
         for i in range(hp.mel_len):
             if i > 0:
-                input = (outputs[-1] if inputs is None else inputs[:, i-1:i, :])
+                input = (
+                    outputs[-1] if inputs is None else inputs[:, i-1:i, :])
 
             # feed a prenet to the input
             input = prenet(input, layer_sizes=hp.prenet_channels,
@@ -129,19 +130,23 @@ class Decoder(Module):
             with nn.parameter_scope('rnn_decoder'):
                 # concat RNN output and attention context vector
                 with nn.parameter_scope('project_to_decoder'):
-                    output = F.concatenate(output, F.transpose(context, (1, 0, 2)), axis=2)
-                    output = PF.affine(output, encoder_dim, base_axis=2)  # (1, bz, 256)
+                    output = F.concatenate(
+                        output, F.transpose(context, (1, 0, 2)), axis=2)
+                    output = PF.affine(output, encoder_dim,
+                                       base_axis=2)  # (1, bz, 256)
 
                 # decoder RNN with residual connection
                 for i in range(2):
                     with nn.parameter_scope(f'gru_resisidual_{i}'):
-                        out, h_gru[i] = PF.gru(output, h_gru[i], training=self.training, bidirectional=False)
+                        out, h_gru[i] = PF.gru(
+                            output, h_gru[i], training=self.training, bidirectional=False)
                         output += out  # (1, bz, 256)
 
                 # projector to mels
                 with nn.parameter_scope('project_to_mel'):
                     output = F.transpose(output, (1, 0, 2))
-                    output = PF.affine(output, mel_shape, base_axis=2)  # (bz, 1, n_mels*r)
+                    # (bz, 1, n_mels*r)
+                    output = PF.affine(output, mel_shape, base_axis=2)
 
             outputs.append(output)
             attends.append(attend)
@@ -172,7 +177,8 @@ class PostNet(Module):
             nn.Variable: Output variable of shape (T_y, B, n_mels).
         """
         hparams = self._hparams
-        inputs = F.reshape(inputs, (inputs.shape[0], -1, hparams.n_mels), inplace=False)
+        inputs = F.reshape(
+            inputs, (inputs.shape[0], -1, hparams.n_mels), inplace=False)
         out = post_cbhg(
             F.transpose(inputs, (0, 2, 1)),
             hparams.n_mels,
