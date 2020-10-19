@@ -4,7 +4,7 @@ This is a NNabla implementation of the [Tacotron: Towards End-to-End Speech Synt
 
 All hyper-parameters are defined in [hparams.py](./hparams.py). We use the same values from https://github.com/keithito/tacotron/ as reference.
 
-
+<img src="./images/o_att.png" width=30% height=30% > <img src="./images/o_mel.png" width=30% height=30% > <img src="./images/o_mag.png" width=30% height=30% >
 
 ## Dataset
 Run the following commands to prepare the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/),
@@ -36,7 +36,7 @@ mpirun -n <number of GPUs> python main.py --device-id <list of GPUs> --context "
 
 The pretrained model can be downloaded from [here]().
 
-Some audio samples can be found in `./samples`.
+Synthesized audio samples can be downloaded from [here]().
 
 # References
 

@@ -19,7 +19,7 @@ from nnabla.ext_utils import get_extension_context
 
 
 def immediate_dir(path):
-    r"""Returns inmediate directories from path."""
+    r"""Returns immediate directories from path."""
     return [f.name for f in os.scandir(path) if f.is_dir()]
 
 

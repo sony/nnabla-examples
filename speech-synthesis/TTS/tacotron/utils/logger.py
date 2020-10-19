@@ -24,7 +24,7 @@ class ProgressMeter(object):
             num_batches(int): The number of batches per epoch.
             path(str, optional): Path to save tensorboard and log file.
                 Defaults to None.
-            quiet(bool, optional): If quite == True, no messeges will be shown.
+            quiet(bool, optional): If quite == True, no message will be shown.
     """
 
     def __init__(self, num_batches, path=None, quiet=False):

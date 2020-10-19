@@ -16,7 +16,7 @@ import json
 
 
 class HParams(object):
-    r"""Hyperparameter containner.
+    r"""Hyperparameter container.
 
     A `HParams` object holds hyperparameters used to build and train a model,
     such as the learning rate, batch size, etc. The hyperparameter are

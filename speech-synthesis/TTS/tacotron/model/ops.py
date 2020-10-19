@@ -201,7 +201,7 @@ def Bahdanau_attention(query, values, out_features, scope):
     r"""Return the Bahdanau attention mechanism.
 
     Args:
-        query (nn.Variable): A qurey of size (B, 1, C).
+        query (nn.Variable): A query of size (B, 1, C).
         values (nn.Variable): Values of size (B, T, C).
         out_features (int): The projected dimensonality.
         scope (str): Parameter scope.

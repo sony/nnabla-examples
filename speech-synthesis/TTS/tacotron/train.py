@@ -27,15 +27,15 @@ from utils.audio import synthesize_from_spec
 from utils.logger import ProgressMeter
 
 
-def save_image(data, path, label, title):
-    r"""Saves an image."""
-    plt.figure(figsize=(6, 5))
+def save_image(data, path, label, title, figsize=(6, 5)):
+    r"""Saves an image to file."""
+    plt.figure(figsize=figsize)
     plt.imshow(data.copy(), origin='lower', aspect='auto')
     plt.xlabel(label[0])
     plt.ylabel(label[1])
     plt.title(title)
     plt.colorbar()
-    plt.savefig(os.path.join(path))
+    plt.savefig(os.path.join(path), bbox_inches='tight')
     plt.close()
 
 
@@ -44,9 +44,9 @@ class TacotronTrainer(ABC):
 
     Args:
         model (model.module.Module): Tacotron model.
-        dataloader: Dataloader.
-        optimizer: Optimizer used to update the parameters.
-        hparams: Hyper-parameters.
+        dataloader (dict): A dataloader.
+        optimizer (Optimizer): An optimizer used to update the parameters.
+        hparams (HParams): Hyper-parameters.
     """
 
     def __init__(self, model, dataloader, optimizer, hparams):
@@ -64,7 +64,7 @@ class TacotronTrainer(ABC):
         r"""Builds the graph and update the placeholder.
 
         Args:
-            key (str, optional): Type of graph. Defaults to 'train'.
+            key (str, optional): Type of computational graph. Defaults to 'train'.
         """
         assert key in ('train', 'valid')
 
@@ -176,7 +176,8 @@ class TacotronTrainer(ABC):
                         data=data.reshape((-1, hp.n_mels)).T if k == 'o_mel' else data.T,
                         path=os.path.join(path, k + '.png'),
                         label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else ('Frame', 'Channel'),
-                        title=k[2:]
+                        title={'o_att': 'Attention', 'o_mel': 'Mel spectrogram', 'o_mag': 'Spectrogram'}[k],
+                        figsize=(6, 5) if k == 'o_att' else (6, 3)
                     )
                 wave = synthesize_from_spec(p['o_mag'].d[0].copy(), hp)
                 wavfile.write(os.path.join(path, 'sample.wav'), rate=hp.sr, data=wave)  # write a sample

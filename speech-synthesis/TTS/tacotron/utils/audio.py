@@ -35,7 +35,7 @@ def preemphasis(x, factor=0.97):
 
 
 def rev_preemphasis(x, factor=0.97):
-    r"""Apply inverve preemphasis to a signal."""
+    r"""Apply inverse preemphasis to a signal."""
     return signal.lfilter([1], [1, -factor], x)
 
 
