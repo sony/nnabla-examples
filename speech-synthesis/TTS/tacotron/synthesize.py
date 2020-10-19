@@ -43,11 +43,11 @@ def synthesize(args):
     model = Tacotron(hp)
     model.training = False
     model.load_parameters(args.f_model)
-    
+
     x_txt = nn.Variable([hp.batch_size, hp.text_len])
     _, mag, _ = model(x_txt)
     x_txt.d = text[np.newaxis, :]
-    
+
     mag.forward(clear_buffer=True)
     wave = synthesize_from_spec(mag.d[0].copy(), hp)
     wavfile.write(args.f_output, rate=hp.sr, data=wave)  # write a sample
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # setup context for nnabla
     if args.device_id != '-1':
         os.environ["CUDA_VISIBLE_DEVICES"] = args.device_id
-    
+
     # setup nnabla context
     ctx = get_extension_context(args.context, device_id='0')
     nn.set_default_context(ctx)

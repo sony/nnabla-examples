@@ -45,9 +45,9 @@ python synthesize.py --device-id <device id> \
     --f-output <output file>
 ```
 
-The pretrained model can be downloaded from [here]().
+The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/tacotron/model.h5).
 
-Synthesized audio samples can be downloaded from [here]().
+Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/tacotron/samples.7z).
 
 # References
 
