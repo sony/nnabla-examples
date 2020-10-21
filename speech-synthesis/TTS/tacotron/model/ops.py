@@ -68,14 +68,15 @@ def highwaynet(inputs, depth, scope):
 
 
 def cbhg(inputs, K, projections, depth, is_training, scope):
-    r"""Return the CBHG module.
+    r"""Returns the 1D Convolution Bank Highwaynet bindirectional
+    GRU (CBHG) module.
 
     Args:
-        inputs ([type]): Input NNabla variable of shape (B, C, T)
+        inputs (nn.Variable): NNabla Variable of shape (B, C, T).
         K (int): Maximum kernel size.
         projections (list of int): A list of channels.
         depth (int): A depth. This should be an even number.
-        is_training (bool): Whether training mode is activted.
+        is_training (bool): Whether training mode is activated.
         scope (str): The parameter scope name.
 
     Returns:
@@ -204,7 +205,7 @@ def Bahdanau_attention(query, values, out_features, scope):
     Args:
         query (nn.Variable): A query of size (B, 1, C).
         values (nn.Variable): Values of size (B, T, C).
-        out_features (int): The projected dimensonality.
+        out_features (int): The projected dimensionality.
         scope (str): Parameter scope.
 
     Returns:

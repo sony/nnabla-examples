@@ -27,7 +27,7 @@ from dataset import LJSpeechDataSource
 from hparams import hparams as hp
 from model.model import Tacotron
 from train import TacotronTrainer
-from utils.misc import CommunicatorWrapper
+from utils import CommunicatorWrapper
 from utils.optim import NoamScheduler
 from utils.optim import Optimizer
 

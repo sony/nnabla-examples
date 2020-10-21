@@ -70,7 +70,7 @@ hparams = HParams(
     warmup=4000,                                   # number of iterations for warmup
     # number of epochs for each checkpoint
     epochs_per_checkpoint=50,
-    output_path="./log/tacotron-32/",                 # directory to save results
+    output_path="./log/tacotron/",                 # directory to save results
 
     seed=123456,                                   # random seed
 )

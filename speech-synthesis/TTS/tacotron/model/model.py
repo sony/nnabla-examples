@@ -136,10 +136,10 @@ class Decoder(Module):
                                        base_axis=2)  # (1, bz, 256)
 
                 # decoder RNN with residual connection
-                for i in range(2):
-                    with nn.parameter_scope(f'gru_resisidual_{i}'):
-                        out, h_gru[i] = PF.gru(
-                            output, h_gru[i], training=self.training, bidirectional=False)
+                for j in range(2):
+                    with nn.parameter_scope(f'gru_resisidual_{j}'):
+                        out, h_gru[j] = PF.gru(
+                            output, h_gru[j], training=self.training, bidirectional=False)
                         output += out  # (1, bz, 256)
 
                 # projector to mels
@@ -177,8 +177,7 @@ class PostNet(Module):
             nn.Variable: Output variable of shape (T_y, B, n_mels).
         """
         hparams = self._hparams
-        inputs = F.reshape(
-            inputs, (inputs.shape[0], -1, hparams.n_mels), inplace=False)
+        inputs = inputs.reshape((inputs.shape[0], -1, hparams.n_mels))
         out = post_cbhg(
             F.transpose(inputs, (0, 2, 1)),
             hparams.n_mels,

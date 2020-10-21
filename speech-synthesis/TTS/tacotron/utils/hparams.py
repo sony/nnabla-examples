@@ -32,16 +32,6 @@ class HParams(object):
     def __init__(self, **kargs):
         self.__dict__.update(**kargs)
 
-    def parse(self, values):
-        if values.strip() == '':
-            return
-        for arg in values.split(";"):
-            try:
-                key, value = arg.split("=")
-                self.__dict__[key.strip()] = eval(value)
-            except Exception:
-                raise Exception('Syntax Error: Unexpected Expression')
-
     def save(self, file_name):
         with open(file_name, 'w') as json_file:
             json.dump(self.__dict__, json_file, ensure_ascii=False, indent=4,
