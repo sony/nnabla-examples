@@ -140,7 +140,7 @@ def train():
     # process (local_rank is 0) on the host.
 
     # Prepare data only when local_rank is 0
-    if mpi_local_rank == 0:
+    if mpi_rank == 0:
         rng = np.random.RandomState(device_id)
         _, tdata = data_iterator(args.batch_size, True, rng)
         vsource, vdata = data_iterator(args.batch_size, False)
@@ -149,7 +149,7 @@ def train():
     comm.barrier()
 
     # Prepare data when local_rank is not 0
-    if mpi_local_rank != 0:
+    if mpi_rank != 0:
         rng = np.random.RandomState(device_id)
         _, tdata = data_iterator(args.batch_size, True, rng)
         vsource, vdata = data_iterator(args.batch_size, False)
