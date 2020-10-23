@@ -4,7 +4,7 @@ This is a NNabla implementation of the [Tacotron: Towards End-to-End Speech Synt
 
 Tacotron is an end-to-end text-to-speech synthesis system. It can synthesize speech directly from a sequence of characters. Training data are given as `<text, audio>` pairs. The model takes characters as input and outputs a raw spectrogram. Audios are synthesized from spectrograms using the Griffin-Lim algorithm.
 
-All hyper-parameters are defined in [hparams.py](./hparams.py). We use the same values from https://github.com/Kyubyong/tacotron as reference.
+All hyper-parameters are defined in [hparams.py](./hparams.py). We use the values from https://github.com/Kyubyong/tacotron as reference.
 
 
 The figures below show an alignment, mel spectrogram, and spectrogram as outputs of the model on the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/).
@@ -22,7 +22,7 @@ pip install -r ./requirements.txt
 ```
 Note that this `requirements.txt` dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.
-See [NNabla CUDA extension package installation guild](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
+See [NNabla CUDA extension package installation guide](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
 ## Dataset
 Run the following commands to prepare the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/),

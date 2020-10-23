@@ -44,13 +44,13 @@ class LJSpeechDataSource(DataSource):
 
         # read text and wave files
         texts, waves = list(), list()
-        path = os.path.join(hparams.data_dir, metadata)
-        with open(path, encoding='utf-8') as f:
+        path = Path(hparams.data_dir)
+        with open(path / metadata, encoding='utf-8') as f:
             for line in f:
                 inputs = line.strip().split('|')
-                waves.append(os.path.join(hparams.data_dir,
-                                          'wavs', '%s.wav' % inputs[0]))
+                waves.append(str(path / 'wavs' / f'{inputs[0]}.wav'))
                 texts.append(inputs[2])
+        
         # split data
         n = len(waves)
         index = self._rng.permutation(n) if shuffle else np.arange(n)
@@ -84,40 +84,38 @@ class LJSpeechDataSource(DataSource):
     def _get_data(self, position):
         r"""Return a tuple of data."""
         index = self._indexes[position]
-        basename = os.path.basename(self._waves[index]).replace("wav", "npy")
-        return tuple(np.load(os.path.join(self._path, x, basename)) for x in self._variables)
+        basename = Path(self._waves[index]).name.replace("wav", "npy")
+        return tuple(np.load(str(Path(self._path) / x / basename)) for x in self._variables)
 
     def _store_entry(self, index, linear, w):
         hp = self.hparams
-        basename = os.path.basename(self._waves[index]).replace("wav", "npy")
+        basename = Path(self._waves[index]).name.replace("wav", "npy")
+    
+        seq_len = hp.n_frames * hp.r
+        lin_len = linear.shape[1]
+        assert lin_len <= seq_len  # sanitary check
 
-        if 'mel' in self._variables or 'linear' in self._variables:
-            seq_len = hp.mel_len * hp.r
-            lin_len = linear.shape[1]
-            assert lin_len <= seq_len  # sanitary check
+        # compute linear spectrogram
+        post_linear = self._padding(linear.T, (seq_len, linear.shape[0]))
+        post_linear = audio.normalize(post_linear, hp)
+        np.save(str(Path(self._path) / 'linear' / basename), post_linear)
 
-            if 'linear' in self._variables:
-                post_linear = self._padding(
-                    linear.T, (seq_len, linear.shape[0]))
-                post_linear = audio.normalize(post_linear, hp)
-                np.save(os.path.join(self._path, 'linear', basename), post_linear)
+        # compute mel spectrogram
+        mel = np.dot(self.mel_basis, linear)  # transform to mel scales
+        mel = self._padding(mel.T, (seq_len, hp.n_mels))
+        mel = audio.normalize(mel, hp)
+        mel = mel.reshape(-1, hp.n_mels*hp.r)
+        np.save(str(Path(self._path) / 'mel' / basename), mel)
 
-            if 'mel' in self._variables:
-                mel = np.dot(self.mel_basis, linear)  # transform to mel scales
-                mel = self._padding(mel.T, (seq_len, hp.n_mels))
-                mel = audio.normalize(mel, hp)
-                mel = mel.reshape(-1, hp.n_mels*hp.r)
-                np.save(os.path.join(self._path, 'mel', basename), mel)
-
-        if 'text' in self._variables:
-            text = text_normalize(self._texts[index], self.hparams.vocab)
-            assert len(text) < hp.text_len
-            text = text.ljust(hp.text_len, '~')
-            text = [self._char2idx[ch] for ch in text]
-            np.save(os.path.join(self._path, 'text', basename), text)
+        # compute text sequence
+        text = text_normalize(self._texts[index], self.hparams.vocab)
+        assert len(text) < hp.text_len
+        text = text.ljust(hp.text_len, '~')
+        text = [self._char2idx[ch] for ch in text]
+        np.save(str(Path(self._path) / 'text' / basename), text)
 
     def _get_spectrograms(self, index):
-        r""" Return the corresponding spectrogram and waveform."""
+        r"""Return the corresponding spectrogram and waveform."""
         file = self._waves[index]
 
         # get hyper-parameters
@@ -135,11 +133,10 @@ class LJSpeechDataSource(DataSource):
 
     def _preprocess(self):
         r"""Precomputes all mels, linears, and texts of training data.
-        All reults will be saved into disk at the same data folder.
+        All results will be saved into disk at the same data folder.
         """
         for f in self._variables:
-            Path(os.path.join(self._path, f)).mkdir(
-                parents=True, exist_ok=True)
+            (Path(self._path) / f).mkdir(parents=True, exist_ok=True)
 
         for i in tqdm(range(self._size)):
             linear, w = self._get_spectrograms(i)
@@ -163,19 +160,19 @@ class LJSpeechDataSource(DataSource):
 
 def data_split(path):
     r"""Split the LJ dataset into train and validation sets."""
-    with open(os.path.join(path, 'metadata.csv'), encoding='utf-8') as f:
+    with open(Path(path) / 'metadata.csv', encoding='utf-8') as f:
         lines = [line.strip() for line in f]
         n = len(lines)
         index = np.random.RandomState(313).permutation(n)
         split = dict(train=[lines[i] for i in index[:-int(0.1 * n)]],
                      valid=[lines[i] for i in index[-int(0.1 * n):]])
         for key in ['train', 'valid']:
-            with open(os.path.join(path, f'metadata_{key}.csv'), 'w') as writer:
+            with open(Path(path) / f'metadata_{key}.csv', 'w') as writer:
                 writer.write('\n'.join(split[key]))
 
 
 if __name__ == '__main__':
     from hparams import hparams as hp
     rng = np.random.RandomState(hp.seed)
-    data_split('./data/LJSpeech-1.1/')
+    data_split(hp.data_dir)
     LJSpeechDataSource('metadata.csv', hp, False, rng)._preprocess()

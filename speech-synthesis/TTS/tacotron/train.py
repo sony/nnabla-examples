@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from abc import ABC
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -35,7 +34,7 @@ def save_image(data, path, label, title, figsize=(6, 5)):
     plt.ylabel(label[1])
     plt.title(title)
     plt.colorbar()
-    plt.savefig(os.path.join(path), bbox_inches='tight')
+    plt.savefig(path, bbox_inches='tight')
     plt.close()
 
 
@@ -59,7 +58,7 @@ class TacotronTrainer(ABC):
         self.optimizer = optimizer
         self.monitor = ProgressMeter(
             self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
-        hparams.save(os.path.join(hparams.output_path, 'settings.json'))
+        hparams.save(str(Path(hparams.output_path) / 'settings.json'))
 
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
@@ -74,8 +73,8 @@ class TacotronTrainer(ABC):
 
         # define input variables
         x_txt = nn.Variable([hp.batch_size, hp.text_len])
-        x_mel = nn.Variable([hp.batch_size, hp.mel_len, hp.n_mels*hp.r])
-        t_mag = nn.Variable([hp.batch_size, hp.mel_len*hp.r, hp.n_fft//2+1])
+        x_mel = nn.Variable([hp.batch_size, hp.n_frames, hp.n_mels*hp.r])
+        t_mag = nn.Variable([hp.batch_size, hp.n_frames*hp.r, hp.n_fft//2+1])
 
         # output variables
         o_mel, o_mag, o_att = self.model(x_txt, x_mel)
@@ -168,12 +167,11 @@ class TacotronTrainer(ABC):
                 [self.loss], division=True, inplace=False)
         self.loss.data /= self.dataloader['valid'].size
         if self.hparams.comm.rank == 0:
-            p, hp = self.placeholder['train'], self.hparams
+            p, hp = self.placeholder['valid'], self.hparams
             self.monitor.info(f'valid/loss={self.loss.data[0]:.5f}\n')
             if self.cur_epoch % hp.epochs_per_checkpoint == 0:
-                path = os.path.join(hp.output_path, 'output', f'epoch_{self.cur_epoch}')
-                Path(path, parents=True, exist_ok=True).mkdir(
-                    parents=True, exist_ok=True)
+                path = Path(hp.output_path) / 'output' / f'epoch_{self.cur_epoch}'
+                path.mkdir(parents=True, exist_ok=True)
                 # write attention and spectrogram outputs
                 for k in ('o_att', 'o_mel', 'o_mag'):
                     p[k].forward(clear_buffer=True)
@@ -181,7 +179,7 @@ class TacotronTrainer(ABC):
                     save_image(
                         data=data.reshape(
                             (-1, hp.n_mels)).T if k == 'o_mel' else data.T,
-                        path=os.path.join(path, k + '.png'),
+                        path=str(path / (k + '.png')),
                         label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else (
                             'Frame', 'Channel'),
                         title={
@@ -189,13 +187,12 @@ class TacotronTrainer(ABC):
                         figsize=(6, 5) if k == 'o_att' else (6, 3)
                     )
                 wave = synthesize_from_spec(p['o_mag'].d[0].copy(), hp)
-                wavfile.write(os.path.join(path, 'sample.wav'),
-                              rate=hp.sr, data=wave)  # write a sample
-                self.model.save_parameters(os.path.join(path, f'model_{self.cur_epoch}.h5'))
+                wavfile.write(str(path / 'sample.wav'), rate=hp.sr, data=wave)
+                self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
         self.loss.zero()
 
     def callback_on_finish(self):
         r"""Calls this on finishing the run method."""
         if self.hparams.comm.rank == 0:
-            path = os.path.join(self.hparams.output_path, 'model.h5')
+            path = str(Path(self.hparams.output_path) / 'model.h5')
             self.model.save_parameters(path)

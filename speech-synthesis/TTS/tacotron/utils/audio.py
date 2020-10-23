@@ -46,6 +46,7 @@ def normalize(x, hp):
         x (numpy.ndarray): The input spectrogram of shape (freq x time).
         max_db (float): Maximum intensity in decibel.
         ref_db (float): Reference intensity in decibel.
+    
     Returns:
         numpy.ndarray: An (freq x time) array of values in [0, 1].
     """

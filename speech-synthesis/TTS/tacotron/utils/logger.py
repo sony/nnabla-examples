@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections import OrderedDict
-import os
+from pathlib import Path
 import sys
 
 
@@ -33,7 +33,7 @@ class ProgressMeter(object):
         self.terminal = sys.stdout
         self.quiet = quiet
         if not self.quiet:
-            self.file = open(os.path.join(path, 'log.txt'), 'w')
+            self.file = open(Path(path) / 'log.txt', 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.

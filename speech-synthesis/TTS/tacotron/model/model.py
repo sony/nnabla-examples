@@ -101,7 +101,7 @@ class Decoder(Module):
 
         outputs, attends = [], []
 
-        for i in range(hp.mel_len):
+        for i in range(hp.n_frames):
             if i > 0:
                 input = (
                     outputs[-1] if inputs is None else inputs[:, i-1:i, :])
