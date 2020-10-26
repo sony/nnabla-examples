@@ -50,7 +50,7 @@ class LJSpeechDataSource(DataSource):
                 inputs = line.strip().split('|')
                 waves.append(str(path / 'wavs' / f'{inputs[0]}.wav'))
                 texts.append(inputs[2])
-        
+
         # split data
         n = len(waves)
         index = self._rng.permutation(n) if shuffle else np.arange(n)
@@ -90,7 +90,7 @@ class LJSpeechDataSource(DataSource):
     def _store_entry(self, index, linear, w):
         hp = self.hparams
         basename = Path(self._waves[index]).with_suffix(".npy").name
-    
+
         seq_len = hp.n_frames * hp.r
         lin_len = linear.shape[1]
         assert lin_len <= seq_len  # sanitary check
