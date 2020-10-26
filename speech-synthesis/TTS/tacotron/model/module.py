@@ -72,8 +72,6 @@ class Module(object):
         return self._submodules
 
     def get_parameters(self, recursive=True, grad_only=False, memo=None):
-        '''
-        '''
         params = OrderedDict()
         if memo is None:
             memo = ParamMemo()

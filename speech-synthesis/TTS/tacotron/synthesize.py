@@ -35,7 +35,7 @@ def synthesize(args):
     text = text_normalize(text, hp.vocab)
     if len(text) >= hp.text_len - 1:
         text = text[:hp.text_len-1]
-    text += '~'*(hp.text_len-len(text))
+    text += '~' * (hp.text_len - len(text))
     text = np.array([char2idx[ch] for ch in text]).reshape(-1)
 
     hp.batch_size = 1

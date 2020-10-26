@@ -60,7 +60,7 @@ class LJSpeechDataSource(DataSource):
 
         self._waves = [waves[i] for i in index]
         self._texts = [texts[i] for i in index]
-        self._path = hparams.save_data_dir
+        self._path = Path(hparams.save_data_dir)
         self._size = len(self._waves)
         self._variables = hparams.out_variables
         self.hparams = hparams
@@ -84,12 +84,12 @@ class LJSpeechDataSource(DataSource):
     def _get_data(self, position):
         r"""Return a tuple of data."""
         index = self._indexes[position]
-        basename = Path(self._waves[index]).name.replace("wav", "npy")
-        return tuple(np.load(str(Path(self._path) / x / basename)) for x in self._variables)
+        basename = Path(self._waves[index]).with_suffix(".npy").name
+        return tuple(np.load(self._path / x / basename) for x in self._variables)
 
     def _store_entry(self, index, linear, w):
         hp = self.hparams
-        basename = Path(self._waves[index]).name.replace("wav", "npy")
+        basename = Path(self._waves[index]).with_suffix(".npy").name
     
         seq_len = hp.n_frames * hp.r
         lin_len = linear.shape[1]
@@ -98,21 +98,21 @@ class LJSpeechDataSource(DataSource):
         # compute linear spectrogram
         post_linear = self._padding(linear.T, (seq_len, linear.shape[0]))
         post_linear = audio.normalize(post_linear, hp)
-        np.save(str(Path(self._path) / 'linear' / basename), post_linear)
+        np.save(self._path / 'linear' / basename, post_linear)
 
         # compute mel spectrogram
         mel = np.dot(self.mel_basis, linear)  # transform to mel scales
         mel = self._padding(mel.T, (seq_len, hp.n_mels))
         mel = audio.normalize(mel, hp)
         mel = mel.reshape(-1, hp.n_mels*hp.r)
-        np.save(str(Path(self._path) / 'mel' / basename), mel)
+        np.save(self._path / 'mel' / basename, mel)
 
         # compute text sequence
         text = text_normalize(self._texts[index], self.hparams.vocab)
         assert len(text) < hp.text_len
         text = text.ljust(hp.text_len, '~')
         text = [self._char2idx[ch] for ch in text]
-        np.save(str(Path(self._path) / 'text' / basename), text)
+        np.save(self._path / 'text' / basename, text)
 
     def _get_spectrograms(self, index):
         r"""Return the corresponding spectrogram and waveform."""
@@ -132,11 +132,9 @@ class LJSpeechDataSource(DataSource):
         return linear, w
 
     def _preprocess(self):
-        r"""Precomputes all mels, linears, and texts of training data.
-        All results will be saved into disk at the same data folder.
-        """
+        r"""Precomputes mel spectrograms, linear spectrograms, and texts."""
         for f in self._variables:
-            (Path(self._path) / f).mkdir(parents=True, exist_ok=True)
+            self._path.joinpath(f).mkdir(parents=True, exist_ok=True)
 
         for i in tqdm(range(self._size)):
             linear, w = self._get_spectrograms(i)

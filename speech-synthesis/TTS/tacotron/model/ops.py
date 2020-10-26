@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+
 import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
@@ -86,15 +88,9 @@ def cbhg(inputs, K, projections, depth, is_training, scope):
     with nn.parameter_scope(scope):
         # Convolution bank: concatenate channels from all 1D convolutions
         with nn.parameter_scope('conv_bank'):
-            conv_outputs = F.concatenate(
-                *[conv1d(inputs, kernel_size=k,
-                         channels=128,
-                         activation=F.relu,
-                         is_training=is_training,
-                         scope=f'conv1d_{k}')
-                  for k in range(1, K + 1)],
-                axis=1
-            )
+            conv = partial(conv1d, inputs, channels=128, activation=F.relu, is_training=is_training)
+            conv_outputs = [conv(kernel_size=k, scope=f'conv1d_{k}') for k in range(1, K+1)]
+            conv_outputs = F.concatenate(*conv_outputs, axis=1)
 
         # make sure a valid input to max_pooling
         x = F.pad(conv_outputs, (0,)*5+(1,), mode='constant')

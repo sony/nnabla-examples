@@ -58,7 +58,7 @@ class TacotronTrainer(ABC):
         self.optimizer = optimizer
         self.monitor = ProgressMeter(
             self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
-        hparams.save(str(Path(hparams.output_path) / 'settings.json'))
+        hparams.save(Path(hparams.output_path) / 'settings.json')
 
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
@@ -179,7 +179,7 @@ class TacotronTrainer(ABC):
                     save_image(
                         data=data.reshape(
                             (-1, hp.n_mels)).T if k == 'o_mel' else data.T,
-                        path=str(path / (k + '.png')),
+                        path=path / (k + '.png'),
                         label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else (
                             'Frame', 'Channel'),
                         title={
@@ -187,7 +187,7 @@ class TacotronTrainer(ABC):
                         figsize=(6, 5) if k == 'o_att' else (6, 3)
                     )
                 wave = synthesize_from_spec(p['o_mag'].d[0].copy(), hp)
-                wavfile.write(str(path / 'sample.wav'), rate=hp.sr, data=wave)
+                wavfile.write(path / 'sample.wav', rate=hp.sr, data=wave)
                 self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
         self.loss.zero()
 
