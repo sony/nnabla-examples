@@ -20,7 +20,8 @@ from nnabla.initializer import NormalInitializer
 import nnabla.parametric_functions as PF
 import numpy as np
 
-from .module import Module
+from neu.tts.module import Module
+
 from .ops import fused_add_tanh_sigmoid_multiply
 from .ops import invertible_conv
 
@@ -88,7 +89,7 @@ class WN(Module):
                     )
 
                 if i < n_layers - 1:
-                    audio = res_skip_acts[:, :n_channels, :] + audio
+                    audio += res_skip_acts[:, :n_channels, :]
                     skip_acts = res_skip_acts[:, n_channels:, :]
                 else:
                     skip_acts = res_skip_acts
@@ -96,7 +97,7 @@ class WN(Module):
                 if i == 0:
                     output = skip_acts
                 else:
-                    output = skip_acts + output
+                    output += skip_acts
 
         with nn.parameter_scope('end'):
             # Initializing last layer to 0
@@ -114,8 +115,8 @@ class WaveGlow(Module):
         for i in range(hparams.n_flows):
             setattr(self, f'WN_{i}', WN(hparams))
 
-        n_half = hparams.n_groups // 2
-        n_remaining_channels = hparams.n_groups
+        n_half = hparams.n_samples_per_group // 2
+        n_remaining_channels = hparams.n_samples_per_group
         for k in range(hparams.n_flows):
             if k % hparams.n_early_every == 0 and k > 0:
                 n_half = n_half - hparams.n_early_size // 2
@@ -130,7 +131,7 @@ class WaveGlow(Module):
     def compute_mel(self, wave):
         hp = self.hparams
         reals, imags = F.stft(wave, window_size=hp.win_length, stride=hp.hop_length, fft_size=hp.n_fft)
-        linear = F.pow_scalar(F.pow_scalar(reals, 2) + F.pow_scalar(imags, 2), 0.5)
+        linear = F.pow_scalar(F.add2(F.pow_scalar(reals, 2), F.pow_scalar(imags, 2), inplace=True), 0.5)
         mels = F.batch_matmul(self.basis, linear)
         mels = F.log(F.clip_by_value(mels, 1e-5, np.inf)).apply(need_grad=False)
         return mels
@@ -153,13 +154,13 @@ class WaveGlow(Module):
                 mels = mels[..., :wave.shape[1]]  # (B, L, n_mels)
 
             # transforming to correct shape
-            mels = F.reshape(mels, mels.shape[:2] + (-1, hp.n_groups))
+            mels = F.reshape(mels, mels.shape[:2] + (-1, hp.n_samples_per_group))
             mels = F.transpose(mels, (0, 2, 1, 3))
             mels = F.reshape(mels, mels.shape[:2] + (-1,))
             mels = F.transpose(mels, (0, 2, 1))      # (B, n_mels * n_groups, L/n_groups)
 
         # reshape audio
-        wave = F.reshape(wave, (batch_size, -1, hp.n_groups))
+        wave = F.reshape(wave, (batch_size, -1, hp.n_samples_per_group))
         wave = F.transpose(wave, (0, 2, 1))  # (B, n_groups, L/n_groups)
 
         output_audio, log_s_list, log_det_W_list = [], [], []
@@ -181,7 +182,7 @@ class WaveGlow(Module):
                 output = getattr(self, f'WN_{k}')(audio_0, mels)
                 log_s = output[:, n_half:, :]  # (B, n_half, L/n_groups)
                 b = output[:, :n_half, :]      # (B, n_half, L/n_groups)
-                audio_1 = F.exp(log_s) * audio_1 + b
+                audio_1 = F.add2(F.exp(log_s) * audio_1, b, inplace=True)
                 log_s_list.append(log_s)
 
             wave = F.concatenate(audio_0, audio_1, axis=1)  # (B, n_half*2, L/n_groups)
@@ -213,7 +214,7 @@ class WaveGlow(Module):
                 mels = mels[..., :-(1024 - 256)]  # kernel - stride
 
                 # transforming to correct shape
-                mels = F.reshape(mels, mels.shape[:2]+(-1, hp.n_groups))
+                mels = F.reshape(mels, mels.shape[:2]+(-1, hp.n_samples_per_group))
                 mels = F.transpose(mels, (0, 2, 1, 3))
                 mels = F.reshape(mels, mels.shape[:2] + (-1,))
                 mels = F.transpose(mels, (0, 2, 1))  # (B, n_mels * n_groups, L/n_groups)

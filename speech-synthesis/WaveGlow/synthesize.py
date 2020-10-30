@@ -15,6 +15,10 @@
 
 import argparse
 import os
+from pathlib import Path
+
+import sys
+sys.path.append(str(Path().cwd().parents[1] / 'utils'))
 
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context

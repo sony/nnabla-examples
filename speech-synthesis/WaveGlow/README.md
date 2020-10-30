@@ -40,7 +40,7 @@ mpirun -n <number of GPUs> python main.py \
 Expected training time on 4 GeForce RTX 2080 Ti would be 9 days.
 
 ## Inference
-Download mel-spectrogram samples from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/waveglow/mel_samples.7z).
+Download mel-spectrogram samples from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/WaveGlow/mel_samples.7z).
 
 Run the following command to synthesize audios from mel spectrograms.
 
@@ -52,11 +52,11 @@ python synthesize.py --device-id <device id> \
     --f-output <output file>
 ```
 
-The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/waveglow/model.h5).
+The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/WaveGlow/model.h5).
 
 
 
-Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/waveglow/samples.7z).
+Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/WaveGlow/samples.7z).
 
 # References
 1. https://github.com/NVIDIA/waveglow

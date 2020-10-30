@@ -21,30 +21,11 @@ import numpy as np
 from scipy.io import wavfile
 from tqdm import trange
 
-from utils.logger import ProgressMeter
+from neu.tts.trainer import Trainer
 
 
-class WaveGlowTrainer(ABC):
-    r"""Trainer for WaveGlow.
-
-    Args:
-        model (model.module.Module): WaveGlow model.
-        dataloader (dict): A dataloader.
-        optimizer (Optimizer): An optimizer used to update the parameters.
-        hparams (HParams): Hyper-parameters.
-    """
-
-    def __init__(self, model, dataloader, optimizer, hparams):
-        self.model = model
-        self.dataloader = dataloader
-        self.hparams = hparams
-        self.one_epoch_train = dataloader['train'].size // hparams.batch_size
-        self.one_epoch_valid = dataloader['valid'].size // hparams.batch_size
-        self.placeholder = dict()
-        self.optimizer = optimizer
-        self.monitor = ProgressMeter(
-            self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
-        hparams.save(Path(hparams.output_path) / 'settings.json')
+class WaveGlowTrainer(Trainer):
+    r"""Trainer for WaveGlow."""
 
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
@@ -73,33 +54,6 @@ class WaveGlowTrainer(ABC):
         s_aud = self.model.infer(x_mel)
 
         self.placeholder[key] = {'x_aud': x_aud, 'o_aud': o_aud, 'l_net': l_net, 's_aud': s_aud}
-
-    def callback_on_start(self):
-        self.update_graph('train')
-        params = self.model.get_parameters(grad_only=True)
-        self.optimizer.set_parameters(params)
-        self.update_graph('valid')
-        self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
-        if self.hparams.comm.n_procs > 1:
-            self._grads = [x.grad for x in params.values()]
-
-    def run(self):
-        r"""Run the training process."""
-        self.callback_on_start()
-        for cur_epoch in range(self.hparams.epoch):
-            self.monitor.reset()
-            lr = self.optimizer.get_learning_rate()
-            self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
-            self.cur_epoch = cur_epoch
-            for i in range(self.one_epoch_train):
-                self.train_on_batch()
-                if i % (self.hparams.print_frequency) == 0:
-                    self.monitor.display(i, ['train/l_net'])
-            for i in trange(self.one_epoch_valid, disable=self.hparams.comm.rank > 0):
-                self.valid_on_batch()
-            self.callback_on_epoch_end()
-        self.callback_on_finish()
-        self.monitor.close()
 
     def train_on_batch(self):
         r"""Updates the model parameters."""
@@ -147,9 +101,3 @@ class WaveGlowTrainer(ABC):
                 self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
 
         self.loss.zero()
-
-    def callback_on_finish(self):
-        r"""Calls this on finishing the run method."""
-        if self.hparams.comm.rank == 0:
-            path = str(Path(self.hparams.output_path) / 'model.h5')
-            self.model.save_parameters(path)

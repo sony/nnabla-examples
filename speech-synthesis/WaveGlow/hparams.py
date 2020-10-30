@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from utils.hparams import HParams
+from neu.tts.hparams import HParams
 
 hparams = HParams(
 
@@ -32,7 +32,7 @@ hparams = HParams(
 
     # flow parameters
     n_flows=12,                         # number of flow nets
-    n_groups=8,                         # number of Number of samples in a group processed by the steps of flow
+    n_samples_per_group=8,              # number of samples in a group processed by the steps of flow
     n_early_every=4,                    # Determines how often (i.e., after how many coupling layers)
                                         # a number of channels are output to the loss function
     n_early_size=2,                     # Number of channels output to the loss function
