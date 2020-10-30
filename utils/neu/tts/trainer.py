@@ -53,7 +53,7 @@ class Trainer(ABC):
             key (str, optional): Type of computational graph. Defaults to 'train'.
         """
         pass
-        
+
     def callback_on_start(self):
         r"""Calls this on starting the training."""
         self.update_graph('train')
@@ -68,23 +68,23 @@ class Trainer(ABC):
         r"""Run the training process."""
         self.callback_on_start()
         for cur_epoch in range(self.hparams.epoch):
-        
+
             self.monitor.reset()
             lr = self.optimizer.get_learning_rate()
-        
+
             self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
             self.cur_epoch = cur_epoch
-        
+
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
                 if i % (self.hparams.print_frequency) == 0:
                     self.monitor.display(i, ['train/l_net'])
-        
+
             for i in trange(self.one_epoch_valid, disable=self.hparams.comm.rank > 0):
                 self.valid_on_batch()
-            
+
             self.callback_on_epoch_end()
-        
+
         self.callback_on_finish()
         self.monitor.close()
 

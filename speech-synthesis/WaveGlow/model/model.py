@@ -78,7 +78,8 @@ class WN(Module):
                             w_init=NormalInitializer(0.05)
                         )
 
-                    acts = fused_add_tanh_sigmoid_multiply(audio_inp, spec_inp, n_channels)
+                    acts = fused_add_tanh_sigmoid_multiply(
+                        audio_inp, spec_inp, n_channels)
 
                 with nn.parameter_scope('res_skip'):
                     channels = 2*n_channels if i < n_layers - 1 else n_channels
@@ -125,15 +126,18 @@ class WaveGlow(Module):
 
         mel_basis = librosa_mel_fn(hparams.sr, hparams.n_fft, n_mels=hparams.n_mels,
                                    fmin=hparams.mel_fmin, fmax=hparams.mel_fmax)
-        self.basis = nn.Variable.from_numpy_array(mel_basis[None,...])
+        self.basis = nn.Variable.from_numpy_array(mel_basis[None, ...])
         self.rng = np.random.RandomState(hparams.seed)
 
     def compute_mel(self, wave):
         hp = self.hparams
-        reals, imags = F.stft(wave, window_size=hp.win_length, stride=hp.hop_length, fft_size=hp.n_fft)
-        linear = F.pow_scalar(F.add2(F.pow_scalar(reals, 2), F.pow_scalar(imags, 2), inplace=True), 0.5)
+        reals, imags = F.stft(wave, window_size=hp.win_length,
+                              stride=hp.hop_length, fft_size=hp.n_fft)
+        linear = F.pow_scalar(
+            F.add2(F.pow_scalar(reals, 2), F.pow_scalar(imags, 2), inplace=True), 0.5)
         mels = F.batch_matmul(self.basis, linear)
-        mels = F.log(F.clip_by_value(mels, 1e-5, np.inf)).apply(need_grad=False)
+        mels = F.log(F.clip_by_value(mels, 1e-5, np.inf)
+                     ).apply(need_grad=False)
         return mels
 
     def call(self, wave):
@@ -147,17 +151,20 @@ class WaveGlow(Module):
         #  Upsample spectrogram to the size of audio
         with nn.parameter_scope('upsample'):
             with nn.parameter_scope('deconv'):
-                mels = PF.deconvolution(mels, hp.n_mels, kernel=(1024, ), stride=(256,))
+                mels = PF.deconvolution(
+                    mels, hp.n_mels, kernel=(1024, ), stride=(256,))
 
             # make sure mels having the same length as wave
             if mels.shape[2] > wave.shape[1]:
                 mels = mels[..., :wave.shape[1]]  # (B, L, n_mels)
 
             # transforming to correct shape
-            mels = F.reshape(mels, mels.shape[:2] + (-1, hp.n_samples_per_group))
+            mels = F.reshape(
+                mels, mels.shape[:2] + (-1, hp.n_samples_per_group))
             mels = F.transpose(mels, (0, 2, 1, 3))
             mels = F.reshape(mels, mels.shape[:2] + (-1,))
-            mels = F.transpose(mels, (0, 2, 1))      # (B, n_mels * n_groups, L/n_groups)
+            # (B, n_mels * n_groups, L/n_groups)
+            mels = F.transpose(mels, (0, 2, 1))
 
         # reshape audio
         wave = F.reshape(wave, (batch_size, -1, hp.n_samples_per_group))
@@ -185,7 +192,8 @@ class WaveGlow(Module):
                 audio_1 = F.add2(F.exp(log_s) * audio_1, b, inplace=True)
                 log_s_list.append(log_s)
 
-            wave = F.concatenate(audio_0, audio_1, axis=1)  # (B, n_half*2, L/n_groups)
+            # (B, n_half*2, L/n_groups)
+            wave = F.concatenate(audio_0, audio_1, axis=1)
 
         output_audio.append(wave)
 
@@ -209,17 +217,21 @@ class WaveGlow(Module):
             #  Upsample spectrogram to size of audio
             with nn.parameter_scope('upsample'):
                 with nn.parameter_scope('deconv'):
-                    mels = PF.deconvolution(mels, hp.n_mels, kernel=(1024, ), stride=(256,))
+                    mels = PF.deconvolution(
+                        mels, hp.n_mels, kernel=(1024, ), stride=(256,))
                 # cutout conv artifacts
                 mels = mels[..., :-(1024 - 256)]  # kernel - stride
 
                 # transforming to correct shape
-                mels = F.reshape(mels, mels.shape[:2]+(-1, hp.n_samples_per_group))
+                mels = F.reshape(
+                    mels, mels.shape[:2]+(-1, hp.n_samples_per_group))
                 mels = F.transpose(mels, (0, 2, 1, 3))
                 mels = F.reshape(mels, mels.shape[:2] + (-1,))
-                mels = F.transpose(mels, (0, 2, 1))  # (B, n_mels * n_groups, L/n_groups)
+                # (B, n_mels * n_groups, L/n_groups)
+                mels = F.transpose(mels, (0, 2, 1))
 
-            wave = F.randn(shape=(mels.shape[0], self.n_remaining_channels, mels.shape[2])) * sigma
+            wave = F.randn(
+                shape=(mels.shape[0], self.n_remaining_channels, mels.shape[2])) * sigma
 
             for k in reversed(range(hp.n_flows)):
                 n_half = wave.shape[1] // 2
@@ -236,7 +248,8 @@ class WaveGlow(Module):
                 wave = invertible_conv(wave, reverse=True, rng=self.rng, scope=f'inv_{k}')
 
                 if k % hp.n_early_every == 0 and k > 0:
-                    z = F.randn(shape=(mels.shape[0], hp.n_early_size, mels.shape[2]))
+                    z = F.randn(
+                        shape=(mels.shape[0], hp.n_early_size, mels.shape[2]))
                     wave = F.concatenate(sigma * z, wave, axis=1)
 
             wave = F.transpose(wave, (0, 2, 1))

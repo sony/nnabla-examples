@@ -47,13 +47,15 @@ class WaveGlowTrainer(Trainer):
         l_det = sum([F.sum(x) for x in log_det])
         l_log = sum([F.sum(x) for x in log_s])
 
-        l_net = (F.sum(o_aud*o_aud)/(2*hp.sigma**2) - l_det - l_log) / np.prod(o_aud.shape)
+        l_net = (F.sum(o_aud*o_aud)/(2*hp.sigma**2) -
+                 l_det - l_log) / np.prod(o_aud.shape)
         l_net = l_net.apply(persistent=True)
 
         x_mel = self.model.compute_mel(x_aud)
         s_aud = self.model.infer(x_mel)
 
-        self.placeholder[key] = {'x_aud': x_aud, 'o_aud': o_aud, 'l_net': l_net, 's_aud': s_aud}
+        self.placeholder[key] = {'x_aud': x_aud,
+                                 'o_aud': o_aud, 'l_net': l_net, 's_aud': s_aud}
 
     def train_on_batch(self):
         r"""Updates the model parameters."""
@@ -97,7 +99,8 @@ class WaveGlowTrainer(Trainer):
                 path = Path(hp.output_path) / 'output' / f'epoch_{self.cur_epoch}'
                 path.mkdir(parents=True, exist_ok=True)
                 p['s_aud'].forward(clear_buffer=True)
-                wavfile.write(path / 'sample.wav', rate=hp.sr, data=p['s_aud'].d[0].copy())
+                wavfile.write(path / 'sample.wav', rate=hp.sr,
+                              data=p['s_aud'].d[0].copy())
                 self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
 
         self.loss.zero()

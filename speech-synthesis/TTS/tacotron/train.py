@@ -24,6 +24,7 @@ from scipy.io import wavfile
 from neu.tts.audio import synthesize_from_spec
 from neu.tts.trainer import Trainer
 
+
 def save_image(data, path, label, title, figsize=(6, 5)):
     r"""Saves an image to file."""
     plt.figure(figsize=figsize)
@@ -39,7 +40,7 @@ def save_image(data, path, label, title, figsize=(6, 5)):
 
 class TacotronTrainer(Trainer):
     r"""Trainer for Tacotron."""
-    
+
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
 

@@ -24,16 +24,17 @@ class Denoiser(object):
         waveglow (model.module.Module): WaveGlow model.
         hp (HParams): Hyper-parameters.
     """
+
     def __init__(self, waveglow, hp):
         mel_input = F.constant(shape=[1, hp.n_mels, 88])
         wave = waveglow.infer(mel_input, sigma=0)
-        real, imag = F.stft(wave, window_size=hp.win_length, stride=hp.hop_length, fft_size=hp.n_fft)
+        real, imag = F.stft(wave, window_size=hp.win_length,
+                            stride=hp.hop_length, fft_size=hp.n_fft)
         bias_spec = F.pow_scalar(real**2 + imag**2, 0.5)
         bias_spec.forward(clear_buffer=True)
 
         self.bias_spec = bias_spec.d.copy()[:, :, 0][0, :, None]
         self.hparams = hp
-
 
     def __call__(self, audio, strength=0.01):
         r"""Generates a clean audio.
@@ -46,7 +47,8 @@ class Denoiser(object):
             numpy.ndarray: Clean audio.
         """
         hp = self.hparams
-        linear = lr.stft(audio, n_fft=hp.n_fft, hop_length=hp.hop_length, win_length=hp.win_length)
+        linear = lr.stft(audio, n_fft=hp.n_fft,
+                         hop_length=hp.hop_length, win_length=hp.win_length)
         spect = np.abs(linear) - self.bias_spec * strength
         spect = np.clip(spect, 0, None)
         matrix = spect * np.exp(np.angle(linear) * 1j)

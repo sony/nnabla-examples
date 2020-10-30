@@ -64,7 +64,8 @@ def run(args):
     dataloader = dict(train=train_loader, valid=valid_loader)
     model = WaveGlow(hp)
     # setup optimizer
-    anneal_steps = [x*(train_loader.size//hp.batch_size) for x in hp.anneal_steps]
+    anneal_steps = [x*(train_loader.size//hp.batch_size)
+                    for x in hp.anneal_steps]
     lr_scheduler = AnnealingScheduler(hp.alpha, anneal_steps=anneal_steps,
                                       anneal_factor=hp.anneal_factor)
     optimizer = Optimizer(

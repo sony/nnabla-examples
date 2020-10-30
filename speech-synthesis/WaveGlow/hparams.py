@@ -23,23 +23,29 @@ hparams = HParams(
 
     # spectrogram parameters
     sr=22050,                           # sampling rate used to read audios
-    n_fft=1024,                         # length of the windowed signal after padding with zeros.
+    # length of the windowed signal after padding with zeros.
+    n_fft=1024,
     n_mels=80,                          # number of mel filters
     mel_fmin=0.0,                       # minimum mel bank
     mel_fmax=8000.0,                    # maximum mel bank
-    hop_length=256,                     # number of audio samples between adjacent STFT columns
+    # number of audio samples between adjacent STFT columns
+    hop_length=256,
     win_length=1024,                    # window length
 
     # flow parameters
     n_flows=12,                         # number of flow nets
-    n_samples_per_group=8,              # number of samples in a group processed by the steps of flow
-    n_early_every=4,                    # Determines how often (i.e., after how many coupling layers)
+    # number of samples in a group processed by the steps of flow
+    n_samples_per_group=8,
+    # Determines how often (i.e., after how many coupling layers)
+    n_early_every=4,
                                         # a number of channels are output to the loss function
     n_early_size=2,                     # Number of channels output to the loss function
     sigma=1.0,                          # Standard deviation used for sampling from Gaussian
-    segment_length=8000,                # Segment length (audio samples) processed per iteration
+    # Segment length (audio samples) processed per iteration
+    segment_length=8000,
     wn_n_layers=8,                      # Number of layers in WN
-    wn_kernel_size=3,                   # Kernel size for dialted convolution in the affine coupling layer (WN)
+    # Kernel size for dialted convolution in the affine coupling layer (WN)
+    wn_kernel_size=3,
     wn_n_channels=256,                  # Number of channels in WN
     seed=123456,                        # random seed
 
