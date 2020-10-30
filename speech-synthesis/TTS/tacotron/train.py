@@ -20,11 +20,9 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from scipy.io import wavfile
-from tqdm import trange
 
-from utils.audio import synthesize_from_spec
-from utils.logger import ProgressMeter
-
+from neu.tts.audio import synthesize_from_spec
+from neu.tts.trainer import Trainer
 
 def save_image(data, path, label, title, figsize=(6, 5)):
     r"""Saves an image to file."""
@@ -36,30 +34,12 @@ def save_image(data, path, label, title, figsize=(6, 5)):
     plt.colorbar()
     plt.savefig(path, bbox_inches='tight')
     plt.close()
+    print('here')
 
 
-class TacotronTrainer(ABC):
-    r"""Trainer for Tacotron.
-
-    Args:
-        model (model.module.Module): Tacotron model.
-        dataloader (dict): A dataloader.
-        optimizer (Optimizer): An optimizer used to update the parameters.
-        hparams (HParams): Hyper-parameters.
-    """
-
-    def __init__(self, model, dataloader, optimizer, hparams):
-        self.model = model
-        self.dataloader = dataloader
-        self.hparams = hparams
-        self.one_epoch_train = dataloader['train'].size // hparams.batch_size
-        self.one_epoch_valid = dataloader['valid'].size // hparams.batch_size
-        self.placeholder = dict()
-        self.optimizer = optimizer
-        self.monitor = ProgressMeter(
-            self.one_epoch_train, hparams.output_path, quiet=hparams.comm.rank > 0)
-        hparams.save(Path(hparams.output_path) / 'settings.json')
-
+class TacotronTrainer(Trainer):
+    r"""Trainer for Tacotron."""
+    
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
 
@@ -100,34 +80,6 @@ class TacotronTrainer(ABC):
             'o_mel': o_mel, 'o_mag': o_mag, 'o_att': o_att,
             'l_mel': l_mel, 'l_mag': l_mag, 'l_net': l_net
         }
-
-    def callback_on_start(self):
-        self.update_graph('train')
-        params = self.model.get_parameters(grad_only=True)
-        self.optimizer.set_parameters(params)
-        self.update_graph('valid')
-        self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
-        if self.hparams.comm.n_procs > 1:
-            self._grads = [x.grad for x in params.values()]
-
-    def run(self):
-        r"""Run the training process."""
-        self.callback_on_start()
-        for cur_epoch in range(self.hparams.epoch):
-            self.monitor.reset()
-            lr = self.optimizer.get_learning_rate()
-            self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
-            self.cur_epoch = cur_epoch
-            for i in range(self.one_epoch_train):
-                self.train_on_batch()
-                if i % (self.hparams.print_frequency) == 0:
-                    self.monitor.display(
-                        i, ['train/l_mel', 'train/l_mag', 'train/l_net'])
-            for i in trange(self.one_epoch_valid, disable=self.hparams.comm.rank > 0):
-                self.valid_on_batch()
-            self.callback_on_epoch_end()
-        self.callback_on_finish()
-        self.monitor.close()
 
     def train_on_batch(self):
         r"""Updates the model parameters."""
@@ -190,9 +142,3 @@ class TacotronTrainer(ABC):
                 wavfile.write(path / 'sample.wav', rate=hp.sr, data=wave)
                 self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
         self.loss.zero()
-
-    def callback_on_finish(self):
-        r"""Calls this on finishing the run method."""
-        if self.hparams.comm.rank == 0:
-            path = str(Path(self.hparams.output_path) / 'model.h5')
-            self.model.save_parameters(path)

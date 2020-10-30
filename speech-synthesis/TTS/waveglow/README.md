@@ -4,7 +4,7 @@ This is a NNabla implementation of the [WaveGlow: A Flow-based Generative Networ
 
 WaveGlow is a flow-based network capable of generating high quality speech from mel spectrograms. It is trained by maximizing the likelihood of the training data.
 
-All hyper-parameters are defined in [hparams.py](./hparams.py). We use the values from https://github.com/NVIDIA/waveglow as reference.
+All hyper-parameters are defined in [hparams.py](./hparams.py). We use the values from https://github.com/NVIDIA/waveglow as reference. Note that number of residual channels in the coupling layer networks is 256 instead of 512.
 
 
 
@@ -28,7 +28,7 @@ This will take approximately 1 hour. The data will be located into `./data/LJSpe
 
 ## Train
 ```bash
-python train.py --device-id <device id> \
+python main.py --device-id <device id> \
                 --context "cudnn"
 ```
 If you have multiple GPUs, then 

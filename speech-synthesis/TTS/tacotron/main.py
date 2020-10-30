@@ -16,6 +16,11 @@ import argparse
 import os
 from pathlib import Path
 
+import sys
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
+from neu.comm import CommunicatorWrapper
+from neu.tts.optimizer import Optimizer
+
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
@@ -27,9 +32,7 @@ from dataset import LJSpeechDataSource
 from hparams import hparams as hp
 from model.model import Tacotron
 from train import TacotronTrainer
-from utils import CommunicatorWrapper
-from utils.optim import NoamScheduler
-from utils.optim import Optimizer
+from scheduler import NoamScheduler
 
 
 def run(args):

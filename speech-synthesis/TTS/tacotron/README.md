@@ -33,7 +33,7 @@ This will take approximately 1 hour. The data will be located into `./data/LJSpe
 
 ## Train
 ```bash
-python train.py --device-id <device id> \
+python main.py --device-id <device id> \
                 --context "cudnn"
 ```
 Expected training time on a single GeForce RTX 2080 Ti would be 3 days.
