@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 
 import sys
-sys.path.append(str(Path().cwd().parents[2] / 'utils'))
+sys.path.append(str(Path().cwd().parents[1] / 'utils'))
 from neu.comm import CommunicatorWrapper
 from neu.tts.optimizer import Optimizer
 
@@ -30,9 +30,9 @@ import numpy as np
 
 from dataset import LJSpeechDataSource
 from hparams import hparams as hp
-from model.model import Tacotron
-from train import TacotronTrainer
-from scheduler import NoamScheduler
+from model.model import WaveGlow
+from train import WaveGlowTrainer
+from scheduler import AnnealingScheduler
 
 
 def run(args):
@@ -51,15 +51,6 @@ def run(args):
 
     rng = np.random.RandomState(hp.seed)
 
-    # setup optimizer
-    lr_scheduler = NoamScheduler(hp.alpha, warmup=hp.warmup)
-    optimizer = Optimizer(
-        weight_decay=hp.weight_decay,
-        max_norm=hp.max_norm,
-        lr_scheduler=lr_scheduler,
-        name='Adam', alpha=hp.alpha
-    )
-
     # train data
     train_loader = data_iterator(
         LJSpeechDataSource('metadata_train.csv', hp, shuffle=True, rng=rng),
@@ -71,9 +62,20 @@ def run(args):
         batch_size=hp.batch_size, with_memory_cache=False
     )
     dataloader = dict(train=train_loader, valid=valid_loader)
-    model = Tacotron(hp)
+    model = WaveGlow(hp)
+    # setup optimizer
+    anneal_steps = [x*(train_loader.size//hp.batch_size)
+                    for x in hp.anneal_steps]
+    lr_scheduler = AnnealingScheduler(hp.alpha, anneal_steps=anneal_steps,
+                                      anneal_factor=hp.anneal_factor)
+    optimizer = Optimizer(
+        weight_decay=hp.weight_decay,
+        max_norm=hp.max_norm,
+        lr_scheduler=lr_scheduler,
+        name='Adam', alpha=hp.alpha
+    )
 
-    TacotronTrainer(model, dataloader, optimizer, hp).run()
+    WaveGlowTrainer(model, dataloader, optimizer, hp).run()
 
 
 if __name__ == '__main__':

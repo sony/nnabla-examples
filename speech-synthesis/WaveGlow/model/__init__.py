@@ -11,11 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from pathlib import Path
-import sys
-
-from nnabla.ext_utils import get_extension_context
-
-sys.path.append(str(Path(__file__).parents[4] / 'utils'))
-from neu.comm import CommunicatorWrapper

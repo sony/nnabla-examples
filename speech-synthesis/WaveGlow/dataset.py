@@ -12,21 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from pathlib import Path
 
 import librosa as lr
-from librosa.filters import mel as librosa_mel_fn
 from nnabla.utils.data_source import DataSource
 import numpy as np
 from tqdm import tqdm
 
-from neu.tts import audio
-from neu.tts.text import text_normalize
-
 
 class LJSpeechDataSource(DataSource):
-    r""" Data source for LJ Speech dataset.
+    r"""Data source for LJ Speech dataset.
 
     Args:
         metadata (str): The metadata containing text and audio indices.
@@ -48,9 +43,8 @@ class LJSpeechDataSource(DataSource):
         with open(path / metadata, encoding='utf-8') as f:
             for line in f:
                 inputs = line.strip().split('|')
-                waves.append(str(path / 'wavs' / f'{inputs[0]}.wav'))
+                waves.append(path / 'wavs' / f'{inputs[0]}.wav')
                 texts.append(inputs[2])
-
         # split data
         n = len(waves)
         index = self._rng.permutation(n) if shuffle else np.arange(n)
@@ -64,14 +58,7 @@ class LJSpeechDataSource(DataSource):
         self._size = len(self._waves)
         self._variables = hparams.out_variables
         self.hparams = hparams
-        self._char2idx = {ch: i for i, ch in enumerate(hparams.vocab)}
-        self._idx2char = {i: ch for i, ch in enumerate(hparams.vocab)}
 
-        # compute the mel basis
-        self.mel_basis = librosa_mel_fn(
-            hparams.sr, hparams.n_fft, n_mels=hparams.n_mels,
-            fmin=hparams.mel_fmin, fmax=hparams.mel_fmax
-        )
         self.reset()
 
     def reset(self):
@@ -83,77 +70,29 @@ class LJSpeechDataSource(DataSource):
 
     def _get_data(self, position):
         r"""Return a tuple of data."""
+        hp = self.hparams
         index = self._indexes[position]
-        basename = Path(self._waves[index]).with_suffix(".npy").name
-        return tuple(np.load(self._path / x / basename) for x in self._variables)
-
-    def _store_entry(self, index, linear, w):
-        hp = self.hparams
-        basename = Path(self._waves[index]).with_suffix(".npy").name
-
-        seq_len = hp.n_frames * hp.r
-        lin_len = linear.shape[1]
-        assert lin_len <= seq_len  # sanitary check
-
-        # compute linear spectrogram
-        post_linear = self._padding(linear.T, (seq_len, linear.shape[0]))
-        post_linear = audio.normalize(post_linear, hp)
-        np.save(self._path / 'linear' / basename, post_linear)
-
-        # compute mel spectrogram
-        mel = np.dot(self.mel_basis, linear)  # transform to mel scales
-        mel = self._padding(mel.T, (seq_len, hp.n_mels))
-        mel = audio.normalize(mel, hp)
-        mel = mel.reshape(-1, hp.n_mels*hp.r)
-        np.save(self._path / 'mel' / basename, mel)
-
-        # compute text sequence
-        text = text_normalize(self._texts[index], self.hparams.vocab)
-        assert len(text) < hp.text_len
-        text = text.ljust(hp.text_len, '~')
-        text = [self._char2idx[ch] for ch in text]
-        np.save(self._path / 'text' / basename, text)
-
-    def _get_spectrograms(self, index):
-        r"""Return the corresponding spectrogram and waveform."""
-        file = self._waves[index]
-
-        # get hyper-parameters
-        hp = self.hparams
-
-        w, _ = lr.load(file, sr=hp.sr)
-        w, _ = lr.effects.trim(w)  # triming
-
-        if hasattr(hp, "preemphasis"):
-            # apply a pre-emphasis filter to amplify the high frequencies
-            w = audio.preemphasis(w, factor=hp.preemphasis)
-        linear = audio.wave2spec(w, hp)
-
-        return linear, w
+        basename = self._waves[index].with_suffix(".npy").name
+        w = np.load(self._path / 'audio' / basename)
+        if len(w) > hp.segment_length:
+            idx = self._rng.randint(0, len(w) - hp.segment_length)
+            w = w[idx:idx + hp.segment_length]
+        else:
+            w = np.pad(w, (0, hp.segment_length - len(w)), mode='constant')
+        return [w]
 
     def _preprocess(self):
-        r"""Precomputes mel spectrograms, linear spectrograms, and texts."""
+        r"""Precomputes waveform of training data."""
+        hp = self.hparams
         for f in self._variables:
             self._path.joinpath(f).mkdir(parents=True, exist_ok=True)
 
         for i in tqdm(range(self._size)):
-            linear, w = self._get_spectrograms(i)
-            self._store_entry(i, linear, w)
-
-    def _padding(self, x, shape, value=0):
-        r"""Add padding to have a desired shape.
-
-        Args:
-            x (numpy.ndarray): Input array.
-            shape (tuple of int): The desired shape.
-            value (int, optional): Value to be padded. Defaults to 0.
-
-        Returns:
-            numpy.ndarray: An output array with a desired shape.
-        """
-        row_padding = shape[0] - x.shape[0]
-        col_padding = shape[1] - x.shape[1]
-        return np.pad(x, [[0, row_padding], [0, col_padding]], mode="constant", constant_values=value)
+            file = self._waves[i]
+            w, _ = lr.load(file, sr=hp.sr)
+            w, _ = lr.effects.trim(w)  # triming
+            basename = self._waves[i].with_suffix(".npy").name
+            np.save(self._path / 'audio' / basename, w)
 
 
 def data_split(path):

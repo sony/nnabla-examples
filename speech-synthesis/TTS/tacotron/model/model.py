@@ -17,7 +17,8 @@ import nnabla.functions as F
 from nnabla.initializer import NormalInitializer
 import nnabla.parametric_functions as PF
 
-from .module import Module
+from neu.tts.module import Module
+
 from .ops import Bahdanau_attention
 from .ops import encoder_cbhg
 from .ops import post_cbhg

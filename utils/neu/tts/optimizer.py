@@ -16,32 +16,6 @@ import nnabla.solvers as S
 from nnabla.utils.learning_rate_scheduler import BaseLearningRateScheduler
 
 
-class NoamScheduler(BaseLearningRateScheduler):
-    r"""Noam learning rate scheduler.
-
-    Args:
-        init_lr (float): Initial learning rate.
-        warmup (int): Warmup iteration.
-    """
-
-    def __init__(self, init_lr, warmup=4000):
-        self.init_lr = init_lr
-        self.warmup = warmup
-
-    def get_learning_rate(self, iter):
-        r"""Get learning rate with cosine decay based on current iteration.
-
-        Args:
-            iter (int): Current iteration (starting with 0).
-
-        Returns:
-            float: Learning rate
-        """
-        step = iter + 1
-        return self.init_lr * self.warmup ** 0.5 * min(
-            step*self.warmup ** -1.5, step ** -0.5)
-
-
 class Optimizer(object):
     """An Optimizer class.
 
