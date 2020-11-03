@@ -17,9 +17,9 @@ from neu.tts.hparams import HParams
 hparams = HParams(
 
     # dataset parameters
-    data_dir="/home/denguyeb/Desktop/nnabla-speech/data/LJSpeech-1.1/",  # directory to the data
+    data_dir="./data/LJSpeech-1.1/",  # directory to the data
     # directory to save all precomputed FFTs
-    save_data_dir="/home/denguyeb/Desktop/nnabla-speech/data/LJSpeech-1.1/tacotron2",
+    save_data_dir="./data/LJSpeech-1.1/tacotron2",
 
     out_variables=["mel", "text", "gate"],  # which variables will be used
 
