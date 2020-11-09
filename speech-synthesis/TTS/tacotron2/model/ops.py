@@ -127,7 +127,7 @@ def location_sensitive_attention(query, values, attention_weights_cat,
 
     References:
         J. K. Chorowski, et al., "Attention-based models for speech recognition"
-        in Advances in Neural Information Processing Systems, 2015, pp. 577–585.
+        in Advances in Neural Information Processing Systems, 2015, pp. 577-585.
     """
 
     with nn.parameter_scope(scope):
