@@ -34,13 +34,15 @@ The data will be located into `./data/LJSpeech-1.1/`. There will be two files: `
 python main.py --device-id <device id> \
                 --context "cudnn"
 ```
+Expected training time on a TITAN RTX 24GB is 5 days.
+
 If you have multiple GPUs, then 
 ```bash
 mpirun -n <number of GPUs> python main.py \
     --device-id <list of GPUs>
     --context "cudnn"
 ```
-Expected training time on 4 GeForce RTX 2080 Ti is 4 days.
+Expected training time on 4 GeForce RTX 2080 Ti is 2.9 days.
 
 ## Inference
 ```bash
