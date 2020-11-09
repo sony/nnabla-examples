@@ -27,9 +27,10 @@ def calculate_gain(nonlinearity):
     return 1.0
 
 
-def xavier_uniform_bound(inp_shape, outmaps, kernel=(1, 1), base_axis=1,  
-                            nonlinearity=None, is_affine=False):
-    inmaps = np.prod(inp_shape[base_axis:]) if is_affine else inp_shape[base_axis]
+def xavier_uniform_bound(inp_shape, outmaps, kernel=(1, 1), base_axis=1,
+                         nonlinearity=None, is_affine=False):
+    inmaps = np.prod(inp_shape[base_axis:]
+                     ) if is_affine else inp_shape[base_axis]
     gain = calculate_gain(nonlinearity)
     d = gain * np.sqrt(6. / (np.prod(kernel) * (inmaps + outmaps)))
     return -d, d
@@ -76,7 +77,8 @@ def conv_norm(inputs, out_channels, kernel_size, stride,
         nn.Variable: An output variable.
     """
     with nn.parameter_scope(scope):
-        base_axis = len(inputs.shape) - 1 if kargs.get('channel_last', False) else 1
+        base_axis = len(inputs.shape) - \
+                        1 if kargs.get('channel_last', False) else 1
         lim = xavier_uniform_bound(inputs.shape, out_channels, (kernel_size,), base_axis,
                                    nonlinearity=w_init_gain, is_affine=False)
         w_init = UniformInitializer(lim)
@@ -101,7 +103,8 @@ def prenet(inputs, layer_sizes, is_training, scope):
     out = inputs
     with nn.parameter_scope(scope):
         for i, size in enumerate(layer_sizes):
-            out = affine_norm(out, size, base_axis=2, with_bias=False, w_init_gain='affine', scope=f'affine_{i}')
+            out = affine_norm(out, size, base_axis=2, with_bias=False, 
+                              w_init_gain='affine', scope=f'affine_{i}')
             out = F.dropout(F.relu(out), p=0.5)  # always chooses dropout
     return out
 
@@ -131,8 +134,10 @@ def location_sensitive_attention(query, values, attention_weights_cat,
     """
 
     with nn.parameter_scope(scope):
-        x = affine_norm(query, attention_dim, base_axis=2, with_bias=False, w_init_gain='tanh', scope='query')
-        y = affine_norm(values, attention_dim, base_axis=2, with_bias=False, w_init_gain='tanh', scope='memory')
+        x = affine_norm(query, attention_dim, base_axis=2,
+                        with_bias=False, w_init_gain='tanh', scope='query')
+        y = affine_norm(values, attention_dim, base_axis=2,
+                        with_bias=False, w_init_gain='tanh', scope='memory')
 
         # apply a 1D-convolutional filter
         z = conv_norm(attention_weights_cat, attention_n_filters,
@@ -142,15 +147,16 @@ def location_sensitive_attention(query, values, attention_weights_cat,
         z = F.transpose(z, (0, 2, 1))
 
         # location of shape (B, T, attention_dim)
-        location = affine_norm(z, attention_dim, base_axis=2, with_bias=False, w_init_gain='tanh', scope='location')
+        location = affine_norm(z, attention_dim, base_axis=2,
+                               with_bias=False, w_init_gain='tanh', scope='location')
 
         # scores of shape (B, T, 1)
-        # bias = get_parameter_or_create('location_bias', (1, 1, attention_dim), ConstantInitializer())
         scores = affine_norm(F.tanh(x + y + location), 1, base_axis=2,
                              with_bias=False, w_init_gain='affine', scope='scores')
 
         # attention_weights of shape (B, 1, T)
-        attention_weights = F.softmax(scores, axis=1).reshape((query.shape[0], 1, -1))
+        attention_weights = F.softmax(
+            scores, axis=1).reshape((query.shape[0], 1, -1))
 
         # context_vector shape after sum == (B, 1, C)
         context_vector = F.batch_matmul(attention_weights, values)
