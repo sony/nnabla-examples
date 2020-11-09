@@ -66,8 +66,10 @@ class Tacotron2Trainer(Trainer):
         def criteria(x, t):
             return F.mean(F.squared_error(x, t))
 
-        l_mel = (criteria(o_mel, x_mel) + criteria(o_mel_p, x_mel)).apply(persistent=True)
-        l_gat = F.mean(F.sigmoid_cross_entropy(o_gat, x_gat)).apply(persistent=True)
+        l_mel = (criteria(o_mel, x_mel) +
+                 criteria(o_mel_p, x_mel)).apply(persistent=True)
+        l_gat = F.mean(F.sigmoid_cross_entropy(
+            o_gat, x_gat)).apply(persistent=True)
         l_net = (l_mel + l_gat).apply(persistent=True)
 
         self.placeholder[key] = {
@@ -75,7 +77,7 @@ class Tacotron2Trainer(Trainer):
             'o_mel': o_mel, 'o_mel_p': o_mel_p, 'o_gat': o_gat, 'o_att': o_att,
             'l_mel': l_mel, 'l_gat': l_gat, 'l_net': l_net
         }
-
+        self.out_variables = ['train/l_mel', 'train/l_gat', 'train/l_net']
 
     def train_on_batch(self):
         r"""Updates the model parameters."""
@@ -130,7 +132,8 @@ class Tacotron2Trainer(Trainer):
                         path=path / (k + '.png'),
                         label=('Decoder timestep', 'Encoder timestep') if k == 'o_att' else (
                             'Frame', 'Channel'),
-                        title={'o_att': 'Attention', 'o_mel': 'Mel spectrogram'}[k],
+                        title={'o_att': 'Attention',
+                               'o_mel': 'Mel spectrogram'}[k],
                         figsize=(6, 5) if k == 'o_att' else (6, 3)
                     )
                 self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))

@@ -78,7 +78,7 @@ class Trainer(ABC):
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
                 if i % (self.hparams.print_frequency) == 0:
-                    self.monitor.display(i, ['train/l_net'])
+                    self.monitor.display(i, self.out_variables)
 
             for i in trange(self.one_epoch_valid, disable=self.hparams.comm.rank > 0):
                 self.valid_on_batch()

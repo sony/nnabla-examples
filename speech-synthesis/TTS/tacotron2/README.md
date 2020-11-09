@@ -11,12 +11,6 @@ The figures below show an alignment and mel spectrogram as outputs of the model 
 
 <img src="./images/o_att.png" width=30% height=30% > <img src="./images/o_mel.png" width=30% height=30% >
 
-## Dataset
-Run the following commands to prepare the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/),
-```bash
-bash scripts/prepare_dataset.sh
-```
-The data will be located into `./data/LJSpeech-1.1/`. There will be two files: `metadata_train.csv` and `metadata_valid.csv`. These files are used for training and validation.
 
 ## Requirments
 ### Python environment
@@ -28,6 +22,12 @@ Note that this requirements.txt dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.
 See [NNabla CUDA extension package installation guide](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
+## Dataset
+Run the following commands to prepare the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/),
+```bash
+bash scripts/prepare_dataset.sh
+```
+The data will be located into `./data/LJSpeech-1.1/`. There will be two files: `metadata_train.csv` and `metadata_valid.csv`. These files are used for training and validation.
 
 ## Train
 ```bash
@@ -41,7 +41,8 @@ mpirun -n <number of GPUs> python main.py \
     --context "cudnn"
 ```
 Expected training time on 4 GeForce RTX 2080 Ti is 4 days.
-## Test
+
+## Inference
 ```bash
 python synthesize.py --device-id <device id> \
     --context "cudnn" \
@@ -49,6 +50,7 @@ python synthesize.py --device-id <device id> \
     --f-text <text file> \
     --f-output <output file>
 ```
+Note that the outputs are mel spectrograms. Use a vocoder such as [WaveGlow](https://github.com/sony/nnabla-examples/tree/master/speech-synthesis/WaveGlow) in order to generate audio waveforms from mel spectrograms.
 
 The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/tacotron2/model.h5).
 

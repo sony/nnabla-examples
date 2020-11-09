@@ -35,7 +35,6 @@ def save_image(data, path, label, title, figsize=(6, 5)):
     plt.colorbar()
     plt.savefig(path, bbox_inches='tight')
     plt.close()
-    print('here')
 
 
 class TacotronTrainer(Trainer):
@@ -81,6 +80,7 @@ class TacotronTrainer(Trainer):
             'o_mel': o_mel, 'o_mag': o_mag, 'o_att': o_att,
             'l_mel': l_mel, 'l_mag': l_mag, 'l_net': l_net
         }
+        self.out_variables = ['train/l_mel', 'train/l_mag', 'train/l_net']
 
     def train_on_batch(self):
         r"""Updates the model parameters."""

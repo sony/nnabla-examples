@@ -64,16 +64,21 @@ class Encoder(Module):
                         bias=False, stride=1, dilation=1,
                         w_init_gain='relu', scope='conv_norm', channel_last=True
                     )  # (B, C=512, T)
-                    out = PF.batch_normalization(out, batch_stat=self.training, axes=[2])
+                    out = PF.batch_normalization(
+                        out, batch_stat=self.training, axes=[2])
                     out = F.relu(out)
                     if self.training:
-                        out = F.dropout(out, 0.5)  # (B, C=512, T) --> (B, T, C=512)
+                        # (B, C=512, T) --> (B, T, C=512)
+                        out = F.dropout(out, 0.5)
 
         with nn.parameter_scope('lstm_encoder'):
             out = F.transpose(out, (1, 0, 2))  # (2, 0, 1))
-            h = F.constant(shape=(2, 2, hp.batch_size, hp.encoder_embedding_dim//2))
-            c = F.constant(shape=(2, 2, hp.batch_size, hp.encoder_embedding_dim//2))
-            out, _, _ = PF.lstm(out, h, c, training=self.training, bidirectional=True)
+            h = F.constant(shape=(2, 2, hp.batch_size,
+                                  hp.encoder_embedding_dim//2))
+            c = F.constant(shape=(2, 2, hp.batch_size,
+                                  hp.encoder_embedding_dim//2))
+            out, _, _ = PF.lstm(
+                out, h, c, training=self.training, bidirectional=True)
 
         return out  # (T, B, C=512)
 
@@ -105,40 +110,51 @@ class Decoder(Module):
 
         # initialize decoder states
         decoder_input = F.constant(shape=(hp.batch_size, 1, mel_shape))
-        decoder_hidden = F.constant(shape=(1, 1, hp.batch_size, hp.decoder_rnn_dim))
-        decoder_cell = F.constant(shape=(1, 1, hp.batch_size, hp.decoder_rnn_dim))
+        decoder_hidden = F.constant(
+            shape=(1, 1, hp.batch_size, hp.decoder_rnn_dim))
+        decoder_cell = F.constant(
+            shape=(1, 1, hp.batch_size, hp.decoder_rnn_dim))
 
         # initialize attention states
         attention_weights = F.constant(shape=(hp.batch_size, 1, hp.text_len))
-        attention_weights_cum = F.constant(shape=(hp.batch_size, 1, hp.text_len))
-        attention_context = F.constant(shape=(hp.batch_size, 1, hp.encoder_embedding_dim))
-        attention_hidden = F.constant(shape=(1, 1, hp.batch_size, hp.attention_rnn_dim))
-        attention_cell = F.constant(shape=(1, 1, hp.batch_size, hp.attention_rnn_dim))
+        attention_weights_cum = F.constant(
+            shape=(hp.batch_size, 1, hp.text_len))
+        attention_context = F.constant(
+            shape=(hp.batch_size, 1, hp.encoder_embedding_dim))
+        attention_hidden = F.constant(
+            shape=(1, 1, hp.batch_size, hp.attention_rnn_dim))
+        attention_cell = F.constant(
+            shape=(1, 1, hp.batch_size, hp.attention_rnn_dim))
 
         # store outputs
         mel_outputs, gate_outputs, alignments = [], [], []
 
         for i in range(hp.mel_len):
             if i > 0:
-                decoder_input = (mel_outputs[-1] if decoder_inputs is None else decoder_inputs[:, i-1:i, :])
+                decoder_input = (
+                    mel_outputs[-1] if decoder_inputs is None else decoder_inputs[:, i-1:i, :])
                 if decoder_inputs is None:
                     decoder_input = decoder_input[None, ...]
             # decoder of shape (B, 1, prenet_channels=256)
-            decoder_input = prenet(decoder_input, hp.prenet_channels, is_training=self.training, scope='prenet')
+            decoder_input = prenet(
+                decoder_input, hp.prenet_channels, is_training=self.training, scope='prenet')
 
             with nn.parameter_scope('attention_rnn'):
                 # cell_input of shape (B, 1, prenet_channels[-1] + C=768)
-                cell_input = F.concatenate(decoder_input, attention_context, axis=2)
+                cell_input = F.concatenate(
+                    decoder_input, attention_context, axis=2)
                 _, attention_hidden, attention_cell = PF.lstm(
                     F.transpose(cell_input, (1, 0, 2)),
                     attention_hidden, attention_cell,
                     training=self.training, name='lstm_attention'
                 )  # (1, 1, B, attention_hidden), (1, 1, B, attention_hidden)
                 if self.training:
-                    attention_hidden = F.dropout(attention_hidden, hp.p_attention_dropout)
+                    attention_hidden = F.dropout(
+                        attention_hidden, hp.p_attention_dropout)
 
             with nn.parameter_scope('location_attention'):
-                attention_weights_cat = F.concatenate(attention_weights, attention_weights_cum, axis=1)
+                attention_weights_cat = F.concatenate(
+                    attention_weights, attention_weights_cum, axis=1)
                 attention_context, attention_weights = location_sensitive_attention(
                     F.transpose(attention_hidden[0], (1, 0, 2)),
                     memory, attention_weights_cat,
@@ -152,18 +168,21 @@ class Decoder(Module):
 
             with nn.parameter_scope('decoder_rnn'):
                 # (1, B, attention_rnn_dim + encoder_embedding_dim)
-                inp_decoder = F.concatenate(attention_hidden[0], F.transpose(attention_context, (1, 0, 2)), axis=2)
+                inp_decoder = F.concatenate(attention_hidden[0], F.transpose(
+                    attention_context, (1, 0, 2)), axis=2)
                 _, decoder_hidden, decoder_cell = PF.lstm(
                     inp_decoder, decoder_hidden, decoder_cell,
                     training=self.training, name='lstm_decoder'
                 )
                 if self.training:
-                    decoder_hidden = F.dropout(decoder_hidden, hp.p_decoder_dropout)
+                    decoder_hidden = F.dropout(
+                        decoder_hidden, hp.p_decoder_dropout)
 
             with nn.parameter_scope('projection'):
                 proj_input = F.concatenate(
                     decoder_hidden[0, 0],
-                    F.reshape(attention_context, (hp.batch_size, -1), inplace=False),
+                    F.reshape(attention_context,
+                              (hp.batch_size, -1), inplace=False),
                     axis=1
                 )  # (B, decoder_rnn_dim + encoder_embedding_dim)
                 decoder_output = affine_norm(proj_input, mel_shape, base_axis=1, with_bias=True,
@@ -175,7 +194,8 @@ class Decoder(Module):
                                               w_init_gain='sigmoid', scope='affine')
                 gate_outputs.append(gate_prediction)
 
-        mel_outputs = F.stack(*mel_outputs, axis=1)           # (B, T2, n_mels*r)
+        # (B, T2, n_mels*r)
+        mel_outputs = F.stack(*mel_outputs, axis=1)
         gate_outputs = F.concatenate(*gate_outputs, axis=1)   # (B, T2)
         alignments = F.concatenate(*alignments, axis=1)       # (B, T1, T2)
 
@@ -198,29 +218,32 @@ class PostNet(Module):
         """Return a mel-spectrogram.
 
         Args:
-            inputs (nn.Variable): A mel-spectrogram of shape (B, T, n_mels*r).
+            inputs (nn.Variable): A mel-spectrogram of shape (B, T/r, n_mels*r).
 
         Returns:
-            nn.Variable: The resulting spectrogram of shape (B, T, n_mels*r).
+            nn.Variable: The resulting spectrogram of shape (B, T/r, n_mels*r).
         """
         hp = self._hparams
         with nn.parameter_scope('conv_norm_postnet'):
             out = inputs  # (B, T, n_mels * r)
-            in_channels = [hp.postnet_embedding_dim]*hp.postnet_n_convolutions + [hp.n_mels * hp.r]
+            in_channels = [hp.postnet_embedding_dim] * \
+                hp.postnet_n_convolutions + [hp.n_mels * hp.r]
             for i, channels in enumerate(in_channels):
                 with nn.parameter_scope(f'filter_{i}'):
-                    w_init_gain = 'affine' if i == len(in_channels) - 1 else 'tanh'
+                    w_init_gain = 'affine' if i == len(
+                        in_channels) - 1 else 'tanh'
                     out = conv_norm(
                         out, out_channels=channels, kernel_size=hp.postnet_kernel_size,
                         stride=1, padding=(hp.postnet_kernel_size - 1) // 2, bias=False,
                         dilation=1, w_init_gain=w_init_gain, scope='conv_norm', channel_last=True
                     )  # (B, T, channels)
-                    out = PF.batch_normalization(out, batch_stat=self.training, axes=[2])
+                    out = PF.batch_normalization(
+                        out, batch_stat=self.training, axes=[2])
                     if i < len(in_channels) - 1:
                         out = F.tanh(out)
                     if self.training:
                         out = F.dropout(out, 0.5)
-        return out  # (B, T, n_mels * r)
+        return out  # (B, T/r, n_mels * r)
 
 
 class Tacotron2(Module):
@@ -257,7 +280,8 @@ class Tacotron2(Module):
 
         with nn.parameter_scope('decoder'):
             encoder_outputs = F.transpose(encoder_outputs, (1, 0, 2))
-            mel_outputs, gate_outputs, alignments = self.decoder(encoder_outputs, mel_inputs)
+            mel_outputs, gate_outputs, alignments = self.decoder(
+                encoder_outputs, mel_inputs)
 
         with nn.parameter_scope('post_net'):
             mel_outputs_postnet = self.postnet(mel_outputs) + mel_outputs

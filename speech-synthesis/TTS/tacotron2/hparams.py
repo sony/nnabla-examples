@@ -28,7 +28,8 @@ hparams = HParams(
 
     # spectrogram parameters
     sr=22050,                           # sampling rate used to read audios
-    n_fft=1024,                         # length of windowed signal after padding with zeros.
+    # length of windowed signal after padding with zeros.
+    n_fft=1024,
     n_mels=80,                          # number of mel filters
     hop_length=256,                     # audio samples between adjacent STFT columns
     win_length=1024,                    # window length
@@ -37,10 +38,12 @@ hparams = HParams(
 
     # dictionary
     vocab="~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!'(),-.:;?_ ",  # vocabulary
-    symbols_embedding_dim=512,          # number of dimensions used for character embedding
+    # number of dimensions used for character embedding
+    symbols_embedding_dim=512,
 
     # encoder parameters
-    encoder_embedding_dim=512,          # number of dimensions used for encoder embedding
+    # number of dimensions used for encoder embedding
+    encoder_embedding_dim=512,
     encoder_kernel_size=5,              # kernel size
     encoder_n_convolutions=3,           # number of convolutional layers
 
@@ -76,5 +79,6 @@ hparams = HParams(
     alpha=1e-3,                         # learning rate
     warmup=4000,                        # number of iterations for warmup
     anneal_factor=0.1,                  # factor by which to anneal the learning rate
-    anneal_steps=(500, 1000, 1500)      # epoch at which to anneal the learning rate
+    # epoch at which to anneal the learning rate
+    anneal_steps=(500, 1000, 1500)
 )

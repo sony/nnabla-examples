@@ -40,7 +40,7 @@ def affine_norm(inputs, out_channels, base_axis, with_bias, w_init_gain, scope, 
 
     Args:
         inputs (nn.Variable): An input variable of shape (B,...)
-        out_channels (int): The number of ouput channels.
+        out_channels (int): The number of output channels.
         base_axis (int): The base axis.
         with_bias (bool): Whether to use bias.
         w_init_gain (str): The non-linear function.

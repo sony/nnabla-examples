@@ -87,7 +87,7 @@ class LJSpeechDataSource(DataSource):
     def _store_entry(self, index, linear, w):
         hp = self.hparams
         basename = self._waves[index].with_suffix(".npy").name
-    
+
         seq_len = hp.mel_len * hp.r
         lin_len = linear.shape[1]
         assert lin_len <= seq_len  # sanitary check

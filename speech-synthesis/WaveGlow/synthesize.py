@@ -56,7 +56,7 @@ if __name__ == '__main__':
                         help='A list of device ids to use.\
                         This is only valid if you specify `-c cudnn`. \
                         Defaults to use all available GPUs.')
-    parser.add_argument("--noise-level", "-l", type=float, default=0.0,
+    parser.add_argument("--noise-level", "-l", type=float, default=0.003,
                         help='Noise level.')
     parser.add_argument("--f-model", "-m", type=str,
                         help='File path to the trained model.')
