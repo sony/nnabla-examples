@@ -74,9 +74,11 @@ if __name__ == '__main__':
     # setup context for nnabla
     if args.device_id is not None:
         try:
-            device_list = ','.join(list(map(str, map(int, args.device_id.split(',')))))
+            device_list = ','.join(
+                list(map(str, map(int, args.device_id.split(',')))))
         except ValueError:
-            print("--device-id requires a comma-separated list of GPU numbers", file=sys.stderr)
+            print(
+                "--device-id requires a comma-separated list of GPU numbers", file=sys.stderr)
         else:
             os.environ["CUDA_VISIBLE_DEVICES"] = device_list
 
