@@ -14,6 +14,8 @@
 
 import os
 from pathlib import Path
+import sys
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
 
 import librosa as lr
 from librosa.filters import mel as librosa_mel_fn

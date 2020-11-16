@@ -12,7 +12,7 @@ The figures below show an alignment and mel spectrogram as outputs of the model 
 <img src="./images/o_att.png" width=30% height=30% > <img src="./images/o_mel.png" width=30% height=30% >
 
 
-## Requirments
+## Requirements
 ### Python environment
 Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
 ```bash

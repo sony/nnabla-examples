@@ -8,7 +8,7 @@ All hyper-parameters are defined in [hparams.py](./hparams.py). We use the value
 
 
 
-## Requirments
+## Requirements
 ### Python environment
 Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
 

@@ -13,7 +13,7 @@ The figures below show an alignment, mel spectrogram, and spectrogram as outputs
 
 
 
-## Requirments
+## Requirements
 ### Python environment
 Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
 

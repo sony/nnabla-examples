@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from pathlib import Path
+import sys
+sys.path.append(str(Path().cwd().parents[1] / 'utils'))
 
 import librosa as lr
 from nnabla.utils.data_source import DataSource

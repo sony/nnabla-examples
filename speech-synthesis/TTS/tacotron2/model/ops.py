@@ -103,7 +103,7 @@ def prenet(inputs, layer_sizes, is_training, scope):
     out = inputs
     with nn.parameter_scope(scope):
         for i, size in enumerate(layer_sizes):
-            out = affine_norm(out, size, base_axis=2, with_bias=False, 
+            out = affine_norm(out, size, base_axis=2, with_bias=False,
                               w_init_gain='affine', scope=f'affine_{i}')
             out = F.dropout(F.relu(out), p=0.5)  # always chooses dropout
     return out

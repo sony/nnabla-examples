@@ -225,7 +225,7 @@ class PostNet(Module):
         """
         hp = self._hparams
         with nn.parameter_scope('conv_norm_postnet'):
-            out = inputs  # (B, T, n_mels * r)
+            out = inputs  # (B, T/r, n_mels * r)
             in_channels = [hp.postnet_embedding_dim] * \
                 hp.postnet_n_convolutions + [hp.n_mels * hp.r]
             for i, channels in enumerate(in_channels):

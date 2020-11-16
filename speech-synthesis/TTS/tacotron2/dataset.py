@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from pathlib import Path
+import sys
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
 
 import librosa as lr
 from librosa.filters import mel as librosa_mel_fn
@@ -93,9 +95,9 @@ class LJSpeechDataSource(DataSource):
         assert lin_len <= seq_len  # sanitary check
 
         # mel spectrograms
-        mel = np.dot(self.mel_basis, linear)  # transform to mel scales
+        mel = np.dot(self.mel_basis, linear)  # transform to mel scale
         mel = self._padding(mel.T, (seq_len, hp.n_mels))
-        mel = audio.normalize(mel, hp)
+        mel = np.log(np.clip(mel, 1e-5, None))  # normalize to log scale
         mel = mel.reshape(-1, hp.n_mels*hp.r)
         np.save(self._path / 'mel' / basename, mel)
 
