@@ -3,7 +3,7 @@
 This is a NNabla implementation of the [Natural TTS Synthesis By Conditioning Wavenet On Mel Spectrogram Predictions](https://arxiv.org/abs/1712.05884).
 
 Tacotron2 is a neural network architecture for speech synthesis directly from text. It consists of a
-recurrent sequence-to-sequence feature prediction network that maps character embeddings to mel-scale spectrograms. Training data are given as `<text, audio>` pairs. The model takes characters as input and outputs a mel spectrogram. Audios are synthesized from mel spectrograms using a vocoder like WaveNet and WaveGlow.
+recurrent sequence-to-sequence feature prediction network that maps character embeddings to mel-scale spectrograms. Training data are given as `<text, audio>` pairs. The model takes characters as input and outputs a mel spectrogram. Audios are generated from mel spectrograms using a vocoder like WaveNet and WaveGlow.
 
 All hyper-parameters are defined in [hparams.py](./hparams.py). We use the values from https://github.com/NVIDIA/tacotron2 as reference.
 
@@ -16,7 +16,7 @@ The figures below show an alignment and mel spectrogram as outputs of the model 
 ### Python environment
 Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
 ```bash
-pip install -r ./requirements.txt
+pip install -r requirements.txt
 ```
 Note that this requirements.txt dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.

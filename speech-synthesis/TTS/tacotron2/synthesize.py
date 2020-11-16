@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,8 +59,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--context', '-c', type=str, default='cudnn',
                         help="Extension module. 'cudnn' is highly recommended.")
-    parser.add_argument("--device-id", "-d", type=str, default='-1',
-                        help='A list of device ids to use.\
+    parser.add_argument("--device-id", "-d", type=str, default=None,
+                        help='A comma-separated list of device ids to use. \
                         This is only valid if you specify `-c cudnn`. \
                         Defaults to use all available GPUs.')
     parser.add_argument("--f-model", "-m", type=str,
@@ -72,8 +72,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # setup context for nnabla
-    if args.device_id != '-1':
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.device_id
+    if args.device_id is not None:
+        try:
+            device_list = ','.join(list(map(str, map(int, args.device_id.split(',')))))
+        except ValueError:
+            print("--device-id requires a comma-separated list of GPU numbers", file=sys.stderr)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = device_list
 
     # setup nnabla context
     ctx = get_extension_context(args.context, device_id='0')

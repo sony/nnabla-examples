@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class LJSpeechDataSource(DataSource):
 
     Args:
         metadata (str): The metadata containing text and audio indices.
-        hparams (HParams): A container containing all hyper parameters.
+        hparams (HParams): A container with all hyper parameters.
         shuffle (bool, optional): If `shuffle==True`, data will be loaded in
             a shuffled order. Defaults to False.
         rng (:obj:`numpy.random.RandomState`, optional): Numpy random number
