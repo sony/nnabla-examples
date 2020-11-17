@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from pathlib import Path
 import sys
 sys.path.append(str(Path().cwd().parents[2] / 'utils'))
 
 import librosa as lr
 from librosa.filters import mel as librosa_mel_fn
+from neu.tts import audio
+from neu.tts.text import text_normalize
 from nnabla.utils.data_source import DataSource
 import numpy as np
 from tqdm import tqdm
-
-from neu.tts import audio
-from neu.tts.text import text_normalize
 
 
 class LJSpeechDataSource(DataSource):
@@ -32,7 +30,7 @@ class LJSpeechDataSource(DataSource):
 
     Args:
         metadata (str): The metadata containing text and audio indices.
-        hparams (HParams): A container containing all hyper parameters.
+        hparams (HParams): A container with all hyper parameters.
         shuffle (bool, optional): If `shuffle==True`, data will be loaded in
             a shuffled order. Defaults to False.
         rng (:obj:`numpy.random.RandomState`, optional): Numpy random number
@@ -50,9 +48,8 @@ class LJSpeechDataSource(DataSource):
         with open(path / metadata, encoding='utf-8') as f:
             for line in f:
                 inputs = line.strip().split('|')
-                waves.append(str(path / 'wavs' / f'{inputs[0]}.wav'))
+                waves.append(path / 'wavs' / f'{inputs[0]}.wav')
                 texts.append(inputs[2])
-
         # split data
         n = len(waves)
         index = self._rng.permutation(n) if shuffle else np.arange(n)
@@ -86,38 +83,38 @@ class LJSpeechDataSource(DataSource):
     def _get_data(self, position):
         r"""Return a tuple of data."""
         index = self._indexes[position]
-        basename = Path(self._waves[index]).with_suffix(".npy").name
+        basename = self._waves[index].with_suffix(".npy").name
         return tuple(np.load(self._path / x / basename) for x in self._variables)
 
     def _store_entry(self, index, linear, w):
         hp = self.hparams
-        basename = Path(self._waves[index]).with_suffix(".npy").name
+        basename = self._waves[index].with_suffix(".npy").name
 
-        seq_len = hp.n_frames * hp.r
+        seq_len = hp.mel_len * hp.r
         lin_len = linear.shape[1]
         assert lin_len <= seq_len  # sanitary check
 
-        # compute linear spectrogram
-        post_linear = self._padding(linear.T, (seq_len, linear.shape[0]))
-        post_linear = audio.normalize(post_linear, hp)
-        np.save(self._path / 'linear' / basename, post_linear)
-
-        # compute mel spectrogram
-        mel = np.dot(self.mel_basis, linear)  # transform to mel scales
+        # mel spectrograms
+        mel = np.dot(self.mel_basis, linear)  # transform to mel scale
         mel = self._padding(mel.T, (seq_len, hp.n_mels))
-        mel = audio.normalize(mel, hp)
+        mel = np.log(np.clip(mel, 1e-5, None))  # normalize to log scale
         mel = mel.reshape(-1, hp.n_mels*hp.r)
         np.save(self._path / 'mel' / basename, mel)
 
-        # compute text sequence
+        # sequence of character
         text = text_normalize(self._texts[index], self.hparams.vocab)
         assert len(text) < hp.text_len
         text = text.ljust(hp.text_len, '~')
         text = [self._char2idx[ch] for ch in text]
         np.save(self._path / 'text' / basename, text)
 
+        # gate
+        gate = np.zeros(hp.mel_len, dtype=np.int)
+        gate[lin_len//hp.r:] = 1
+        np.save(self._path / 'gate' / basename, gate)
+
     def _get_spectrograms(self, index):
-        r"""Return the corresponding spectrogram and waveform."""
+        r""" Return the corresponding spectrogram and waveform."""
         file = self._waves[index]
 
         # get hyper-parameters
@@ -126,15 +123,14 @@ class LJSpeechDataSource(DataSource):
         w, _ = lr.load(file, sr=hp.sr)
         w, _ = lr.effects.trim(w)  # triming
 
-        if hasattr(hp, "preemphasis"):
-            # apply a pre-emphasis filter to amplify the high frequencies
-            w = audio.preemphasis(w, factor=hp.preemphasis)
         linear = audio.wave2spec(w, hp)
 
         return linear, w
 
     def _preprocess(self):
-        r"""Precomputes mel spectrograms, linear spectrograms, and texts."""
+        r"""Precomputes all mels, linears, and texts of training data.
+        All reults will be saved into disk at the same data folder.
+        """
         for f in self._variables:
             self._path.joinpath(f).mkdir(parents=True, exist_ok=True)
 
@@ -160,14 +156,15 @@ class LJSpeechDataSource(DataSource):
 
 def data_split(path):
     r"""Split the LJ dataset into train and validation sets."""
-    with open(Path(path) / 'metadata.csv', encoding='utf-8') as f:
+    path = Path(path)
+    with open(path / 'metadata.csv', encoding='utf-8') as f:
         lines = [line.strip() for line in f]
         n = len(lines)
         index = np.random.RandomState(313).permutation(n)
         split = dict(train=[lines[i] for i in index[:-int(0.1 * n)]],
                      valid=[lines[i] for i in index[-int(0.1 * n):]])
         for key in ['train', 'valid']:
-            with open(Path(path) / f'metadata_{key}.csv', 'w') as writer:
+            with open(path / f'metadata_{key}.csv', 'w') as writer:
                 writer.write('\n'.join(split[key]))
 
 

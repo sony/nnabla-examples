@@ -13,7 +13,7 @@ The figures below show an alignment, mel spectrogram, and spectrogram as outputs
 
 
 
-## Requirments
+## Requirements
 ### Python environment
 Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
 
@@ -29,14 +29,14 @@ Run the following commands to prepare the [LJ dataset](https://keithito.com/LJ-S
 ```bash
 bash scripts/prepare_dataset.sh
 ```
-This will take approximately 1 hour. The data will be located into `./data/LJSpeech-1.1/`. There will be three files: `metadata_train.csv`, `metadata_valid.csv`, and `metadata_test.csv`. These files are used for training, validation, and test, respectively.
+This will take approximately 1 hour. The data will be located into `./data/LJSpeech-1.1/`. There will be two files: `metadata_train.csv` and `metadata_valid.csv`. These files are used for training and validation, respectively.
 
 ## Train
 ```bash
 python main.py --device-id <device id> \
                 --context "cudnn"
 ```
-Expected training time on a single GeForce RTX 2080 Ti would be 3 days.
+Expected training time on a single GeForce RTX 2080 Ti is 3 days.
 
 If you have multiple GPUs, then 
 ```bash

@@ -56,6 +56,7 @@ class WaveGlowTrainer(Trainer):
 
         self.placeholder[key] = {'x_aud': x_aud,
                                  'o_aud': o_aud, 'l_net': l_net, 's_aud': s_aud}
+        self.out_variables = ['train/l_net']
 
     def train_on_batch(self):
         r"""Updates the model parameters."""

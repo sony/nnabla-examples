@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,59 +16,71 @@
 import argparse
 import os
 from pathlib import Path
-
 import sys
-sys.path.append(str(Path().cwd().parents[1] / 'utils'))
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
 
+from neu.tts.text import text_normalize
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 import numpy as np
 from scipy.io import wavfile
 
 from hparams import hparams as hp
-from model.denoiser import Denoiser
-from model.model import WaveGlow
+from model.model import Tacotron2
 
 
 def synthesize(args):
+    char2idx = {ch: i for i, ch in enumerate(hp.vocab)}
+    with open(args.f_text, 'r') as file:
+        text = ''.join(file.readlines())
+    # normalize the text
+    text = text_normalize(text, hp.vocab)
+    if len(text) >= hp.text_len - 1:
+        text = text[:hp.text_len-1]
+    text += '~'*(hp.text_len-len(text))
+    text = np.array([char2idx[ch] for ch in text]).reshape(-1)
+
     hp.batch_size = 1
     # load the model
-    model = WaveGlow(hp)
+    model = Tacotron2(hp)
     model.training = False
-    model.load_parameters(args.f_model, raise_if_missing=True)
+    model.load_parameters(args.f_model)
 
-    # build a denoiser
-    denoise = Denoiser(model, hp)
+    x_txt = nn.Variable([hp.batch_size, hp.text_len])
+    _, mels, _, _ = model(x_txt)
+    x_txt.d = text[np.newaxis, :]
 
-    x_mel = nn.Variable.from_numpy_array(np.load(args.f_mel))
-    o_aud = model.infer(x_mel)
-
-    o_aud.forward(clear_buffer=True)
-    wave = denoise(o_aud.d[0].copy(), strength=args.noise_level)
-    wavfile.write(args.f_output, rate=hp.sr, data=wave)
+    mels.forward(clear_buffer=True)
+    m = mels.d.copy().reshape(1, -1, hp.n_mels)
+    np.save(args.f_output, m.transpose((0, 2, 1)))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--context', '-c', type=str, default='cudnn',
                         help="Extension module. 'cudnn' is highly recommended.")
-    parser.add_argument("--device-id", "-d", type=str, default='-1',
-                        help='A list of device ids to use.\
+    parser.add_argument("--device-id", "-d", type=str, default=None,
+                        help='A comma-separated list of device ids to use. \
                         This is only valid if you specify `-c cudnn`. \
                         Defaults to use all available GPUs.')
-    parser.add_argument("--noise-level", "-l", type=float, default=0.003,
-                        help='Noise level.')
     parser.add_argument("--f-model", "-m", type=str,
                         help='File path to the trained model.')
-    parser.add_argument("--f-mel", "-f", type=str,
-                        help='File path to the mel file.')
-    parser.add_argument("--f-output", "-o", type=str, default='sample.wav',
+    parser.add_argument("--f-text", "-f", type=str,
+                        help='File path to the text file.')
+    parser.add_argument("--f-output", "-o", type=str, default='sample.npy',
                         help='File path to the synthetic output waveform.')
     args = parser.parse_args()
 
     # setup context for nnabla
-    if args.device_id != '-1':
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.device_id
+    if args.device_id is not None:
+        try:
+            device_list = ','.join(
+                list(map(str, map(int, args.device_id.split(',')))))
+        except ValueError:
+            print(
+                "--device-id requires a comma-separated list of GPU numbers", file=sys.stderr)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = device_list
 
     # setup nnabla context
     ctx = get_extension_context(args.context, device_id='0')

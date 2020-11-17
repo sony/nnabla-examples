@@ -52,4 +52,7 @@ class Denoiser(object):
         spect = np.abs(linear) - self.bias_spec * strength
         spect = np.clip(spect, 0, None)
         matrix = spect * np.exp(np.angle(linear) * 1j)
-        return lr.istft(matrix, hop_length=hp.hop_length, win_length=hp.win_length)
+        wave = lr.istft(matrix, hop_length=hp.hop_length,
+                        win_length=hp.win_length)
+        wave, _ = lr.effects.trim(wave)
+        return wave
