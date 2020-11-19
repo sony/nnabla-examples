@@ -44,7 +44,7 @@ def visualize(label):
 
 
 def post_process(output, old_size, target_size):
-    ratio = min(np.divide(desired_size, old_size))
+    ratio = min(np.divide(target_size, old_size))
     new_size = (int(old_size[0]*ratio), int(old_size[1]*ratio))
 
     post_processed = output[0:new_size[0], 0:new_size[1]]
@@ -98,7 +98,7 @@ def main():
 
     x.d = input_array
     y.forward(clear_buffer=True)
-    print ("done")
+    print("done")
     available_devices = ext.get_devices()
     ext.device_synchronize(available_devices[0])
     ext.clear_memory_cache()
