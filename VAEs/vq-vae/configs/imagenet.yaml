@@ -1,0 +1,65 @@
+model:
+  in_channels: 3
+  num_hidden: 128
+  num_res_layers: 2
+  embedding_dim: 128
+  num_embeddings: 512
+  commitment_cost: 0.5
+  saved_models_dir: tmp.monitor_imagenet/trained_models_imagenet/
+  checkpoint: tmp.monitor_imagenet/trained_models_imagenet/epoch_20/
+  rng: 313
+  decay: 0.99
+
+train:
+  batch_size: 32
+  num_training_updates: 25000 
+  learning_rate: 2.0e-4
+  weight_decay: 0
+  num_epochs: 40
+  save_param_step_interval: 2
+  logger_step_interval: 1
+  solver: adam
+  learning_rate_decay_epochs: [10, 30]
+  learning_rate_decay_factor: 0.1
+
+val:
+  interval: 1
+  batch_size: 32
+
+monitor:
+  path: tmp.monitor_imagenet/
+  train_loss: Training-loss-imagenet 
+  train_recon: Training-reconstructions-imagenet
+  val_loss: Validation-loss-imagenet 
+  val_recon: Validation-reconstructions-imagenet
+  prior_recon: Latent-reconstruction-pixelcnn-imagenet
+
+
+dataset:
+  name: imagenet
+  dali: True
+  train_size: 1281167
+  val_size: 10000
+  path: 
+  val_path: 
+  dali_threads: 4
+  cache_dir: 
+
+prior:
+  num_latent_vectors: 512
+  in_channels: 128
+  out_channels: 512
+  num_layers: 12
+  num_features: 128
+  num_classes: 1000
+  latent_shape: [32,32] # Height and Width of encoder output. Hard-coded for each dataset here.
+  conditional: False
+  checkpoint: tmp.monitor_imagenet/trained_models_imagenet/epoch_2/
+
+  train:
+    num_epochs: 50
+    lr: 3.0e-4
+
+
+extension_module: cudnn
+device_id: '0'
