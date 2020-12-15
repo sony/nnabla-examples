@@ -89,7 +89,7 @@ python prototypical.py -nw 5 -ns 1 -nq 5 -nwt 5 -nst 1 -nqt 5
 We can also demonstrate an example of the matching network.
 
 ```
-python prototypical.py --net-type matching --metric cosine
+python prototypical.py --net_type matching --metric cosine
 ```
 If you want to try the prototypical networks on CelebA dataset,
 first, you need to download "img_align_celeba.zip" and "identity_CelebA.txt" from the following website

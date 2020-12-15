@@ -49,5 +49,5 @@ def data_iterator_celeba(img_path, batch_size, imsize=(128, 128), num_samples=10
         img = img[cy - 64: cy + 64, cx - 64: cx +
                   64, :].transpose(2, 0, 1) / 255.
         img = img * 2. - 1.
-        return img, None
+        return img, np.array([])
     return data_iterator_simple(load_func, num_samples, batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)

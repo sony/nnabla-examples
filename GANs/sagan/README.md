@@ -41,7 +41,7 @@ You can download the pre-trained weights [here](https://nnabla.org/pretrained-mo
 
 ```bash
 mpirun -n 4 python train_with_mgpu.py -c cudnn -b 64 \
-    -T <path to save dir> \
+    -T <path to train images dir> \
     -L ./dirname_to_label.txt \
     --monitor-path ./result/example_000 \
     --max-iter 999999 \

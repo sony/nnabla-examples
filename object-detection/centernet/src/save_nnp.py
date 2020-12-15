@@ -35,7 +35,7 @@ if __name__ == '__main__':
     nn.set_auto_forward(True)
     opt = opts().init()
     model = create_model(opt.arch, opt.heads, opt.head_conv,
-                         opt.num_layers, training=False)
+                         opt.num_layers, training=False, channel_last=opt.channel_last)
     if opt.checkpoint != '':
         extension = os.path.splitext(opt.checkpoint)[1]
         assert (extension == '.h5' or

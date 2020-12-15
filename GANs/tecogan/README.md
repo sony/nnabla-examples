@@ -53,12 +53,12 @@ The pre-trained TecoGAN weights can be used to generate High-Resolution frames f
 ### Inference using the downloaded pre-trained weights.
 Clone the nnabla-examples [repository](https://github.com/sony/nnabla-examples.git) and run the following command to download test data and ground-truth data
 ```
-cd nnabla-examples/GANs/TecoGAN
+cd nnabla-examples/GANs/tecogan
 python download_test_data.py 
 ```
 Run the following command to generate HR images from a given sample of LR images
 ```
-python generate.py --model {path to downloaded TecoGAN NNabla weight file} --input_dir_LR {input directory} --output_dir {path to output directory}
+python generate.py --model {path to downloaded TecoGAN NNabla weight file} --input-dir-lr {input directory} --output-dir {path to output directory}
 ```
 ## Dataset preparation
 We would like to attribute credits of data download and sequence preparation to original authors of the paper "[ LEARNING TEMPORAL COHERENCE VIA SELF-SUPERVISION FOR GAN-BASED VIDEO GENERATION](https://arxiv.org/pdf/1811.09393.pdf)" and code (https://github.com/thunil/TecoGAN).
@@ -118,7 +118,7 @@ So, we require a pre-trained VGG19 model for this purpose. Download the VGG19 NN
 from [here](https://nnabla.org/pretrained-models/nnabla-examples/GANs/tecogan/vgg19.h5). If you want to convert tensorflow VGG19 weights to NNabla h5
 format, download the VGG19 weights from [here](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz) and then convert these weights to .h5 format using the below command:
 ```
-python convert_vgg19_nnabla_tf --pre_trained_model {pre-trained tensorflow vgg19 weights} --save-path {path to save the converted model}
+python convert_tf_vgg19_weights.py --pre_trained_model {pre-trained tensorflow vgg19 weights} --save-path {path to save the converted model}
 ```
 
 The pre-trained FRVSR model is used for finetuning the TecoGAN network. 

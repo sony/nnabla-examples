@@ -70,11 +70,11 @@ def match(args):
     name = "Matched Image {}".format(args.class_id)
     monitor_image = MonitorImage(name, monitor, interval=1,
                                  num_images=batch_size,
-                                 normalize_method=lambda x: (x + 1.) / 2. * 255.)
+                                 normalize_method=lambda x: (x + 1.) / 2.)
     name = "Matched Image Tile {}".format(args.class_id)
     monitor_image_tile = MonitorImageTile(name, monitor, interval=1,
                                           num_images=batch_size + args.top_n,
-                                          normalize_method=lambda x: (x + 1.) / 2. * 255.)
+                                          normalize_method=lambda x: (x + 1.) / 2.)
 
     # Generate and p(h|x).forward
     # generate

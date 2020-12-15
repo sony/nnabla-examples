@@ -75,7 +75,8 @@ def main():
              'data': ['x'],
              'output': ['y']}]}
     import nnabla.utils.save
-    nnabla.utils.save.save(args.nnp, runtime_contents)
+    nnabla.utils.save.save(args.nnp, runtime_contents,
+                           variable_batch_size=False)
 
 
 if __name__ == '__main__':

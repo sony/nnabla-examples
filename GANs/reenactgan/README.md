@@ -30,7 +30,7 @@ Figure: Overview of ReenactGAN (image from the original repository).
 ## Getting Dataset and Preprocessing
 ### WLFW
 
-For training `Encoder`, you need to get [WLFW Dataset](https://wywu.github.io/projects/LAB/WFLW.html). Please visit the website and download `WFLW_images.tar.gz` and `WFLW_annotations.tar.gz`.
+For training `Encoder`, you need to get [WFLW Dataset](https://wywu.github.io/projects/LAB/WFLW.html). Please visit the website and download `WFLW_images.tar.gz` and `WFLW_annotations.tar.gz`.
 
 This dataset contains 10000 (7500 for training and 2500 for validation) faces with 98 fully manual annotated landmarks. 
 
@@ -53,8 +53,8 @@ WFLW dataset contains raw images, which means, faces are **not aligned** and som
 To do this, you can use `preprocess.py` like the following.
 
 ```
-python preprocess.py --dataset WFLW --mode train --out-dir datasets/WFLW_heatmaps
-python preprocess.py --dataset WFLW --mode test --out-dir datasets/WFLW_heatmaps
+python preprocess.py --dataset datasets --mode train --out-dir datasets/WFLW_heatmaps
+python preprocess.py --dataset datasets --mode test --out-dir datasets/WFLW_heatmaps
 ```
 
 By running the script above, you will get the preprocessed data (saved as `.npz` files) at `./dataset/WFLW_heatmaps` and they are used when training `encoder`. However, since we don't know what kind of preprocessing the author did, our preprocess may be different from the way they did. 
@@ -89,7 +89,7 @@ By this, you will get 3 `.npz` files such as `<person>_heatmap.npz`, `<person>_i
 Originally, CelebV dataset has no Train/Test sets. If you want, you can split the dataset by `split_celebV.sh`. In this example, by default *all the images are used for training*, but for executing reenactment (for more details, please see `Reenactment` section), you need to split the dataset.
 
 ```
-sh split_CelebV.sh ./datasets/CelebV
+sh split_celebv.sh ./datasets/CelebV
 ```
 
 By default it divides the data into 30000 for training and the rest for test. This scripts simply creates new annotation files (`train_98pt.txt` and `test_98pt.txt`) and when you train transformer, the data iterator retrieves the data according to these annotation files. This won't create any new images or directories. Don't forget to specify which set to use for training or test (you need to specify using configuration files).

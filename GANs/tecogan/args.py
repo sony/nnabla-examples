@@ -53,7 +53,7 @@ def get_config():
 
     # refine config
     conf.data.input_video_dir = args.input_video_dir
-    conf.train.max_iter = conf.train.max_iter
+    conf.train.max_iter = args.max_iter
     conf.data.output_dir = args.output_dir
     conf.train.num_resblock = args.num_resblock
     conf.train.pre_trained_frvsr_weights = args.pre_trained_frvsr_weights

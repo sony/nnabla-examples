@@ -71,7 +71,7 @@ def data_iterator_imagenet(img_path, dirname_to_label_path,
             img = np.asarray(img)
             img = img.transpose((2, 0, 1))
             img = img / 128.0 - 1.0
-            return img, None
+            return img, np.array([])
         di = data_iterator_simple(
             load_func, len(imgs), batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
         return di
@@ -112,7 +112,7 @@ def data_iterator_imagenet(img_path, dirname_to_label_path,
         elms = imgs[i].rstrip().split("/")
         dname = elms[-2]
         label = dirname_to_label[dname]
-        return img, label
+        return img, np.array(label)
 
     di = data_iterator_simple(
         load_func, len(imgs), batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)

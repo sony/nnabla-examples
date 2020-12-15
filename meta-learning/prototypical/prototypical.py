@@ -77,7 +77,7 @@ def similarity(fq, fs, metric):
         qs = F.sum(fq * fs, axis=2)
         qq = F.sum(fq ** 2.0, axis=2)
         ss = F.sum(fs ** 2.0, axis=2)
-        h = qs * (ss ** -0.5) * (qq ** -0.5)
+        h = qs * ((ss ** -0.5) * (qq ** -0.5) + 1e-20 ** -1)
     return h
 
 

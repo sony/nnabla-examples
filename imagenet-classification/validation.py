@@ -84,7 +84,7 @@ def main():
 
     # Load parameters
     channel_last, channels = load_parameters_and_config(
-        args.weights, args.channels, args.type_config)
+        args.weights, args.type_config)
     args.channel_last = channel_last
 
     # Build a validation entwork

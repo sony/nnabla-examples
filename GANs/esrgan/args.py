@@ -37,7 +37,7 @@ def get_config():
                         help='True to train esrgan')
     parser.add_argument('--n_epochs', type=int, default=conf.train.n_epochs,
                         help='no. of epochs 497 for psnr oriented rrdb and 199 for esrgan')
-    parser.add_argument('--lr_g', type=int, default=conf.hyperparameters.lr_g,
+    parser.add_argument('--lr_g', type=float, default=conf.hyperparameters.lr_g,
                         help='initial generator learning rate 2e-4 for PSNR, 1e-4 for esrgan')
     parser.add_argument('--savemodel', default=conf.train.savemodel,
                         help='path to save the trained weights')

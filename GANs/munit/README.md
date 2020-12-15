@@ -14,7 +14,7 @@ To prepare dataset(s),
 
 ```bash
 # Training dataset
-python prepare_dataset.py --dataset edges2shoes --data-type train
+python prepare_datasets.py --dataset edges2shoes --data-type train
 
 # Validation dataset
 python prepare_datasets.py --dataset edges2shoes --data-type val

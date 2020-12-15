@@ -130,7 +130,7 @@ def distil():
         vpred.forward(clear_buffer=True)
         ve += categorical_error(vpred.d, vlabel.d)
     ve /= int(n_valid / args.batch_size)
-    monitor_verr.add(i, ve / args.val_iter)
+    monitor_verr.add(i, ve)
 
     parameter_file = os.path.join(
         args.model_save_path, 'params_{:06}.h5'.format(args.max_iter))

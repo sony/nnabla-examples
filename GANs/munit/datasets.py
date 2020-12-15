@@ -212,7 +212,7 @@ def munit_data_iterator(img_path, batch_size=1, image_size=256, num_samples=-1,
         img = scipy.misc.imresize(img, (image_size, image_size))
         img = normalize_method(img)
         img = img.transpose((2, 0, 1))
-        return img, None
+        return img, np.array([])
 
     return data_iterator_simple(load_func, num_samples, batch_size,
                                 shuffle=shuffle, rng=rng, with_file_cache=False)
