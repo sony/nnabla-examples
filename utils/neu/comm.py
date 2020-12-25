@@ -41,7 +41,7 @@ class CommunicatorWrapper(object):
             self.rank = 0
             self.comm = None
 
-        ctx.device_id = str(int(ctx.device_id) + int(self.rank))
+        ctx.device_id = str(int(comm.local_rank))
         self.ctx = ctx
         self.ctx_float = create_float_context(ctx)
 
