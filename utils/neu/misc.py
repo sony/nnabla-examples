@@ -15,10 +15,18 @@
 import os
 
 
-def init_nnabla(conf):
+def init_nnabla(conf=None, ext_name=None, device_id=None, type_config=None):
     import nnabla as nn
     from nnabla.ext_utils import get_extension_context
     from .comm import CommunicatorWrapper
+    if conf is None:
+        conf = AttrDict()
+    if ext_name is not None:
+        conf.ext_name = ext_name
+    if device_id is not None:
+        conf.device_id = device_id
+    if type_config is not None:
+        conf.type_config = type_config
 
     # set context
     ctx = get_extension_context(
@@ -66,6 +74,72 @@ class AttrDict(dict):
             print("{}: {}".format(k, v))
 
         print("=======================================================================")
+
+
+class DictInterfaceFactory(object):
+    '''Creating a single dict interface of any function or class.
+
+    Example:
+
+    .. code-block:: python
+        # Define a function.
+        def foo(a, b=1, c=None):
+            for k, v in locals():
+                print(k, v)
+
+        # Register the function to the factory.
+        dictif = DictInterfaceFactory()
+        dictif.register(foo)
+
+        # You can call the registered function by name and a dict representing the arguments.
+        cfg = dict(a=1, c='hello')
+        dictif.call('foo', cfg)
+
+        # The following will fail because the `foo` function requires `a`.
+        #     cfg = dict(c='hello')
+        #     dictif.call('foo', cfg)
+
+        # Any argument not required will be just ignored.
+        cfg = dict(a=1, aaa=0)
+        dictif.call('foo', cfg)
+
+        # You can also use it for class initializer (we use it as a class decorator).
+        @dictif.register
+        class Bar:
+            def __init__(self, a, b, c=None):
+                for k, v in locals():
+                    print(k, v)
+
+        bar = dictif.call('Bar', dict(a=0, b=0))
+
+    '''
+
+    def __init__(self):
+        self._factory = {}
+
+    def register(self, cls):
+        import inspect
+
+        # config interface function
+        def func(cfg):
+            sig = inspect.signature(cls)
+            # Handle all arguments of the created class
+            args = {}
+            for p in sig.parameters.values():
+                # Positional argument
+                if p.default is p.empty and p.name not in cfg:
+                    raise ValueError(f'`{cls.__name__}`` requires an argument `{p.name}`. Not found in cfg={cfg}.')
+                args[p.name] = cfg.get(p.name, p.default)
+            return cls(**args)
+
+        # Register config interface function
+        self._factory[cls.__name__] = func
+        return cls
+
+    def call(self, name, cfg):
+        if name in self._factory:
+            return self._factory[name](cfg)
+        raise ValueError(f'`{name}`` not found in `{list(self._factory.keys())}`.')
 
 
 def makedirs(dirpath):

@@ -209,14 +209,46 @@
     subcomponents is subject to the terms and conditions of the following
     licenses.
 
-    =======================================================================================
-    Apache-2.0 licenses
-    =======================================================================================
-
     The following components are provided under an Apache 2.0 license.
 
     1. TTUR, Fréchet Inception Distance - For details, see, /utils/neu/metrics/gan_eval/fid.py:calculate_fid
          Copyright (c) 2017 by Contributors
+
+    The following components are provided under MIT License.
+
+    1. CenterNet, object-detection/centernet/src/lib/
+        utils/{blob,image,reval,timer}.py
+        tools/reval.py
+        tools/voc_eval_lib/setup.py
+        utils/voc_eval_lib/
+
+        Copyright (c) 2015 Microsoft
+
+    2. CenterNet, object-detection/centernet/src/lib/
+        utils/{debugger,post_process,utils}.py
+        trains/eval_coco.py
+        tools/{merge_pascal_json,vis_pred}.py
+
+        Copyright (c) 2019 Xingyi Zhou.
+        All rights reserved.
+
+    The following components are provided under Nvidia Source Code License-NC.
+
+    1. StyleGAN2 - For details, see, /GANs/stylegan2/ops.py:_setup_kernel
+         Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+
+    =======================================================================================
+    MIT License
+    =======================================================================================
+
+    Copyright <YEAR> <COPYRIGHT HOLDER>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
     =======================================================================================
     Nvidia Source Code License-NC
@@ -315,9 +347,3 @@
     COMMERCIAL DAMAGES OR LOSSES), EVEN IF THE LICENSOR HAS BEEN ADVISED OF
     THE POSSIBILITY OF SUCH DAMAGES.
 
-    =======================================================================
-
-    The following components are provided under Nvidia Source Code License-NC.
-
-    1. StyleGAN2 - For details, see, /GANs/stylegan2/ops.py:_setup_kernel
-         Copyright (c) 2019, NVIDIA Corporation. All rights reserved.

@@ -23,9 +23,11 @@ class Debugger(object):
         self.theme = theme
         colors = [(color_list[_]).astype(np.uint8)
                   for _ in range(len(color_list))]
-        self.colors = np.array(colors, dtype=np.uint8).reshape(len(colors), 1, 1, 3)
+        self.colors = np.array(colors, dtype=np.uint8).reshape(
+            len(colors), 1, 1, 3)
         if self.theme == 'white':
-            self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
+            self.colors = self.colors.reshape(-1)[::-
+                                                  1].reshape(len(colors), 1, 1, 3)
             self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
         self.dim_scale = 1
         if dataset == 'coco_hp':
@@ -275,7 +277,7 @@ class Debugger(object):
                         w, h = dets[i, -3] * \
                                self.down_ratio, dets[i, -2] * self.down_ratio
                         x, y = dets[i, 0] * \
-                               self.down_ratio, dets[i, 1] * self.down_ratio
+                            self.down_ratio, dets[i, 1] * self.down_ratio
                         bbox = np.array([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
                                         dtype=np.float32)
                         self.add_coco_bbox(
@@ -545,4 +547,5 @@ def save_nnp(opt, model, extension='nnp'):
 
     model_name = f'{opt.arch}_{opt.num_layers}'
 
-    nn.utils.save.save(os.path.join(opt.save_dir, '%s.%s' % (model_name, extension)), runtime_contents)
+    nn.utils.save.save(os.path.join(opt.save_dir, '%s.%s' %
+                                    (model_name, extension)), runtime_contents)

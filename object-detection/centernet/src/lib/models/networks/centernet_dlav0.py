@@ -38,9 +38,10 @@ def torch_initializer(inmaps, kernel):
     return UniformInitializer((-d, d))
 
 
-def pf_convolution(x, ochannels, kernel, pad=(1,1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
+def pf_convolution(x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
     return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad,
                           with_bias=with_bias, w_init=w_init, b_init=b_init, channel_last=channel_last)
+
 
 class PoseDLA(object):
     def __init__(
@@ -48,26 +49,20 @@ class PoseDLA(object):
             num_layers,
             heads,
             head_conv,
-            use_pretrained=True,
             training=True,
             channel_last=False,
             **kwargs):
 
         self.n_init = NormalInitializer(0.001)
         self.backbone_model = DLAUp
-        self.use_pretrained = use_pretrained
         self.num_layerse = num_layers
         self.training = training
         self.heads = heads
         self.head_conv = head_conv
         self.channel_last = channel_last
-        #TODO add DLA variations
+        # TODO add DLA variations
         self.axes = 3 if self.channel_last else 1
-        if self.use_pretrained:
-            if channel_last:
-                nn.load_parameters(os.path.join("pretrained","dla34_nhwc_imagenet.h5"))
-            else:
-                nn.load_parameters(os.path.join("pretrained","dla34_nchw_imagenet.h5"))
+
     def __call__(self, x):
         if not isinstance(x, nn._variable.Variable):
             input_variable = nn.Variable(x.shape)
@@ -78,7 +73,8 @@ class PoseDLA(object):
         else:
             input_variable = x
 
-        features = self.backbone_model(input_variable, test=not self.training,channel_last=self.channel_last)
+        features = self.backbone_model(
+            input_variable, test=not self.training, channel_last=self.channel_last)
 
         output = []
         for head in sorted(self.heads):
@@ -134,5 +130,11 @@ class PoseDLA(object):
 
 def get_pose_net(num_layers, heads, head_conv, training, channel_last=False, opt=None, batch_size=None):
     model = PoseDLA(num_layers, heads, head_conv,
-                    training=training, use_pretrained=True, channel_last=channel_last)
+                    training=training, channel_last=channel_last)
     return model
+
+
+def load_weights(pretrained_model_dir, num_layers, channel_last):
+    layout = 'nhwc' if channel_last else 'nchw'
+    nn.load_parameters(os.path.join(pretrained_model_dir,
+                                    "dla{}_{}_imagenet.h5".format(num_layers, layout)))

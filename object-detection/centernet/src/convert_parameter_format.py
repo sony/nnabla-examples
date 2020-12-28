@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument("input", help='Path to an input h5 parameter file.')
     parser.add_argument(
         "output", help='Path to an output h5 paramter file which will be created.')
-    parser.add_argument('--affine-to-conv', '-a', action='store_true',default=False,
+    parser.add_argument('--affine-to-conv', '-a', action='store_true', default=False,
                         help='convert affine layer to 1x1 convolution')
     parser.add_argument('--memory-layout', '-m',
                         help='Convert weight to "NHWC" or "NCHW".', default=None)
@@ -70,16 +70,17 @@ def convert_memory_layout(params, layout):
         new_param.need_grad = param.need_grad
         params[key] = new_param
 
+
 def affine_to_conv(params, layout, rm_list):
-    rm_list=[]
+    rm_list = []
     for key in list(params.keys()):
         if key.endswith('affine/W'):
             rm_list.append(key)
             param = params[key]
             array = param.d
-            array = np.swapaxes(array,0,1)
-            array = np.expand_dims(array,axis=2)
-            array = np.expand_dims(array,axis=3)
+            array = np.swapaxes(array, 0, 1)
+            array = np.expand_dims(array, axis=2)
+            array = np.expand_dims(array, axis=3)
             new_param = nn.Variable.from_numpy_array(array)
             new_param.need_grad = param.need_grad
             new_key = ('fc/fc/conv/W')
@@ -94,8 +95,9 @@ def affine_to_conv(params, layout, rm_list):
             new_param = nn.Variable.from_numpy_array(array)
             new_param.need_grad = param.need_grad
             del params[key]
-            params[new_key]=new_param
+            params[new_key] = new_param
     return True
+
 
 def force_3_channels(params, layout):
     key = 'conv1/conv/W'
@@ -113,6 +115,7 @@ def force_3_channels(params, layout):
     params[key] = new_param
     return True
 
+
 def force_4_channels(params, layout):
     key = 'conv1/conv/W'
     param = params[key]
@@ -121,9 +124,11 @@ def force_4_channels(params, layout):
         return False
     array = param.d
     if layout == 'nhwc':
-        array = np.pad(array,[(0,0),(0,0),(0,0),(0,1)],'constant',constant_values=0)
+        array = np.pad(array, [(0, 0), (0, 0), (0, 0),
+                               (0, 1)], 'constant', constant_values=0)
     else:
-        array = np.pad(array,[(0,0),(0,1),(0,0),(0,0)],'constant',constant_values=0)
+        array = np.pad(array, [(0, 0), (0, 1), (0, 0),
+                               (0, 0)], 'constant', constant_values=0)
     new_param = nn.Variable.from_numpy_array(array)
     new_param.need_grad = param.need_grad
     params[key] = new_param

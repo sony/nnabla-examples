@@ -1,3 +1,17 @@
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -33,17 +47,19 @@ class PascalVOCDefaultParams():
         11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     cat_ids = {v: i for i, v in enumerate(_valid_ids)}
     _eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
-                             dtype=np.float32)
+                        dtype=np.float32)
     _eig_vec = np.array([
         [-0.58752847, -0.69563484, 0.41340352],
         [-0.5832747, 0.00994535, -0.81221408],
         [-0.56089297, 0.71832671, 0.41158938]
     ], dtype=np.float32)
 
+
 class PascalVOC(DatasetConfig):
 
     def __init__(self, opt, split, mixed_precision=False, channel_last=False, shuffle=False, rng=None):
-        super(PascalVOC, self).__init__(mixed_precision=mixed_precision, channel_last=channel_last, shuffle=shuffle, rng=rng)
+        super(PascalVOC, self).__init__(mixed_precision=mixed_precision,
+                                        channel_last=channel_last, shuffle=shuffle, rng=rng)
         self.data_dir = os.path.join(opt.data_dir, 'voc')
         self.img_dir = os.path.join(self.data_dir, 'images')
         _ann_name = {
@@ -88,4 +104,3 @@ class PascalVOC(DatasetConfig):
         self.save_results(results, save_dir)
         avg_map = from_dets(os.path.join(save_dir, 'results.json'), data_dir)
         return avg_map
-

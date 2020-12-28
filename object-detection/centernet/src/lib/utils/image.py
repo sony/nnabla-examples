@@ -25,11 +25,14 @@ def transform_preds(coords, center, scale, output_size):
         target_coords[p, 0:2] = affine_transform(coords[p, 0:2], trans)
     return target_coords
 
-#Trick using cvtColor to zero pad channel into four channels, faster than np.pad
+# Trick using cvtColor to zero pad channel into four channels, faster than np.pad
+
+
 def fast_pad(inp_image):
     inp_image = cv2.cvtColor(inp_image, cv2.COLOR_RGB2RGBA)
-    inp_image[:,:,3] = 0.0
+    inp_image[:, :, 3] = 0.0
     return inp_image
+
 
 def get_affine_transform(center,
                          scale,

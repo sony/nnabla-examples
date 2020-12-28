@@ -28,7 +28,8 @@ from models.networks.model_resnet import resnet_imagenet
 from nnabla.initializer import ConstantInitializer, NormalInitializer
 from nnabla.utils.save import save
 
-def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1,1), dilation=(2,2),with_bias=False,w_init=None,b_init=None, channel_last=False):
+
+def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1, 1), dilation=(2, 2), with_bias=False, w_init=None, b_init=None, channel_last=False):
     x = PF.deconvolution(
         x, ochannels, kernel,
         pad=pad,
@@ -40,9 +41,12 @@ def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1,1), dilation=(2
         b_init=b_init,
         channel_last=channel_last)
     return x
-def pf_convolution(x, ochannels, kernel, pad=(1,1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
+
+
+def pf_convolution(x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
     return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad,
                           with_bias=with_bias, w_init=w_init, b_init=b_init, channel_last=channel_last)
+
 
 class PoseResNet(object):
     def __init__(
@@ -50,11 +54,9 @@ class PoseResNet(object):
             num_layers,
             heads,
             head_conv,
-            use_pretrained=True,
             training=True,
             channel_last=False,
             **kwargs):
-        self.use_pretrained = use_pretrained
         self.num_layers = num_layers
         self.training = training
         self.heads = heads
@@ -62,12 +64,7 @@ class PoseResNet(object):
         self.backbone_model = resnet_imagenet
         self.n_init = NormalInitializer(0.001)
         self.channel_last = channel_last
-        if self.use_pretrained:
-            if channel_last:
-                nn.load_parameters(os.path.join("pretrained","resnet{}_nhwc_imagenet.h5".format(self.num_layers)))
-            else:
-                nn.load_parameters(os.path.join("pretrained","resnet{}_nchw_imagenet.h5".format(self.num_layers)))
-        # used for deconv layers
+        # used for deconv num_layers
         self.ochannels = ([256, 256, 256])
         self.kernels_size = ([4, 4, 4])
 
@@ -81,13 +78,13 @@ class PoseResNet(object):
         else:
             input_variable = x
         axes = 3 if self.channel_last else 1
-        r,hidden = self.backbone_model(
+        r, hidden = self.backbone_model(
             input_variable,
             num_classes=1000,
             num_layers=self.num_layers,
             shortcut_type='b',
             test=not self.training,
-            channel_last =self.channel_last)
+            channel_last=self.channel_last)
         with nn.parameter_scope("upsample1"):
             kernel_size = self.kernels_size[0]
             features = pf_deconvolution(
@@ -102,7 +99,7 @@ class PoseResNet(object):
 
             features = PF.batch_normalization(
                 features,
-                axes = [axes],
+                axes=[axes],
                 batch_stat=self.training,
                 param_init={'gamma': ConstantInitializer(
                     1), 'beta': ConstantInitializer(0)},
@@ -142,7 +139,7 @@ class PoseResNet(object):
             )
             features = F.relu(PF.batch_normalization(
                 features,
-                axes = [axes],
+                axes=[axes],
                 batch_stat=self.training,
                 param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)}),
                 inplace=True)
@@ -163,7 +160,8 @@ class PoseResNet(object):
                                          stride=(1, 1),
                                          with_bias=True,
                                          w_init=w_init_param,
-                                         b_init=ConstantInitializer(b_init_param),
+                                         b_init=ConstantInitializer(
+                                             b_init_param),
                                          channel_last=self.channel_last,
                                          )
                     out = F.relu(out, inplace=True)
@@ -197,5 +195,12 @@ class PoseResNet(object):
 
 
 def get_pose_net(num_layers, heads, head_conv, training, channel_last=False, opt=None, batch_size=None):
-    model = PoseResNet(num_layers, heads, head_conv, use_pretrained=True, training=training, channel_last=channel_last)
+    model = PoseResNet(num_layers, heads, head_conv,
+                       training=training, channel_last=channel_last)
     return model
+
+
+def load_weights(pretrained_model_dir, num_layers, channel_last):
+    layout = 'nhwc' if channel_last else 'nchw'
+    nn.load_parameters(os.path.join(pretrained_model_dir,
+                                    "resnet{}_{}_imagenet.h5".format(num_layers, layout)))

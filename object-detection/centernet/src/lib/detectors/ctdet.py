@@ -1,3 +1,17 @@
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -31,11 +45,11 @@ class CtdetDetector(BaseDetector):
         wh = outputs[1]
         reg = outputs[2]
         if self.opt.channel_last:
-            hm = F.transpose(hm,(0,3,1,2))
-            wh = F.transpose(wh,(0,3,1,2))
-            reg = F.transpose(reg,(0,3,1,2))
+            hm = F.transpose(hm, (0, 3, 1, 2))
+            wh = F.transpose(wh, (0, 3, 1, 2))
+            reg = F.transpose(reg, (0, 3, 1, 2))
         forward_time = time.time()
-        dets = ctdet_decode(hm, wh, reg=reg , K=self.opt.K)
+        dets = ctdet_decode(hm, wh, reg=reg, K=self.opt.K)
 
         if return_time:
             return outputs, dets, forward_time
@@ -73,11 +87,11 @@ class CtdetDetector(BaseDetector):
         hm = output[0]
         hm = F.sigmoid(hm)
         if self.opt.channel_last:
-            hm = F.transpose(hm,(0,3,1,2))
+            hm = F.transpose(hm, (0, 3, 1, 2))
         for i in range(1):
             if self.opt.mixed_precision:
-                #Removing pad from input image for drawing
-                img = images[i][:,:,:3]
+                # Removing pad from input image for drawing
+                img = images[i][:, :, :3]
             if not self.opt.channel_last:
                 img = images[i].transpose(1, 2, 0)
             img = ((img * self.std + self.mean) * 255).astype(np.uint8)
@@ -96,7 +110,8 @@ class CtdetDetector(BaseDetector):
                 hmap = hmap.astype('uint8')
                 print("max at channel {}:".format(j), np.max(hmap))
                 hmap = cv2.applyColorMap(hmap, cv2.COLORMAP_JET)
-                debugger.add_img(hmap, img_id='heatmap_{}_{:.1f}'.format(j, scale))
+                debugger.add_img(
+                    hmap, img_id='heatmap_{}_{:.1f}'.format(j, scale))
 
     def show_results(self, debugger, image, results):
         debugger.add_img(image, img_id='ctdet')

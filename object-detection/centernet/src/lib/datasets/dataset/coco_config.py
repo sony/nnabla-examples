@@ -1,3 +1,17 @@
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -9,7 +23,8 @@ import json
 import pycocotools.coco as coco
 from pycocotools.cocoeval import COCOeval
 
-from  datasets.dataset.dataset_config import DatasetConfig
+from datasets.dataset.dataset_config import DatasetConfig
+
 
 class COCODefaultParams():
     mean = np.array([0.40789654, 0.44719302, 0.47026115],
@@ -20,7 +35,7 @@ class COCODefaultParams():
     default_resolution = [512, 512]
     max_objs = 128
     train_size = 118287
-    eval_size =  5000
+    eval_size = 5000
 
     class_name = [
             '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
@@ -47,19 +62,21 @@ class COCODefaultParams():
             82, 84, 85, 86, 87, 88, 89, 90]
     cat_ids = {v: i for i, v in enumerate(_valid_ids)}
     voc_color = [(v // 32 * 64 + 64, (v // 8) % 4 * 64, v % 8 * 32)
-            for v in range(1, num_classes + 1)]
+                 for v in range(1, num_classes + 1)]
     _eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
-            dtype=np.float32)
+                        dtype=np.float32)
     _eig_vec = np.array([
         [-0.58752847, -0.69563484, 0.41340352],
         [-0.5832747, 0.00994535, -0.81221408],
         [-0.56089297, 0.71832671, 0.41158938]
         ], dtype=np.float32)
 
+
 class COCO(DatasetConfig):
 
-    def __init__(self, opt, split, shuffle=False, rng=None, mixed_precision=False,channel_last=False):
-        super(COCO, self).__init__(shuffle=shuffle, rng=rng, mixed_precision=mixed_precision,channel_last=channel_last)
+    def __init__(self, opt, split, shuffle=False, rng=None, mixed_precision=False, channel_last=False):
+        super(COCO, self).__init__(shuffle=shuffle, rng=rng,
+                                   mixed_precision=mixed_precision, channel_last=channel_last)
         self.data_dir = os.path.join(opt.data_dir, 'coco')
         self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
         if split == 'test':
@@ -118,7 +135,8 @@ class COCO(DatasetConfig):
         return detections
 
     def save_results(self, results, save_dir):
-        json.dump(self.convert_eval_format(results), open('{}/results.json'.format(save_dir), 'w'))
+        json.dump(self.convert_eval_format(results), open(
+            '{}/results.json'.format(save_dir), 'w'))
 
     def run_eval(self, results, save_dir, data_dir):
         self.save_results(results, save_dir)

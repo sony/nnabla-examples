@@ -1,6 +1,21 @@
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import os
 import cv2
+cv2.setNumThreads(1)
 import json
 import math
 
@@ -20,10 +35,12 @@ class DatasetConfig(DataSource):
     channel_last sets input image data as NHWC
     mixed_precision zero pads the input image channel to 4 for better utilization of Tensor Cores
     '''
+
     def __init__(self, mixed_precision=False, channel_last=False, shuffle=False, rng=None):
         super(DatasetConfig, self).__init__(shuffle=shuffle, rng=rng)
-        self.channel_last=channel_last
-        self.mixed_precision=mixed_precision
+        self.channel_last = channel_last
+        self.mixed_precision = mixed_precision
+
     def save_results(self, results, save_dir):
         raise NotImplementedError
 
@@ -46,6 +63,7 @@ class DatasetConfig(DataSource):
         while size - border // i <= border // i:
             i *= 2
         return border // i
+
     def __len__(self):
         return self._size
 
@@ -105,12 +123,13 @@ class DatasetConfig(DataSource):
                              flags=cv2.INTER_LINEAR)
         inp = (inp.astype(np.float32) / 255.)
         if self.split == 'train' and not self.opt.no_color_aug:
-            color_aug(self._rng, inp, self.params._eig_val, self.params._eig_vec)
+            color_aug(self._rng, inp, self.params._eig_val,
+                      self.params._eig_vec)
         inp = (inp - self.params.mean) / self.params.std
 
         if self.mixed_precision:
             inp = fast_pad(inp)
-            #Transpose to NCHW if channel_last is not enabled
+            # Transpose to NCHW if channel_last is not enabled
         if not self.channel_last:
             inp = inp.transpose(2, 0, 1)
         output_h = input_h // self.opt.down_ratio
@@ -149,10 +168,8 @@ class DatasetConfig(DataSource):
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
                 cls[k] = cls_id
-        #Transpose heatmap to NHWC if channel last is enabled
+        # Transpose heatmap to NHWC if channel last is enabled
         if self.channel_last:
-            hm = np.transpose(hm, (1,2,0))
+            hm = np.transpose(hm, (1, 2, 0))
         ret = (inp, hm, ind, wh, reg, reg_mask, cls)
         return ret
-
-

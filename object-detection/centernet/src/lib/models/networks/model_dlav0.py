@@ -31,10 +31,11 @@ from models.networks.initializers import he_initializer, bilinear_depthwise_init
 
 RNG = np.random.RandomState(214)
 
-def pf_depthwise_deconvolution(x, kernel, stride=(1, 1), pad=(1,1), dilation=(2,2),with_bias=False,w_init=None,b_init=None, channel_last=False):
-    out_map=x.shape[3] if channel_last else x.shape[1]
+
+def pf_depthwise_deconvolution(x, kernel, stride=(1, 1), pad=(1, 1), dilation=(2, 2), with_bias=False, w_init=None, b_init=None, channel_last=False):
+    out_map = x.shape[3] if channel_last else x.shape[1]
     if channel_last:
-        w_init = np.transpose(w_init, (0,2,3,1))
+        w_init = np.transpose(w_init, (0, 2, 3, 1))
     x = PF.deconvolution(
         x,
         out_map,
@@ -50,16 +51,19 @@ def pf_depthwise_deconvolution(x, kernel, stride=(1, 1), pad=(1,1), dilation=(2,
         )
     return x
 
+
 def pf_affine(r, num_classes=1000, channel_last=False):
     r = PF.convolution(r, num_classes, (1, 1), channel_last=channel_last,
                        w_init=NormalInitializer(sigma=0.01, rng=RNG), name='fc')
     return F.reshape(r, (r.shape[0], -1), inplace=False)
 
+
 def pf_convolution(x, ochannels, kernel, pad=None, stride=(1, 1), dilation=None, with_bias=False, w_init=None, b_init=None, channel_last=False):
-    return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad,dilation=dilation,
+    return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad, dilation=dilation,
                           with_bias=with_bias, w_init=w_init, b_init=b_init, channel_last=channel_last)
 
-def shortcut(x, ochannels, stride, shortcut_type, test,channel_last=False):
+
+def shortcut(x, ochannels, stride, shortcut_type, test, channel_last=False):
     axes = 3 if channel_last else 1
     ichannels = x.shape[axes]
     use_conv = shortcut_type.lower() == 'c'
@@ -72,7 +76,7 @@ def shortcut(x, ochannels, stride, shortcut_type, test,channel_last=False):
         # Matching channels, striding.
         with nn.parameter_scope("shortcut_conv"):
             x = PF.convolution(x, ochannels, (1, 1),
-                               stride=(stride, stride), with_bias=False,channel_last=channel_last)
+                               stride=(stride, stride), with_bias=False, channel_last=channel_last)
             x = PF.batch_normalization(x, axes=[axes], batch_stat=not test)
     else:
         # shortcut block is slightly different for dla
@@ -81,11 +85,11 @@ def shortcut(x, ochannels, stride, shortcut_type, test,channel_last=False):
             x = F.max_pooling(
                 x, kernel=(
                     stride, stride), stride=(
-                    stride, stride),channel_last=channel_last)
+                    stride, stride), channel_last=channel_last)
         if ichannels != ochannels:
             x = PF.convolution(
                 x, ochannels, (1, 1), stride=(
-                    1, 1), with_bias=False,channel_last=channel_last)
+                    1, 1), with_bias=False, channel_last=channel_last)
             x = PF.batch_normalization(x, axes=[axes], batch_stat=not test)
 
     return x
@@ -99,12 +103,12 @@ def basicblock(x, residual, ochannels, stride, test, channel_last=False):
         residual = x
     with nn.parameter_scope("basicblock1"):
         h = F.relu(bn(PF.convolution(x, ochannels, (3, 3), stride=(
-            stride, stride), pad=(1, 1), with_bias=False,channel_last=channel_last)), inplace=True)
+            stride, stride), pad=(1, 1), with_bias=False, channel_last=channel_last)), inplace=True)
     with nn.parameter_scope("basicblock2"):
         h = bn(
             PF.convolution(
                 h, ochannels, (3, 3), pad=(
-                    1, 1), with_bias=False,channel_last=channel_last))
+                    1, 1), with_bias=False, channel_last=channel_last))
     return F.relu(F.add2(h, residual, inplace=True), inplace=True)
 
 
@@ -116,27 +120,30 @@ def bottleneck(x, ochannels, shortcut_type, stride, test, channel_last=False):
     hchannels = ochannels / 4
     with nn.parameter_scope("bottleneck1"):
         h = F.relu(
-            bn(PF.convolution(x, hchannels, (1, 1), with_bias=False,channel_last=channel_last)),
+            bn(PF.convolution(x, hchannels, (1, 1),
+                              with_bias=False, channel_last=channel_last)),
             inplace=True)
     with nn.parameter_scope("bottleneck2"):
         h = F.relu(
             bn(PF.convolution(h, hchannels, (3, 3), pad=(1, 1),
                               stride=stride, with_bias=False, channel_last=channel_last)), inplace=True)
     with nn.parameter_scope("bottleneck3"):
-        h = bn(PF.convolution(h, ochannels, (1, 1), with_bias=False,channel_last=channel_last))
+        h = bn(PF.convolution(h, ochannels, (1, 1),
+                              with_bias=False, channel_last=channel_last))
     with nn.parameter_scope("bottleneck_s"):
-        s = shortcut(x, ochannels, stride, shortcut_type, test,channel_last)
+        s = shortcut(x, ochannels, stride, shortcut_type, test, channel_last)
     return F.relu(F.add2(h, s, inplace=True), inplace=True)
 
-def layer(x, block, ochannels, count, stride, shortcut_type, test,channel_last=False):
+
+def layer(x, block, ochannels, count, stride, shortcut_type, test, channel_last=False):
     for i in range(count):
         with nn.parameter_scope("layer{}".format(i + 1)):
             x = block(x, ochannels, stride if i ==
-                      0 else (1, 1), shortcut_type, test,channel_last=channel_last)
+                      0 else (1, 1), shortcut_type, test, channel_last=channel_last)
     return x
 
 
-def _make_conv_level(x, ochannels, convs, test, stride=1, dilation=1,channel_last=False):
+def _make_conv_level(x, ochannels, convs, test, stride=1, dilation=1, channel_last=False):
     axes = [3 if channel_last else 1]
     for i in range(convs):
         with nn.parameter_scope("conv{}".format(i + 1)):
@@ -147,7 +154,8 @@ def _make_conv_level(x, ochannels, convs, test, stride=1, dilation=1,channel_las
                 dilation=(dilation, dilation),
                 with_bias=False,
                 channel_last=channel_last)
-            x = F.relu(PF.batch_normalization(x, axes=axes, batch_stat=not test))
+            x = F.relu(PF.batch_normalization(
+                x, axes=axes, batch_stat=not test))
     return x
 
 
@@ -168,7 +176,7 @@ def root(x, children, ochannels, test, concat_axis=1, kernel_size=1, channel_las
     return x
 
 
-def upsample(x, ochannels, test, kernel_size=4,channel_last=False):
+def upsample(x, ochannels, test, kernel_size=4, channel_last=False):
     rng = np.random.RandomState(313)
     axes = 3 if channel_last else 1
     with nn.parameter_scope("up"):
@@ -182,7 +190,7 @@ def upsample(x, ochannels, test, kernel_size=4,channel_last=False):
         x = F.relu(
             PF.batch_normalization(
                 x,
-                axes = [axes],
+                axes=[axes],
                 batch_stat=not test),
             inplace=True)
         ichannels = x.shape[axes]
@@ -221,17 +229,20 @@ def _make_tree_level1(
     if ichannels != ochannels:
         residual = pf_convolution(
             bottom, ochannels, (1, 1), stride=(1, 1), pad=None, with_bias=False, channel_last=channel_last)
-        residual = PF.batch_normalization(residual, axes=[axes], batch_stat=not test)
+        residual = PF.batch_normalization(
+            residual, axes=[axes], batch_stat=not test)
     else:
         residual = bottom
     with nn.parameter_scope('block1'):
-        b1 = block(x, residual, ochannels, stride, test,channel_last=channel_last)
+        b1 = block(x, residual, ochannels, stride,
+                   test, channel_last=channel_last)
     with nn.parameter_scope('block2'):
-        b2 = block(b1, b1, ochannels, 1, test,channel_last=channel_last)
+        b2 = block(b1, b1, ochannels, 1, test, channel_last=channel_last)
     _children = [bottom, b2] if level_root else [b2]
     if children:
         _children += children
-    x = root(b1, _children, ochannels, test, kernel_size=1,channel_last=channel_last)
+    x = root(b1, _children, ochannels, test,
+             kernel_size=1, channel_last=channel_last)
     return x, bottom
 
 
@@ -247,10 +258,10 @@ def _make_tree_level2(
         channel_last=False):
     with nn.parameter_scope('node1'):
         ag1, bottom1 = _make_tree_level1(
-            x, None, block, ochannels, level, test, False, stride,channel_last=channel_last)
+            x, None, block, ochannels, level, test, False, stride, channel_last=channel_last)
     with nn.parameter_scope('node2'):
         x, _ = _make_tree_level1(
-            ag1, [bottom1], block, ochannels, level, test, level_root, 1,channel_last=channel_last)
+            ag1, [bottom1], block, ochannels, level, test, level_root, 1, channel_last=channel_last)
     return x
 
 
@@ -287,7 +298,7 @@ def dla_imagenet(
     with nn.parameter_scope("conv1"):
         stride = (1, 1)
         r = pf_convolution(x, 16, (7, 7),
-                           pad=(3, 3), stride=stride, with_bias=False,channel_last=channel_last)
+                           pad=(3, 3), stride=stride, with_bias=False, channel_last=channel_last)
         r = F.relu(PF.batch_normalization(
             r, axes=[axes], batch_stat=not test), inplace=True)
     hidden = {}
@@ -315,7 +326,7 @@ def dla_imagenet(
         logger.debug(r.shape)
     with nn.parameter_scope("level2"):
         r, _ = _make_tree_level1(
-            r, None, block, ochannels[2], levels[2], test, levels_root[2], stride=strides[2],channel_last=channel_last)
+            r, None, block, ochannels[2], levels[2], test, levels_root[2], stride=strides[2], channel_last=channel_last)
         hidden['level2'] = r
         logger.debug(r.shape)
     with nn.parameter_scope("level3"):
@@ -346,7 +357,7 @@ def dla_imagenet(
         logger.debug(r.shape)
     with nn.parameter_scope("level5"):
         r, _ = _make_tree_level1(
-            r, None, block, ochannels[5], levels[5], test, levels_root[5], stride=strides[5],channel_last=channel_last)
+            r, None, block, ochannels[5], levels[5], test, levels_root[5], stride=strides[5], channel_last=channel_last)
         hidden['level5'] = r
         logger.debug(r.shape)
     pool_shape = r.shape[-2:]
@@ -362,40 +373,48 @@ def dla_imagenet(
 # Upsampling portion of DLA
 
 
-def DLAUp(x, test, residual_root=False,channel_last=False):
-    r, hidden = dla_imagenet(x, num_classes=1000, num_layers=34, test=test,channel_last=channel_last)
+def DLAUp(x, test, residual_root=False, channel_last=False):
+    r, hidden = dla_imagenet(
+        x, num_classes=1000, num_layers=34, test=test, channel_last=channel_last)
     callback = NnpNetworkPass(True)
     callback.remove_and_rewire('fc')
     ochannels = [256, 128, 64, 32]
     with nn.parameter_scope("up16"):
-        x = upsample(hidden['level5'], ochannels[0], test, kernel_size=4,channel_last=channel_last)
+        x = upsample(hidden['level5'], ochannels[0], test,
+                     kernel_size=4, channel_last=channel_last)
         hidden['up16'] = x
     with nn.parameter_scope("up8"):
-        x = root(x, [hidden['level4']], ochannels[0], test, kernel_size=3,channel_last=channel_last)
-        x = upsample(x, ochannels[1], test, kernel_size=4,channel_last=channel_last)
+        x = root(x, [hidden['level4']], ochannels[0], test,
+                 kernel_size=3, channel_last=channel_last)
+        x = upsample(x, ochannels[1], test,
+                     kernel_size=4, channel_last=channel_last)
         hidden['up8'] = x
     with nn.parameter_scope("up4"):
         with nn.parameter_scope("residual_level3"):
             level4up = upsample(
-                hidden['level4'], ochannels[1], test, kernel_size=4,channel_last=channel_last)
+                hidden['level4'], ochannels[1], test, kernel_size=4, channel_last=channel_last)
             with nn.parameter_scope("level3up_root"):
                 level3up = root(
-                    level4up, [hidden['level3']], ochannels[1], test, kernel_size=3,channel_last=channel_last)
+                    level4up, [hidden['level3']], ochannels[1], test, kernel_size=3, channel_last=channel_last)
             with nn.parameter_scope("x_root"):
-                x = root(x, [level3up], ochannels[1], test, kernel_size=1,channel_last=channel_last)
-        x = upsample(x, ochannels[2], test, kernel_size=4,channel_last=channel_last)
+                x = root(x, [level3up], ochannels[1], test,
+                         kernel_size=1, channel_last=channel_last)
+        x = upsample(x, ochannels[2], test,
+                     kernel_size=4, channel_last=channel_last)
         hidden['up4'] = x
     with nn.parameter_scope("up2_b"):
-        level3up_b = upsample(level3up, ochannels[2], test, kernel_size=4,channel_last=channel_last)
+        level3up_b = upsample(
+            level3up, ochannels[2], test, kernel_size=4, channel_last=channel_last)
     with nn.parameter_scope("up2_c"):
         level3up_c = upsample(
-            hidden['level3'], ochannels[2], test, kernel_size=4,channel_last=channel_last)
+            hidden['level3'], ochannels[2], test, kernel_size=4, channel_last=channel_last)
         with nn.parameter_scope("level3up_c_root"):
             level3up_c = root(hidden['level2'], [
-                              level3up_c], ochannels[2], test, kernel_size=3,channel_last=channel_last)
+                              level3up_c], ochannels[2], test, kernel_size=3, channel_last=channel_last)
         with nn.parameter_scope("level2up_root"):
             level2up = root(level3up_b, [level3up_c],
-                            ochannels[2], test, kernel_size=3,channel_last=channel_last)
+                            ochannels[2], test, kernel_size=3, channel_last=channel_last)
         with nn.parameter_scope("x_root"):
-            x = root(x, [level2up], ochannels[2], test, kernel_size=3,channel_last=channel_last)
+            x = root(x, [level2up], ochannels[2], test,
+                     kernel_size=3, channel_last=channel_last)
     return x

@@ -1,3 +1,17 @@
+# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -7,9 +21,15 @@ import os
 from datasets.dataset.pascal_config import PascalVOCDefaultParams
 from datasets.dataset.coco_config import COCODefaultParams
 
+from utils import setup_neu
+setup_neu()
+from neu.yaml_wrapper import read_yaml
+
+
 class opts(object):
     def __init__(self):
-        self.parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        self.parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         # basic experiment setting
         self.parser.add_argument('task', default='ctdet',
                                  help='ctdet')
@@ -24,19 +44,18 @@ class opts(object):
         self.parser.add_argument('--demo', default=None,
                                  help='path to image/ image folders/ video. '
                                       'or "webcam"')
-        self.parser.add_argument('--resume', action='store_true',
-                                 help='resume an experiment. '
-                                      'Reloaded the optimizer parameter and '
-                                      'set load_model to model_last.pth '
-                                      'in the exp dir if load_model is empty.')
         self.parser.add_argument('--extension_module', default='cudnn',
                                  help='NNabla extension module. '
                                       'cpu | cuda | cudnn')
         self.parser.add_argument('--data_dir', type=str, default='/home/ubuntu/data/',
                                  help='Path to root directory of dataset.')
-        self.parser.add_argument('--root_output_dir', type=str,
-                                 default=os.path.join(os.path.dirname(__file__), '..', '..'),
+        self.parser.add_argument('--root_output_dir', '-o', type=str,
+                                 default=os.path.join(
+                                     os.path.dirname(__file__), '..', '..'),
                                  help='Path to root directory of output data.')
+        self.parser.add_argument('--save_dir', type=str,
+                                 default=None,
+                                 help='Path to directory for saving outputs of training and inference etc.')
 
         # system
         self.parser.add_argument('--gpus', default='0',
@@ -79,20 +98,10 @@ class opts(object):
                                  help='input width. -1 for default from dataset.')
 
         # train
-        self.parser.add_argument('--lr', type=float, default=5e-4,
-                                 help='learning rate for batch size 32.')
-        self.parser.add_argument('--lr_step', type=str, default='90,120',
-                                 help='drop learning rate by at given epochs.')
-        self.parser.add_argument('--lr_decay', type=float, default=0.1,
-                                 help='Multiply LR by given value every drop.')
+        self.parser.add_argument('--train-config', type=str,
+                                 help='YAML file for training config')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
                                  help='weight decay parameter.')
-        self.parser.add_argument('--num_epochs', type=int, default=140,
-                                 help='total training epochs.')
-        self.parser.add_argument('--batch_size', type=int, default=16,
-                                 help='batch size')
-        self.parser.add_argument('--warmup', type=int, default=0,
-                                 help='number of warmup epochs')
         self.parser.add_argument('--checkpoint', type=str, default='',
                                  help='checkpoint file to resume training.')
         self.parser.add_argument('--mixed_precision', action='store_true',
@@ -101,12 +110,15 @@ class opts(object):
                                  help='Channel last models. Currently only DLAv0 is supported')
         self.parser.add_argument('--checkpoint_dir', type=str, default='',
                                  help='Root folder that includes checkpoint(s) for test.')
+        self.parser.add_argument('--resume-from', type=int, default=None,
+                                 help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')
+
         # test
         self.parser.add_argument('--test_scales', type=str, default='1',
                                  help='multi scale test augmentation.')
 
         self.parser.add_argument('--K', type=int, default=100,
-                             help='max number of output objects.')
+                                 help='max number of output objects.')
         self.parser.add_argument('--fix_res', action='store_true',
                                  help='fix testing resolution or keep '
                                       'the original resolution')
@@ -144,9 +156,10 @@ class opts(object):
                                  help='Regress local offset.')
 
         # monitor setting
-        self.parser.add_argument('--train_monitor_interval', type=int, default=1)
-        self.parser.add_argument('--eval_monitor_interval', type=int, default=1)
-
+        self.parser.add_argument(
+            '--train_monitor_interval', type=int, default=1)
+        self.parser.add_argument(
+            '--eval_monitor_interval', type=int, default=1)
 
     def parse(self, args=''):
         if args == '':
@@ -154,11 +167,29 @@ class opts(object):
         else:
             opt = self.parser.parse_args(args)
 
+        # Load training config
+        if opt.train_config is not None:
+            opt.train_config = read_yaml(opt.train_config)
+            cfg = opt.train_config
+            opt.dataset = cfg.dataset.dataset
+            opt.arch = cfg.model.arch
+            opt.num_layers = cfg.model.num_layers
+            opt.pretrained_model_dir = cfg.model.pretrained_model_dir
+            opt.batch_size = cfg.train.batch_size
+            opt.num_epochs = cfg.train.num_epochs
+            lr_cfg = cfg.learning_rate_config
+            if 'epochs' not in lr_cfg or lr_cfg.epochs is None:
+                lr_cfg.epochs = cfg.train.num_epochs
+            mp_cfg = cfg.mixed_precision
+            opt.mixed_precision = mp_cfg.mixed_precision
+            opt.channel_last = mp_cfg.channel_last
+            opt.loss_scaling = mp_cfg.loss_scaling
+            opt.use_dynamic_loss_scaling = mp_cfg.use_dynamic_loss_scaling
+
         opt.gpus_str = opt.gpus
         opt.gpus = [int(gpu) for gpu in opt.gpus.split(',')]
         opt.gpus = [i for i in range(
             len(opt.gpus))] if opt.gpus[0] >= 0 else [-1]
-        opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
         opt.test_scales = [float(i) for i in opt.test_scales.split(',')]
 
         opt.fix_res = not opt.keep_res
@@ -171,7 +202,8 @@ class opts(object):
         opt.num_stacks = 1
 
         opt.exp_dir = os.path.join(opt.root_output_dir, "exp", opt.task)
-        opt.save_dir = os.path.join(opt.exp_dir,opt.exp_id)
+        if opt.save_dir is None:
+            opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id)
         opt.debug_dir = os.path.join(opt.save_dir, 'debug')
         print('The output will be saved to ', opt.save_dir)
         os.makedirs(opt.save_dir, exist_ok=True)

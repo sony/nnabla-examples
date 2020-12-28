@@ -36,7 +36,8 @@ class pascal_voc(imdb):
                          'cow', 'diningtable', 'dog', 'horse',
                          'motorbike', 'person', 'pottedplant',
                          'sheep', 'sofa', 'train', 'tvmonitor')
-        self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
+        self._class_to_ind = dict(
+            list(zip(self.classes, list(range(self.num_classes)))))
         self._image_ext = '.jpg'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
@@ -192,7 +193,8 @@ class pascal_voc(imdb):
 
     def _get_voc_results_file_template(self):
         # VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
-        filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
+        filename = self._get_comp_id() + '_det_' + \
+                                     self._image_set + '_{:s}.txt'
         path = os.path.join(
             self._devkit_path,
             'results',
@@ -274,6 +276,6 @@ if __name__ == '__main__':
 
     d = pascal_voc('trainval', '2007')
     res = d.roidb
-    from IPython import embed;
+    from IPython import embed
 
     embed()

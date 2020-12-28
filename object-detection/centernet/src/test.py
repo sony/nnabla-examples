@@ -1,3 +1,17 @@
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -25,6 +39,7 @@ def recursive_glob(rootdir=".", pattern="*"):
         for filename in fnmatch.filter(filenames, pattern):
             matches.append(os.path.join(root, filename))
     return sorted(matches)
+
 
 def test(opt):
     """ Validate opt.checkpoint if opt.checkpoint is valid file.
@@ -61,7 +76,8 @@ def test(opt):
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     if opt.extension_module != 'cpu':
         if opt.mixed_precision:
-            ctx = get_extension_context(opt.extension_module, device_id="0", type_config="half")
+            ctx = get_extension_context(
+                opt.extension_module, device_id="0", type_config="half")
         else:
             ctx = get_extension_context(opt.extension_module, device_id="0")
         nn.set_default_context(ctx)
@@ -80,7 +96,8 @@ def test(opt):
         dir_path = opt.checkpoint_dir
         checkpoints_to_run = recursive_glob(dir_path, "params.h5")
         monitor = Monitor(dir_path)
-        monitor_map = MonitorSeries("Val mAP", monitor, interval=1, verbose=False)
+        monitor_map = MonitorSeries(
+            "Val mAP", monitor, interval=1, verbose=False)
 
         for cur_file in checkpoints_to_run:
             opt.checkpoint = cur_file
