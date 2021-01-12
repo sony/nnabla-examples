@@ -32,6 +32,7 @@ class CommunicatorWrapper(object):
             comm.init()
             self.n_procs = comm.size
             self.rank = comm.rank
+            self.local_rank = comm.local_rank
             self.comm = comm
         except Exception as e:
             print(e)
@@ -39,9 +40,10 @@ class CommunicatorWrapper(object):
                   ' all processes will perform totally same.')
             self.n_procs = 1
             self.rank = 0
+            self.local_rank = 0
             self.comm = None
 
-        ctx.device_id = str(int(ctx.device_id) + int(self.rank))
+        ctx.device_id = str(int(ctx.device_id) + int(self.local_rank))
         self.ctx = ctx
         self.ctx_float = create_float_context(ctx)
 
