@@ -22,6 +22,9 @@ from utils import depth_to_space
 
 
 def box_filter(x, szf):
+    """
+    Box filter
+    """
     y = F.identity(x)
     szy = list(y.shape)
     b_filt = nn.Variable((szf, szf, 1, 1))
@@ -40,6 +43,9 @@ def box_filter(x, szf):
 
 
 def guided_filter(img, r, eps):
+    """
+    Edge preserving filter
+    """
     img2 = F.concatenate(img, img * img, axis=3)
     img2 = box_filter(img2, r)
     mean = F.split(img2, axis=3)
@@ -58,6 +64,9 @@ def guided_filter(img, r, eps):
 
 
 def conv_2d(x, o_ch, kernel, name=None):
+    """
+    Convolution for JSInet
+    """
     b = I.ConstantInitializer(0.)
     h = PF.convolution(x, o_ch, kernel=kernel, stride=(1, 1), pad=(1, 1), channel_last=True,
                        b_init=b, name=name)
@@ -65,6 +74,9 @@ def conv_2d(x, o_ch, kernel, name=None):
 
 
 def res_block(x, out_ch, name):
+    """
+    Create residual block
+    """
     with nn.parameter_scope(name):
         h = conv_2d(F.relu(x), out_ch, kernel=(3, 3), name='conv/0')
         h = conv_2d(F.relu(h), out_ch, kernel=(3, 3), name='conv/1')
@@ -73,6 +85,9 @@ def res_block(x, out_ch, name):
 
 
 def dyn_2d_filter(x, lf_2d, k_sz):
+    """
+    Dynamic 2d filtering
+    """
     with nn.parameter_scope('Dynamic_2D_Filtering'):
         f_localexpand = nn.Variable.from_numpy_array(
             np.eye(k_sz[0] * k_sz[1], k_sz[0] * k_sz[1]))
@@ -93,6 +108,9 @@ def dyn_2d_filter(x, lf_2d, k_sz):
 
 
 def dyn_2d_up_operation(x, lf_2d, k_sz, sf=2):
+    """
+    Dynamic 2d upsampling
+    """
     with nn.parameter_scope("Dynamic_2D_Upsampling"):
         y = []
         sz = lf_2d.shape
@@ -109,11 +127,11 @@ def dyn_2d_up_operation(x, lf_2d, k_sz, sf=2):
 
 
 def dyn_sep_up_operation(x, dr_k_v, dr_k_h, k_sz, sf):
-    '''
+    """
     Dynamic separable upsampling operation with 1D separable local kernels.
     x: [B, H, W, C], dr_k_v: [B, H, W, 41*sf*sf], dr_k_h: [B, H, W, 41*sf*sf]
     out: [B, H*sf, W*sf, C]
-    '''
+    """
     sz = x.shape
     pad = k_sz // 2  # local filter pad size
     # [B, H, W, C*sf*sf]
@@ -155,7 +173,7 @@ def dyn_sep_up_operation(x, dr_k_v, dr_k_h, k_sz, sf):
 
 def res_block_concat(x, out_ch, name):
     """
-    basic residual block -> [conv-relu | conv-relu] + input
+    Basic residual block -> [conv-relu | conv-relu] + input
     """
     with nn.parameter_scope(name):
         h = conv_2d(F.relu(x), out_ch, kernel=(3, 3), name='conv/0')
@@ -165,6 +183,9 @@ def res_block_concat(x, out_ch, name):
 
 
 def model(img, sf):
+    """
+    Define JSInet model
+    """
     with nn.parameter_scope('Network'):
         with nn.parameter_scope('local_contrast_enhancement'):
             ## ================= Local Contrast Enhancement Subnet ============================ ##
@@ -219,6 +240,9 @@ def model(img, sf):
 
 
 def truncated_normal(w_shape, mean, std):
+    """
+    Numpy truncated normal
+    """
     init = I.NormalInitializer()
     tmp = init(w_shape + (4,))
     valid = np.logical_and((np.less(tmp, 2)), (np.greater(tmp, -2)))
@@ -229,8 +253,10 @@ def truncated_normal(w_shape, mean, std):
     return trunc_norm
 
 
-###### conv for discriminator ######
 def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True, scope='conv_0'):
+    """
+    Convolution for discriminator
+    """
     w_n_shape = (channels, kernel, kernel, x.shape[-1])
     w_init = truncated_normal(w_n_shape, mean=0.0, std=0.02)
     b_init = I.ConstantInitializer(0.)
@@ -264,6 +290,9 @@ def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True,
 
 
 def dis_block(n, c, i, train=True):
+    """
+    Discriminator conv_bn_relu block
+    """
     out = conv(n, channels=c, kernel=4, stride=2, pad=1, use_bias=False,
                scope='d_conv/' + str(2 * i + 2))
     out_fm = F.leaky_relu(
@@ -281,6 +310,9 @@ def dis_block(n, c, i, train=True):
 
 
 def discriminator_fm(x, sf, scope="Discriminator_FM"):
+    """
+    Feature matching discriminator
+    """
     with nn.parameter_scope(scope):
         fm_list = []
         ch = 32
@@ -317,6 +349,9 @@ def discriminator_fm(x, sf, scope="Discriminator_FM"):
 
 
 def discriminator_loss(real, fake):
+    """
+    Calculate discriminator loss
+    """
     real_loss = F.mean(
         F.relu(1.0 - (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
     fake_loss = F.mean(
@@ -326,6 +361,9 @@ def discriminator_loss(real, fake):
 
 
 def generator_loss(real, fake):
+    """
+    Calculate generator loss
+    """
     real_loss = F.mean(
         F.relu(1.0 + (real - F.reshape(F.mean(fake), (1, 1, 1, 1)))))
     fake_loss = F.mean(
@@ -335,10 +373,11 @@ def generator_loss(real, fake):
 
 
 def feature_matching_loss(x, y, num=4):
-    # L2 Loss
+    """
+    Calculate feature matching loss
+    """
     fm_loss = 0.0
     for i in range(num):
-        #fm_loss = F.add2(fm_loss, F.mean(F.squared_error(x[i], y[i])), inplace=True)
         fm_loss += F.mean(F.squared_error(x[i], y[i]))
     return fm_loss
 

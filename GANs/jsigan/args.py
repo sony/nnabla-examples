@@ -27,23 +27,23 @@ def get_config():
 
     conf = read_yaml(args.cfg)
 
-    parser.add_argument('--lr_sdr_test', type=str, default="datasets/",
+    parser.add_argument('--lr-sdr-test', type=str, default="datasets/",
                         help='The directory of the input data, for testing')
-    parser.add_argument('--hr_hdr_test', type=str, default="datasets/",
+    parser.add_argument('--hr-hdr-test', type=str, default="datasets/",
                         help='The directory of the input data, for testing')
-    parser.add_argument('--lr_sdr_train', type=str, default="datasets/",
+    parser.add_argument('--lr-sdr-train', type=str, default="datasets/",
                         help='The directory of the input data, for training')
-    parser.add_argument('--hr_hdr_train', type=str, default="datasets/",
+    parser.add_argument('--hr-hdr-train', type=str, default="datasets/",
                         help='The directory of the input data, for training')
-    parser.add_argument('--scaling_factor', type=int, default=4,
+    parser.add_argument('--scaling-factor', type=int, default=4,
                         help='LR to HR scaling factor')
-    parser.add_argument('--pre_trained_model', type=str, default="models/",
+    parser.add_argument('--pre-trained-model', type=str, default="models/",
                         help='Path of the pre trained weights')
-    parser.add_argument('--output_dir', type=str, default="models/",
+    parser.add_argument('--output-dir', type=str, default="models/",
                         help='Path to save weight files during training')
     parser.add_argument('--jsigan', action='store_true', default=False,
                         help='If True, GAN network will be trained, False otherwise')
-    parser.add_argument('--save_images', action='store_true', default=False,
+    parser.add_argument('--save-images', action='store_true', default=False,
                         help='If True, images will be saved during inference; False to save time')
 
     args = parser.parse_args()

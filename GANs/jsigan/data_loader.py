@@ -21,9 +21,8 @@ import nnabla as nn
 
 def read_mat_file(data_fname, label_fname, data_name, label_name, train):
     """
-    read training data from .mat file
+    Read training data from .mat file
     """
-    #import pdb; pdb.set_trace()
     data_file = h5py.File(data_fname, 'r')
     label_file = h5py.File(label_fname, 'r')
     data = data_file[data_name][()]
@@ -42,7 +41,6 @@ def read_mat_file(data_fname, label_fname, data_name, label_name, train):
 
 
 class JSIData(DataSource):
-
     def _get_data(self, position):
         if self.train:
             data_train = self.data_train[self._indexes[position]]

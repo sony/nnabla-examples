@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 import os
 import sys
 import imageio
@@ -30,6 +29,9 @@ from neu.variable_utils import set_persistent_all
 
 
 def get_hw_boundary(patch_boundary, h, w, pH, sH, pW, sW):
+    """
+    Calculate height and width of patch
+    """
     h_low_ind = max(pH * sH - patch_boundary, 0)
     h_high_ind = min((pH + 1) * sH + patch_boundary, h)
     w_low_ind = max(pW * sW - patch_boundary, 0)
@@ -39,11 +41,11 @@ def get_hw_boundary(patch_boundary, h, w, pH, sH, pW, sW):
 
 
 def depth_to_space(x, sf):
-    '''
+    """
     x: (B, H, W, sf*sf)
     reshape x to (B, H, W, sf,sf,1) then transpose to (B, H, sf, W, sf, 1) & finally reshape (B, H*sf, W*sf, 1)
     return: (B, H*sf, W*sf, 1)
-    '''
+    """
     x_sz = x.shape
     if x_sz[3] == sf*sf:
         x = F.reshape(x, (x_sz[0], x_sz[1], x_sz[2], sf, sf, 1))
@@ -58,6 +60,10 @@ def depth_to_space(x, sf):
 
 
 def trim_patch_boundary(img, patch_boundary, h, w, pH, sH, pW, sW, sf):
+    """
+    Remove both rows and columns to reduce edge effect 
+    around patch edges.
+    """
     # trim rows
     if pH * sH >= patch_boundary:
         img = img[:, patch_boundary * sf:, :, :]
@@ -74,12 +80,18 @@ def trim_patch_boundary(img, patch_boundary, h, w, pH, sH, pW, sW, sf):
 
 
 def compute_psnr(img_orig, img_out, peak):
+    """
+    Calculate PSNR value
+    """
     mse = np.mean((img_orig - img_out) ** 2)
     psnr = 10 * np.log10(1.*1. / mse)
     return psnr
 
 
 def get_learning_rate(init_lr, iteration, lr_stair_decay_points, lr_decreasing_factor):
+    """
+    Calculate learning rate decay
+    """
     epoch_lr_to_be_decayed_boundaries = [
         y * (iteration) for y in lr_stair_decay_points]
     epoch_lr_to_be_decayed_value = [init_lr * (lr_decreasing_factor ** y) for y in
@@ -93,13 +105,10 @@ def get_learning_rate(init_lr, iteration, lr_stair_decay_points, lr_decreasing_f
     return lr
 
 
-def get_learning_rate_gan(epoch, conf):
-    lr = conf.learning_rate if epoch < conf.gan_lr_linear_decay_point \
-        else conf.learning_rate * (conf.epoch - epoch) / (conf.epoch - gan_lr_linear_decay_point)
-    return lr
-
-
 def save_results_yuv(pred, index, test_img_dir):
+    """
+    Saves generated YUV image seperately by channel  
+    """
     test_pred = np.squeeze(pred)
     test_pred = np.clip(test_pred, 0, 1) * 1023
     test_pred = np.uint16(test_pred)

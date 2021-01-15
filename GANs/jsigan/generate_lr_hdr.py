@@ -19,6 +19,9 @@ import numpy as np
 
 
 def cubic(x):
+    """
+    Cubic kernel
+    """
     absx = np.abs(x)
     absx2 = absx**2
     absx3 = absx**3
@@ -27,7 +30,10 @@ def cubic(x):
             (absx > 1) * (absx <= 2)).astype(type(absx)))
 
 
-def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width, antialiasing):
+def calculate_weights_indices(in_length, out_length, scale, kernel_width, antialiasing):
+    """
+    Get weights and indices
+    """
     if (scale < 1) and (antialiasing):
         # Use a modified kernel to simultaneously interpolate and antialias- larger kernel width
         kernel_width = kernel_width / scale
@@ -91,13 +97,14 @@ def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width
 
 
 def imresize_np(img, scale, antialiasing=True):
-    # Now the scale should be the same for H and W
-    # input: img: Numpy, HWC BGR [0,1]
-    # output: HWC BGR [0,1] w/o round
+    """
+    The scale should be the same for H and W
+    Input: img: Numpy, HWC BGR [0,1]
+    Output: HWC BGR [0,1] w/o round
+    """
     in_H, in_W, in_C = img.shape
     _, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
     kernel_width = 4
-    kernel = 'cubic'
 
     # Return the desired dimension order for performing the resize.  The
     # strategy is to perform the resize first along the dimension with the
@@ -106,9 +113,9 @@ def imresize_np(img, scale, antialiasing=True):
 
     # get weights and indices
     weights_H, indices_H, sym_len_Hs, sym_len_He = calculate_weights_indices(
-        in_H, out_H, scale, kernel, kernel_width, antialiasing)
+        in_H, out_H, scale, kernel_width, antialiasing)
     weights_W, indices_W, sym_len_Ws, sym_len_We = calculate_weights_indices(
-        in_W, out_W, scale, kernel, kernel_width, antialiasing)
+        in_W, out_W, scale, kernel_width, antialiasing)
     # process H dimension
     # symmetric copying
     img_aug = np.ndarray((in_H + sym_len_Hs + sym_len_He,
@@ -175,19 +182,20 @@ def imresize_np(img, scale, antialiasing=True):
     return out_2
 
 
+# Command line arguments
 data_parser = argparse.ArgumentParser(description='dataset path')
 
-data_parser.add_argument('--hr_hdr_path', type=str, default="HDR_youtube_80.mat",
+data_parser.add_argument('--hr-hdr-path', type=str, default="HDR_youtube_80.mat",
                          help='add path where HR-HDR dataset resides')
 
-data_parser.add_argument('--lr_hdr_path', type=str, default="LR_HDR_youtube_80.mat",
+data_parser.add_argument('--lr-hdr-path', type=str, default="LR_HDR_youtube_80.mat",
                          help='where the LR-HDR images will be saved')
 
-data_parser.add_argument('--reduction_factor', type=int, default=2,
+data_parser.add_argument('--reduction-factor', type=int, default=2,
                          help='by how much factor you want to reduce the size of the images')
 
-data_parser.add_argument('--create_test_dataset', action='store_true', default=False,
-                         help='If True, ')
+data_parser.add_argument('--create-test-dataset', action='store_true', default=False,
+                         help='If True, HDR_YUV is name of group in hdf5 dataset')
 
 args = data_parser.parse_args()
 

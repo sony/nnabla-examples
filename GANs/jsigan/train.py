@@ -27,7 +27,7 @@ from utils import compute_psnr, get_learning_rate, CommunicatorWrapper
 
 def setup_monitor(conf, monitor):
     """
-    setup monitor to keep track of losses and times to log them
+    Setup monitor to keep track of losses and times to log them
     """
     jsi_monitor = {'rec_loss': MonitorSeries('rec_loss', monitor, interval=conf.monitor_interval),
                    'psnr': MonitorSeries('psnr', monitor, interval=conf.monitor_interval),
