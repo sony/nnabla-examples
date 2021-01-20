@@ -17,6 +17,7 @@ from contextlib import contextmanager
 import nnabla.logger as logger
 from nnabla.lms import SwapInOutScheduler
 
+
 @contextmanager
 def sechdule_scope(scheduler):
     scheduler.update_pre_hook()
@@ -27,7 +28,8 @@ def sechdule_scope(scheduler):
 def lms_scheduler(ctx, use_lms, gpu_memory_size=8e9, window_length=12e9):
     _check_list = [x.split(":")[0] for x in ctx.backend]
     if "cudnn" not in _check_list and "cuda" not in _check_list:
-        logger.warn("ctx passed to scheduler doesn't have cuda/cudnn backend. lms scheduler will not be used.")
+        logger.warn(
+            "ctx passed to scheduler doesn't have cuda/cudnn backend. lms scheduler will not be used.")
         use_lms = False
 
     if use_lms:
