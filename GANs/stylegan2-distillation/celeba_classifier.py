@@ -1,5 +1,5 @@
-import os 
-import sys 
+import os
+import sys
 import numpy as np
 import functools
 import argparse
@@ -10,18 +10,19 @@ stargan_utils_path = os.path.abspath(
 sys.path.append(stargan_utils_path)
 from dataloader import stargan_load_func, get_data_dict
 
-import nnabla as nn 
-import nnabla.functions as F 
-import nnabla.parametric_functions as PF 
+import nnabla as nn
+import nnabla.functions as F
+import nnabla.parametric_functions as PF
 import nnabla.solvers as S
 from nnabla.ext_utils import get_extension_context
 from nnabla.utils.data_iterator import data_iterator_simple
 
+
 def get_data_loader(attr_path, image_dir, batch_size, batch_size_valid, image_size, attribute='Bangs'):
     dataset, attr2idx, idx2attr = get_data_dict(attr_path, [attribute])
-    np.random.seed(313)  
-    np.random.shuffle(dataset)  
-    test_dataset = dataset[-4000:]  
+    np.random.seed(313)
+    np.random.shuffle(dataset)
+    test_dataset = dataset[-4000:]
 
     training_dataset = dataset[:-4000]
     print("Use {} images for training.".format(len(training_dataset)))
@@ -86,19 +87,21 @@ def resnet_prediction(image, test=False, ncls=2, nmaps=128, act=F.relu):
     for i in range(int(np.log2(image_size))-1):
         h = res_unit(h, f'conv{i*2+2}', False)
         if i != np.log2(image_size)-2:
-            h = res_unit(h,f'conv{i*2+3}', True)
+            h = res_unit(h, f'conv{i*2+3}', True)
 
     h = F.average_pooling(h, kernel=(4, 4))  # -> 1x1
     pred = PF.affine(h, ncls)
 
     return pred
 
+
 def loss_function(pred, label):
     loss = F.mean(F.softmax_cross_entropy(pred, label))
     return loss
 
+
 def train(args):
-     
+
     extension_module = args.context
     ctx = get_extension_context(extension_module)
     nn.set_default_context(ctx)
@@ -107,7 +110,8 @@ def train(args):
 
     # Create training graphs
     test = False
-    image_train = nn.Variable((args.batch_size, 3, args.image_size, args.image_size))
+    image_train = nn.Variable(
+        (args.batch_size, 3, args.image_size, args.image_size))
     label_train = nn.Variable((args.batch_size, 1))
     pred_train = prediction(image_train, test)
     loss_train = loss_function(pred_train, label_train)
@@ -115,7 +119,8 @@ def train(args):
 
     # Create validation graph
     test = True
-    image_valid = nn.Variable((args.batch_size_valid, 3, args.image_size, args.image_size))
+    image_valid = nn.Variable(
+        (args.batch_size_valid, 3, args.image_size, args.image_size))
     pred_valid = prediction(image_valid, test)
     input_image_valid = {"image": image_valid}
 
@@ -125,14 +130,14 @@ def train(args):
     start_point = 0
 
     # Data Iterator
-    tdata, vdata = get_data_loader(args.attr_path, args.image_dir, args.batch_size, 
-    args.batch_size_valid, args.image_size, args.attribute)
+    tdata, vdata = get_data_loader(args.attr_path, args.image_dir, args.batch_size,
+                                   args.batch_size_valid, args.image_size, args.attribute)
 
     # Training-loop
-    pbar = trange(args.num_iters,desc="Training")
+    pbar = trange(args.num_iters, desc="Training")
     for i in pbar:
         # Validation
-        if i%args.val_step == 0:
+        if i % args.val_step == 0:
             va = 0.
             for j in range(4000//args.batch_size_valid):
                 image, label = vdata.next()
@@ -151,14 +156,16 @@ def train(args):
 
         # Solvers update
         solver.update()
-        
+
         pbar.set_description(f'Batch Train Loss: {loss_train.d}, VA: {va}')
-        if i%args.save_param_step == 0 or i==args.num_iters-1:
+        if i % args.save_param_step == 0 or i == args.num_iters-1:
             nn.save_parameters(os.path.join(args.model_save_path,
                                             'params_%06d.h5' % (i)))
-            
+
         if i in args.lr_step_iter:
-            solver.set_learning_rate(solver.get_learning_rate()*args.lr_step_factor)
+            solver.set_learning_rate(
+                solver.get_learning_rate()*args.lr_step_factor)
+
 
 def main():
 
@@ -174,39 +181,40 @@ def main():
     parser.add_argument('--batch-size-valid', type=int,
                         default=6, help='batch-size for validation')
     parser.add_argument('--attr-path', type=str,
-                        default='/net/netapp01-01.ubiq.sony.co.jp/SHARE/sDeep/Data/Dataset/celeba-hq-512/list_attr_celeba-hq.txt', 
+                        default='celeba-hq-512/list_attr_celeba-hq.txt',
                         help='attr.txt file path for celeba')
     parser.add_argument('--image-dir', type=str,
-                        default='/net/netapp01-01.ubiq.sony.co.jp/SHARE/sDeep/Data/Dataset/celeba-hq-512/images', 
+                        default='celeba-hq-512/images',
                         help='directory containing the images')
     parser.add_argument('--attribute', type=str,
-                        default='Bangs', 
+                        default='Bangs',
                         help='One of the 40 attributes for CelebA dataset (Case sensitive)')
     parser.add_argument('--init-lr', type=float,
-                        default=0.001, 
+                        default=0.001,
                         help='Inital learning rate for the solver')
     parser.add_argument('--lr-step-factor', type=float,
-                        default=0.1, 
+                        default=0.1,
                         help='Multiplicative Factor for the learning rate')
     parser.add_argument('--lr-step-iter', type=int, nargs='*',
-                        default=[500, 5000], 
+                        default=[500, 5000],
                         help='Iterations after which to apply the learning rate factor')
     parser.add_argument('--save-param-step', type=int,
-                        default=300, 
+                        default=300,
                         help='Number of iterations after which to save model parameters')
     parser.add_argument('--val-step', type=int,
-                        default=300, 
+                        default=300,
                         help='Number of iterations after which to check model accuracy on validation set')
     parser.add_argument('--model-save-path', type=str,
-                        default='bangs', 
+                        default='bangs',
                         help='path to save parameters')
-            
+
     parser.add_argument('--context', type=str, default='cudnn')
     args = parser.parse_args()
-    
+
     os.makedirs(args.model_save_path, exist_ok=True)
-    
+
     train(args)
+
 
 if __name__ == '__main__':
     main()

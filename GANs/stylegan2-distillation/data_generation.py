@@ -17,6 +17,7 @@ from nnabla.ext_utils import get_extension_context
 import nnabla.functions as F
 from nnabla.utils.image_utils import imsave
 
+
 def generate_data(args):
 
     if not os.path.isfile(os.path.join(args.weights_path, 'gen_params.h5')):
@@ -28,15 +29,18 @@ def generate_data(args):
 
     nn.load_parameters(os.path.join(args.weights_path, 'gen_params.h5'))
     print('Loaded pretrained weights from tensorflow!')
-    
+
     os.makedirs(args.save_image_path, exist_ok=True)
-    
-    batches = [args.batch_size for _ in range(args.num_images//args.batch_size)]
-    if args.num_images%args.batch_size != 0:
-        batches.append(args.num_images - (args.num_images//args.batch_size)*args.batch_size)
-        
+
+    batches = [args.batch_size for _ in range(
+        args.num_images//args.batch_size)]
+    if args.num_images % args.batch_size != 0:
+        batches.append(args.num_images - (args.num_images //
+                                          args.batch_size)*args.batch_size)
+
     for idx, batch_size in enumerate(batches):
-        z = [F.randn(shape=(batch_size, 512)).data, F.randn(shape=(batch_size, 512)).data]
+        z = [F.randn(shape=(batch_size, 512)).data,
+             F.randn(shape=(batch_size, 512)).data]
 
         for i in range(len(z)):
             z[i] = F.div2(z[i], F.pow_scalar(F.add_scalar(F.mean(
@@ -53,13 +57,14 @@ def generate_data(args):
 
         # Load direction
         if not args.face_morph:
-            attr_delta = nn.NdArray.from_numpy_array(np.load(args.attr_delta_path))
-            attr_delta = F.reshape(attr_delta[0], (1,-1))
+            attr_delta = nn.NdArray.from_numpy_array(
+                np.load(args.attr_delta_path))
+            attr_delta = F.reshape(attr_delta[0], (1, -1))
             w_plus = [w[0]+args.coeff*attr_delta, w[1]]
             w_minus = [w[0]-args.coeff*attr_delta, w[1]]
         else:
-            w_plus = [w[0], w[0]] # content
-            w_minus = [w[1], w[1]] # style
+            w_plus = [w[0], w[0]]  # content
+            w_minus = [w[1], w[1]]  # style
 
         constant_bc = nn.parameter.get_parameter_or_create(
                         name="G_synthesis/4x4/Const/const",
@@ -68,9 +73,10 @@ def generate_data(args):
             constant_bc, (batch_size,) + constant_bc.shape[1:])
 
         gen_plus = synthesis(w_plus, constant_bc, noise_seed=100, mix_after=8)
-        gen_minus = synthesis(w_minus, constant_bc, noise_seed=100, mix_after=8)
+        gen_minus = synthesis(w_minus, constant_bc,
+                              noise_seed=100, mix_after=8)
         gen = synthesis(w, constant_bc, noise_seed=100, mix_after=8)
-        
+
         image_plus = convert_images_to_uint8(gen_plus, drange=[-1, 1])
         image_minus = convert_images_to_uint8(gen_minus, drange=[-1, 1])
         image = convert_images_to_uint8(gen, drange=[-1, 1])
@@ -81,10 +87,11 @@ def generate_data(args):
             imsave(f'{filepath}_y.png', image_minus[j], channel_first=True)
             imsave(f'{filepath}.png', image[j], channel_first=True)
             print(f"Genetated. Saved {filepath}")
-            
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--save-image-path', type=str, default='/home/krishna.wadhwani/gdown.pl/facemorph-dataset-1024jpeg',
+    parser.add_argument('--save-image-path', type=str, default='facemorph-dataset-1024jpeg',
                         help="name of directory to save output image")
     parser.add_argument('--attr-delta-path', type=str, default='stylegan2directions/age.npy',
                         help="Path to npy file of attribute variation in stylegan2 latent space")
@@ -97,22 +104,23 @@ def main():
                         help="Batch-size of 1 forward pass of the generator")
     parser.add_argument('--num-images', type=int, default=50000,
                         help="Number of images to generate.")
-    
+
     parser.add_argument('--coeff', type=float, default=0.5,
                         help="coefficient of propagation in stylegan2 latent space")
-    
+
     parser.add_argument('--context', type=str, default="cudnn",
-                    help="context. cudnn is recommended.")
-    
+                        help="context. cudnn is recommended.")
+
     args = parser.parse_args()
-    
+
     assert args.num_images > args.batch_size, 'Number of images must be more than the batch-size'
-    
+
     ctx = get_extension_context(args.context)
     nn.set_default_context(ctx)
     nn.set_auto_forward(True)
-    
+
     generate_data(args)
+
 
 if __name__ == '__main__':
     main()

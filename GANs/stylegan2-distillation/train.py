@@ -1,5 +1,5 @@
-import os 
-import sys 
+import os
+import sys
 
 pix2pixhd_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'pix2pixHD'))
@@ -44,9 +44,9 @@ class Trainer(object):
             ref_img = nn.Variable(shape=(self.bs, 6) + self.image_shape)
         else:
             ref_img = nn.Variable(shape=(self.bs, 3) + self.image_shape)
-            
+
         real = nn.Variable(shape=(self.bs, 3) + self.image_shape)
-        
+
         # generator
         # Note that only global generator would be used in the case of g_scales = 1.
         generator = LocalGenerator()
@@ -66,7 +66,7 @@ class Trainer(object):
             F.concatenate(real, ref_img, axis=1))
         d_fake_out, d_fake_feats = discriminator(
             F.concatenate(unlinked_fake, ref_img, axis=1))
-            
+
         g_gan, g_feat, d_real, d_fake = discriminator.get_loss(d_real_out, d_real_feats,
                                                                d_fake_out, d_fake_feats,
                                                                use_fm=True,
@@ -106,7 +106,6 @@ class Trainer(object):
                   "g_vgg": g_vgg, "d_real": d_real, "d_fake": d_fake}
         reporter = Reporter(self.comm, losses, self.train_conf.save_path)
 
-
         for epoch in range(self.train_conf.max_epochs):
             if epoch == self.fix_global_epoch:
                 g_solver.set_parameters(get_params_startswith(
@@ -117,17 +116,16 @@ class Trainer(object):
             g_solver.set_learning_rate(lr)
             d_solver.set_learning_rate(lr)
 
-            progress_iterator = trange(self.data_iter._size // self.bs //self.comm.n_procs,
+            progress_iterator = trange(self.data_iter._size // self.bs // self.comm.n_procs,
                                        desc="[epoch {}]".format(epoch), disable=self.comm.rank > 0)
 
             reporter.start(progress_iterator)
 
             for i in progress_iterator:
                 image_a, image_b = self.data_iter.next()
-                
+
                 real.d = image_a
                 ref_img.d = image_b
-
 
                 # create fake
                 fake.forward()
@@ -160,18 +158,20 @@ class Trainer(object):
 
                 # report iteration progress
                 reporter()
-                
 
             # report epoch progress
             show_images = {"GeneratedImage": fake.data.get_data("r").transpose((0, 2, 3, 1)),
                            "RealImageStyle": real.data.get_data("r").transpose((0, 2, 3, 1))}
-            
+
             if self.face_morph:
-                show_images['ReferenceImageContent'] = ref_img.data[:, :3].get_data("r").transpose((0, 2, 3, 1))
-                show_images['ReferenceImageStyle'] = ref_img.data[:, 3:].get_data("r").transpose((0, 2, 3, 1))
+                show_images['ReferenceImageContent'] = ref_img.data[:, :3].get_data(
+                    "r").transpose((0, 2, 3, 1))
+                show_images['ReferenceImageStyle'] = ref_img.data[:,
+                                                                  3:].get_data("r").transpose((0, 2, 3, 1))
             else:
-                show_images['RefernceImage'] = ref_img.data.get_data("r").transpose((0, 2, 3, 1))
-            
+                show_images['RefernceImage'] = ref_img.data.get_data(
+                    "r").transpose((0, 2, 3, 1))
+
             reporter.step(epoch, show_images)
 
             if (epoch % 5) == 0 and self.comm.rank == 0:
