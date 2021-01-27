@@ -18,7 +18,7 @@ from models import LocalGenerator
 
 
 class Trainer(object):
-    def __init__(self, tconf, mconf, comm, di):
+    def __init__(self, tconf, mconf, comm, di, face_morph=False):
         rng = np.random.RandomState(tconf.random_seed)
 
         self.train_conf = tconf
@@ -36,10 +36,17 @@ class Trainer(object):
 
         self.load_path = tconf.load_path
 
-    def train(self):
-        real = nn.Variable(shape=(self.bs, 3) + self.image_shape)
-        ref_img = nn.Variable(shape=(self.bs,3) + self.image_shape)
+        self.face_morph = face_morph
 
+    def train(self):
+
+        if self.face_morph:
+            ref_img = nn.Variable(shape=(self.bs, 6) + self.image_shape)
+        else:
+            ref_img = nn.Variable(shape=(self.bs, 3) + self.image_shape)
+            
+        real = nn.Variable(shape=(self.bs, 3) + self.image_shape)
+        
         # generator
         # Note that only global generator would be used in the case of g_scales = 1.
         generator = LocalGenerator()
@@ -54,16 +61,17 @@ class Trainer(object):
         # discriminator
         discriminator = PatchGAN(
             n_scales=self.model_conf.d_n_scales, use_spectral_normalization=False)
+
         d_real_out, d_real_feats = discriminator(
             F.concatenate(real, ref_img, axis=1))
         d_fake_out, d_fake_feats = discriminator(
             F.concatenate(unlinked_fake, ref_img, axis=1))
+            
         g_gan, g_feat, d_real, d_fake = discriminator.get_loss(d_real_out, d_real_feats,
                                                                d_fake_out, d_fake_feats,
                                                                use_fm=True,
                                                                fm_lambda=self.train_conf.lambda_feat,
                                                                gan_loss_type="ls")
-
         g_vgg = vgg16_perceptual_loss(
             real, unlinked_fake) * self.train_conf.lambda_perceptual
 
@@ -109,14 +117,14 @@ class Trainer(object):
             g_solver.set_learning_rate(lr)
             d_solver.set_learning_rate(lr)
 
-            progress_iterator = trange(self.data_iter._size // self.bs,
+            progress_iterator = trange(self.data_iter._size // self.bs //self.comm.n_procs,
                                        desc="[epoch {}]".format(epoch), disable=self.comm.rank > 0)
 
             reporter.start(progress_iterator)
 
             for i in progress_iterator:
                 image_a, image_b = self.data_iter.next()
-
+                
                 real.d = image_a
                 ref_img.d = image_b
 
@@ -152,12 +160,18 @@ class Trainer(object):
 
                 # report iteration progress
                 reporter()
+                
 
             # report epoch progress
-            show_images = {"ReferenceImage": ref_img.data.get_data("r").transpose((0, 2, 3, 1)),
-                           # "InputBoundary": bm.data.get_data("r").transpose((0, 2, 3, 1)),
-                           "GeneratedImage": fake.data.get_data("r").transpose((0, 2, 3, 1)),
-                           "RealImage": real.data.get_data("r").transpose((0, 2, 3, 1))}
+            show_images = {"GeneratedImage": fake.data.get_data("r").transpose((0, 2, 3, 1)),
+                           "RealImageStyle": real.data.get_data("r").transpose((0, 2, 3, 1))}
+            
+            if self.face_morph:
+                show_images['ReferenceImageContent'] = ref_img.data[:, :3].get_data("r").transpose((0, 2, 3, 1))
+                show_images['ReferenceImageStyle'] = ref_img.data[:, 3:].get_data("r").transpose((0, 2, 3, 1))
+            else:
+                show_images['RefernceImage'] = ref_img.data.get_data("r").transpose((0, 2, 3, 1))
+            
             reporter.step(epoch, show_images)
 
             if (epoch % 5) == 0 and self.comm.rank == 0:

@@ -15,7 +15,7 @@ class AttributeFacesData(DataSource):
         
         self.paths_f = sorted([os.path.join(data_root, img_path) for img_path in os.listdir(data_root) if img_exts[0] in img_path])
         self.paths_m = sorted([os.path.join(data_root, img_path) for img_path in os.listdir(data_root) if img_exts[1] in img_path])
-        
+                
         assert len(self.paths_f) > 0 and len(self.paths_m) > 0, 'No images were found in {}'.format(data_root)
         assert len(self.paths_f) == len(self.paths_m) , 'Unequal images of two domains found {} != {}'.format(len(self.paths_f), len(self.paths_m))
         
@@ -57,7 +57,7 @@ class AttributeFacesData(DataSource):
         
         return (image_f, image_m)
         
-def get_data_iterator(data_root, comm, batch_size, image_size, img_exts=['_f.jpg', '_m.jpg']):
+def get_data_iterator_attribute(data_root, comm, batch_size, image_size, img_exts=['o.png', 'y.png']):
     
     data_source = AttributeFacesData(data_root, image_size, img_exts)   
     

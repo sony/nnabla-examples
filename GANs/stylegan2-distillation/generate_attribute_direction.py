@@ -3,7 +3,8 @@ import os
 import sys
 import argparse
 
-stylegan2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+stylegan2_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(stylegan2_path)
 from stylegan2.generate import synthesis
 from stylegan2.networks import mapping_network
@@ -15,9 +16,11 @@ from tqdm import trange
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 import nnabla.functions as F
-from nnabla.utils.image_utils import imsave
 
-def generate_data(args):
+import functools
+from celeba_classifier import resnet_prediction
+
+def generate_attribute_direction(args, attribute_prediction_model):
 
     if not os.path.isfile(os.path.join(args.weights_path, 'gen_params.h5')):
         os.makedirs(args.weights_path, exist_ok=True)
@@ -28,15 +31,22 @@ def generate_data(args):
 
     nn.load_parameters(os.path.join(args.weights_path, 'gen_params.h5'))
     print('Loaded pretrained weights from tensorflow!')
-    
-    os.makedirs(args.save_image_path, exist_ok=True)
-    
+
+    nn.load_parameters(args.classifier_weight_path)
+    print(f'Loaded {args.classifier_weight_path}')
+        
     batches = [args.batch_size for _ in range(args.num_images//args.batch_size)]
     if args.num_images%args.batch_size != 0:
         batches.append(args.num_images - (args.num_images//args.batch_size)*args.batch_size)
         
-    for idx, batch_size in enumerate(batches):
-        z = [F.randn(shape=(batch_size, 512)).data, F.randn(shape=(batch_size, 512)).data]
+    w_plus, w_minus = 0.0, 0.0
+    w_plus_count, w_minus_count = 0.0, 0.0
+    pbar = trange(len(batches))
+    for i in pbar:
+        batch_size = batches[i]
+        z = [F.randn(shape=(batch_size, 512)).data]
+        
+        z = [z[0], z[0]]
 
         for i in range(len(z)):
             z[i] = F.div2(z[i], F.pow_scalar(F.add_scalar(F.mean(
@@ -51,55 +61,41 @@ def generate_data(args):
             name="dlatent_avg", shape=(1, 512))
         w = [lerp(dlatent_avg, _, 0.7) for _ in w]
 
-        # Load direction
-        if not args.face_morph:
-            attr_delta = nn.NdArray.from_numpy_array(np.load(args.attr_delta_path))
-            attr_delta = F.reshape(attr_delta[0], (1,-1))
-            w_plus = [w[0]+args.coeff*attr_delta, w[1]]
-            w_minus = [w[0]-args.coeff*attr_delta, w[1]]
-        else:
-            w_plus = [w[0], w[0]] # content
-            w_minus = [w[1], w[1]] # style
-
         constant_bc = nn.parameter.get_parameter_or_create(
                         name="G_synthesis/4x4/Const/const",
                         shape=(1, 512, 4, 4))
         constant_bc = F.broadcast(
             constant_bc, (batch_size,) + constant_bc.shape[1:])
 
-        gen_plus = synthesis(w_plus, constant_bc, noise_seed=100, mix_after=8)
-        gen_minus = synthesis(w_minus, constant_bc, noise_seed=100, mix_after=8)
-        gen = synthesis(w, constant_bc, noise_seed=100, mix_after=8)
+        gen = synthesis(w, constant_bc, noise_seed=100, mix_after=7)
         
-        image_plus = convert_images_to_uint8(gen_plus, drange=[-1, 1])
-        image_minus = convert_images_to_uint8(gen_minus, drange=[-1, 1])
-        image = convert_images_to_uint8(gen, drange=[-1, 1])
-
-        for j in range(batch_size):
-            filepath = os.path.join(args.save_image_path, f'image_{idx*batch_size+j}')
-            imsave(f'{filepath}_o.png', image_plus[j], channel_first=True)
-            imsave(f'{filepath}_y.png', image_minus[j], channel_first=True)
-            imsave(f'{filepath}.png', image[j], channel_first=True)
-            print(f"Genetated. Saved {filepath}")
+        classifier_score = F.softmax(attribute_prediction_model(gen, True))
+        confidence, class_pred = F.max(classifier_score, axis=1, with_index=True, keepdims=True)
+        
+        w_plus += np.sum(w[0].data*(class_pred.data==0)*(confidence.data>0.65), axis=0, keepdims=True)
+        w_minus += np.sum(w[0].data*(class_pred.data==1)*(confidence.data>0.65), axis=0, keepdims=True)        
+        
+        w_plus_count += np.sum((class_pred.data==0)*(confidence.data>0.65))
+        w_minus_count += np.sum((class_pred.data==1)*(confidence.data>0.65))        
+                
+        pbar.set_description(f'{w_plus_count} {w_minus_count}')
+                    
+    # save attribute direction
+    attribute_variation_direction = (w_plus/w_plus_count) - (w_minus/w_minus_count)
+    print(w_plus_count, w_minus_count)
+    np.save(f'{args.classifier_weight_path.split("/")[0]}/direction.npy', attribute_variation_direction)
             
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--save-image-path', type=str, default='/home/krishna.wadhwani/gdown.pl/facemorph-dataset-1024jpeg',
-                        help="name of directory to save output image")
-    parser.add_argument('--attr-delta-path', type=str, default='stylegan2directions/age.npy',
-                        help="Path to npy file of attribute variation in stylegan2 latent space")
+    parser.add_argument('--classifier-weight-path', type=str, default='bangs/params_001300.h5',
+                        help="Path to pretrained classifier parameters")
     parser.add_argument('--weights-path', type=str, default='./',
                         help="Path to store pretrained stylegan2 parameters")
-    parser.add_argument('--face-morph', '--style-mix', action='store_true', default=False,
-                        help='Set this flag to generate style mixing data')
 
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--batch-size', type=int, default=4,
                         help="Batch-size of 1 forward pass of the generator")
     parser.add_argument('--num-images', type=int, default=50000,
-                        help="Number of images to generate.")
-    
-    parser.add_argument('--coeff', type=float, default=0.5,
-                        help="coefficient of propagation in stylegan2 latent space")
+                        help="Number of images to use to generate the direcion.")
     
     parser.add_argument('--context', type=str, default="cudnn",
                     help="context. cudnn is recommended.")
@@ -112,7 +108,10 @@ def main():
     nn.set_default_context(ctx)
     nn.set_auto_forward(True)
     
-    generate_data(args)
+    attribute_prediction_model = functools.partial(
+        resnet_prediction, nmaps=64, act=F.relu)
+    
+    generate_attribute_direction(args, attribute_prediction_model)
 
 if __name__ == '__main__':
     main()
