@@ -44,7 +44,7 @@ def make_parser():
                         default='results/',
                         help='Path to the save parameters and generation results')
     parser.add_argument('--device-id', type=int,
-                        default=1,
+                        default=0,
                         help='Device ID of the GPU for training')
     parser.add_argument('--face-morph', '--style-mix', action='store_true',
                         default=False,
