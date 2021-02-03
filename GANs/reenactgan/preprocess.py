@@ -18,7 +18,6 @@ import numpy as np
 
 from tqdm import tqdm
 from utils import get_points_list, get_bod_map, get_bod_img
-from data import CelebVNonRefDatahandler
 from nnabla.utils.image_utils import imread, imsave, imresize
 
 
@@ -143,12 +142,10 @@ def get_croped_image(annotation, data_dir, margin=np.random.uniform(0, 0.15)):
     return img_name, img, y_list, x_list
 
 
-class Preprocesser(CelebVNonRefDatahandler):
-    """docstring for Preprocesser"""
+class Preprocessor(object):
+    """docstring for Preprocessor"""
 
     def __init__(self, imgs_root_path, resize_size, line_thickness, gaussian_kernel, gaussian_sigma):
-        super(Preprocesser, self).__init__(resize_size,
-                                           line_thickness, gaussian_kernel, gaussian_sigma)
         self.imgs_root_path = imgs_root_path
         self.resize_size = resize_size
         self.line_thickness = line_thickness
@@ -168,7 +165,6 @@ class Preprocesser(CelebVNonRefDatahandler):
         return img  # (3, 256, 256)
 
     def get_ant_and_size(self, imgs_root_path, img_dirname="Image", txt_dirname="", test=False):
-        # override
         print('loading: {}'.format(imgs_root_path))
         # get the annotation txt file path
         txt_path = sorted(glob.glob(os.path.join(
@@ -244,7 +240,7 @@ def preprocess_WFLW(args):
         annotations = f.readlines()
         annotations = [_.split(" ") for _ in annotations]
 
-    prep = Preprocesser(imgs_root_path, resize_size,
+    prep = Preprocessor(imgs_root_path, resize_size,
                         line_thickness, gaussian_kernel, gaussian_sigma)
 
     tmp_hm_dict = dict()
@@ -316,7 +312,7 @@ def preprocess_celebV(args):
         if not os.path.exists(imgs_root_path):
             raise ValueError(f"specified path {imgs_root_path} not found.")
 
-        prep = Preprocesser(imgs_root_path, resize_size,
+        prep = Preprocessor(imgs_root_path, resize_size,
                             line_thickness, gaussian_kernel, gaussian_sigma)
         annotations, _ = prep.get_ant_and_size(imgs_root_path)
 
