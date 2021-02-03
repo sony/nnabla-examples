@@ -16,21 +16,29 @@ For training the global generator (trains on 512x512 images):
 
 For single gpu: 
 
-`python main.py --data-root [path to the dataset]`
+```
+python main.py --data-root [path to the dataset]
+```
 
 For multiple gpus (say 4):
 
-`mpirun -N 4 python main.py --data-root`
+```
+mpirun -N 4 python main.py --data-root
+```
 
 After training the global generator, local generator can be trained as: 
 
 For single gpu: 
 
-`python main.py --fix-global-epoch 20 --d-n-scales 3 --g-n-scales 2 --save-path [path to store ] --load-path [path to trained global generator parameters (h5 file)]`
+```
+python main.py --fix-global-epoch 20 --d-n-scales 3 --g-n-scales 2 --save-path [path to store ] --load-path [path to trained global generator parameters (h5 file)]
+```
 
 For multiple gpus (say 4):
 
-`mpirun -N 4 python main.py --fix-global-epoch 20 --d-n-scales 3 --g-n-scales 2 --save-path --load-path [path to trained global generator parameters (h5 file)]`
+```
+mpirun -N 4 python main.py --fix-global-epoch 20 --d-n-scales 3 --g-n-scales 2 --save-path --load-path [path to trained global generator parameters (h5 file)]
+```
 
 ## For attributes other than those for which precomputed direction is not available
 
