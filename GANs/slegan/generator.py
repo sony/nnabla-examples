@@ -24,24 +24,30 @@ def GLU(h):
     nc = nc // 2
     return h[:, :nc] * F.sigmoid(h[:, nc:])
 
+
 def Upsample(h, nmap_out, scope_name, train=True, scale=2):
     with nn.parameter_scope(scope_name):
-        sn_w = lambda w: PF.spectral_norm(w, dim=0)
+        def sn_w(w): return PF.spectral_norm(w, dim=0)
         h = F.interpolate(h, scale=(scale, scale), mode="nearest")
-        h = PF.convolution(h, nmap_out*2, (3, 3), pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv1")
+        h = PF.convolution(h, nmap_out*2, (3, 3), pad=(1, 1),
+                           apply_w=sn_w, with_bias=False, name="conv1")
         h = PF.batch_normalization(h, batch_stat=train)
         h = GLU(h)
     return h
 
+
 def SLE(f_large, f_small, scope_name):
     with nn.parameter_scope(scope_name):
-        sn_w = lambda w: PF.spectral_norm(w, dim=0)
+        def sn_w(w): return PF.spectral_norm(w, dim=0)
         ada_pool_size = f_small.shape[2] // 4
-        h = F.average_pooling(f_small, (ada_pool_size, ada_pool_size), stride=(ada_pool_size, ada_pool_size))
-        h = PF.convolution(h, f_large.shape[1], (4, 4), apply_w=sn_w, with_bias=False, name="conv1")
+        h = F.average_pooling(f_small, (ada_pool_size, ada_pool_size), stride=(
+            ada_pool_size, ada_pool_size))
+        h = PF.convolution(
+            h, f_large.shape[1], (4, 4), apply_w=sn_w, with_bias=False, name="conv1")
         # h = F.leaky_relu(h, 0.1, inplace=True)
         h = h * F.sigmoid(h)
-        h = PF.convolution(h, f_large.shape[1], (1, 1), apply_w=sn_w, with_bias=False, name="conv2")
+        h = PF.convolution(
+            h, f_large.shape[1], (1, 1), apply_w=sn_w, with_bias=False, name="conv2")
         h = F.sigmoid(h)
         h = f_large * F.broadcast(h, f_large.shape)
     return h
@@ -50,15 +56,18 @@ def SLE(f_large, f_small, scope_name):
 def Generator(z, scope_name="Generator", train=True, img_size=1024, ngf=64):
     with nn.parameter_scope(scope_name):
         # Get number of channels
-        nfc_multi = {4:16, 8:8, 16:4, 32:2, 64:2, 128:1, 256:0.5, 512:0.25, 1024:0.125}
+        nfc_multi = {4: 16, 8: 8, 16: 4, 32: 2, 64: 2,
+                     128: 1, 256: 0.5, 512: 0.25, 1024: 0.125}
         nfc = {}
         for k, v in nfc_multi.items():
             nfc[k] = int(v*ngf)
-        sn_w = lambda w: PF.spectral_norm(w, dim=0)
+
+        def sn_w(w): return PF.spectral_norm(w, dim=0)
 
         # InitLayer: ConvTranspose + BN + GLU -> 4x4
         with nn.parameter_scope("init"):
-            h = PF.deconvolution(z, 2*16*ngf, (4, 4), apply_w=sn_w, with_bias=False, name="deconv0")
+            h = PF.deconvolution(z, 2*16*ngf, (4, 4),
+                                 apply_w=sn_w, with_bias=False, name="deconv0")
             h = PF.batch_normalization(h, batch_stat=train, name="bn0")
             h = GLU(h)
 
@@ -83,7 +92,8 @@ def Generator(z, scope_name="Generator", train=True, img_size=1024, ngf=64):
             f_last = f_1024
 
         # Conv + Tanh -> image
-        img = F.tanh(PF.convolution(f_last, 3, (3, 3), pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv_last"))
-        img_small = F.tanh(PF.convolution(f_128, 3, (1, 1), apply_w=sn_w, with_bias=False, name="conv_last_small"))
+        img = F.tanh(PF.convolution(f_last, 3, (3, 3), pad=(1, 1),
+                                    apply_w=sn_w, with_bias=False, name="conv_last"))
+        img_small = F.tanh(PF.convolution(
+            f_128, 3, (1, 1), apply_w=sn_w, with_bias=False, name="conv_last_small"))
     return [img, img_small]
-

@@ -52,7 +52,8 @@ def get_args(batch_size=8, image_size=256, max_iter=100000):
                         help="Number of data to be used. When -1 is set all data is used.")
     parser.add_argument("--lr", type=float, default=2e-4,
                         help="Learning rate")
-    parser.add_argument("--aug-list", nargs="+", default=["lrflip", "translation", "color"])
+    parser.add_argument("--aug-list", nargs="+",
+                        default=["lrflip", "translation", "color"])
 
     args = parser.parse_args()
 

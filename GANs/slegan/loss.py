@@ -39,7 +39,7 @@ def loss_dis_real(logits, rec_imgs, part, img):
     img_256 = F.interpolate(img, output_size=(256, 256))
 
     loss = 0.0
-    
+
     # Hinge loss (following the official implementation)
     loss += F.mean(F.relu(0.2*F.rand(shape=logits.shape) + 0.8 - logits))
 
@@ -50,11 +50,10 @@ def loss_dis_real(logits, rec_imgs, part, img):
     loss += reconstruction_loss(rec_imgs[1], img_128)
 
     # Reconstruction loss for rec_img_part (reconstructed from a part of 16x16 features of the original image)
-    img_half = F.where(F.greater_scalar(part[0], 0.5), img_256[:,:,:128,:], img_256[:,:,128:,:])
-    img_part = F.where(F.greater_scalar(part[1], 0.5), img_half[:,:,:,:128], img_half[:,:,:,128:])
+    img_half = F.where(F.greater_scalar(
+        part[0], 0.5), img_256[:, :, :128, :], img_256[:, :, 128:, :])
+    img_part = F.where(F.greater_scalar(
+        part[1], 0.5), img_half[:, :, :, :128], img_half[:, :, :, 128:])
     loss += reconstruction_loss(rec_imgs[2], img_part)
 
     return loss
-
-
-

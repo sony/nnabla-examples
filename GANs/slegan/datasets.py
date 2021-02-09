@@ -23,8 +23,10 @@ import numpy as np
 
 
 def data_iterator(img_path, batch_size, imsize=(256, 256), num_samples=100, shuffle=True, rng=None):
-    di = data_iterator_fewshot(img_path, batch_size, imsize=imsize, num_samples=num_samples, shuffle=shuffle, rng=rng)
+    di = data_iterator_fewshot(img_path, batch_size, imsize=imsize,
+                               num_samples=num_samples, shuffle=shuffle, rng=rng)
     return di
+
 
 def data_iterator_fewshot(img_path, batch_size, imsize=(256, 256), num_samples=1000, shuffle=True, rng=None):
     imgs = glob.glob("{}/*.jpg".format(img_path))
@@ -40,5 +42,3 @@ def data_iterator_fewshot(img_path, batch_size, imsize=(256, 256), num_samples=1
         img = img / 255. * 2. - 1.
         return img, i
     return data_iterator_simple(load_func, num_samples, batch_size, shuffle=shuffle, rng=rng, with_file_cache=False, with_memory_cache=False)
-
-
