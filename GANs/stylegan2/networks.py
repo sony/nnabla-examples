@@ -17,7 +17,7 @@ import numpy as np
 import nnabla as nn
 import nnabla.functions as F
 
-from ops import upsample_conv_2d, weight_init_fn
+from .ops import upsample_conv_2d, weight_init_fn
 
 
 def mapping_network(noise, outmaps=512, num_layers=8, net_scope='G_mapping/Dense'):

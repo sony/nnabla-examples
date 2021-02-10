@@ -19,8 +19,8 @@ import numpy as np
 import nnabla as nn
 import nnabla.functions as F
 
-from ops import upsample_2d, lerp, convert_images_to_uint8
-from networks import mapping_network, conv_block
+from .ops import upsample_2d, lerp, convert_images_to_uint8
+from .networks import mapping_network, conv_block
 from nnabla.ext_utils import get_extension_context
 from nnabla.utils.image_utils import imsave
 
