@@ -1,0 +1,63 @@
+model:
+  in_channels: 1
+  num_hidden: 64
+  num_res_hidden: 32
+  num_res_layers: 2
+  embedding_dim: 64
+  num_embeddings: 10
+  commitment_cost: 0.25
+  saved_models_dir: tmp.monitor_mnist/trained_models_mnist/
+  checkpoint: tmp.monitor_mnist/trained_models_mnist/epoch_29/
+  rng: 313
+  decay: 0.99
+
+train:
+  batch_size: 64
+  num_training_updates: 25000 
+  learning_rate: 1.5e-4
+  weight_decay: 1.0e-5
+  num_epochs: 30
+  save_param_step_interval: 5
+  logger_step_interval: 1000
+  learning_rate_decay_epochs: []
+  learning_rate_decay_factor: 1
+  solver: adam
+
+val:
+  batch_size: 32
+  interval: 100
+
+monitor:
+  path: tmp.monitor_mnist/
+  train_loss: Training-loss-mnist 
+  train_recon: Training-reconstructions-mnist
+  val_loss: Validation-loss-mnist 
+  val_recon: Validation-reconstructions-mnist
+  prior_loss: Training-loss-pixelcnn-mnist
+  prior_recon: Latent-reconstruction-pixelcnn-mnist
+
+dataset:
+  name: mnist
+  train_size: 50000
+  val_size: 10000
+  with_memory_cache: False
+  with_file_cache: False
+  shuffle: True
+
+prior:
+  num_latent_vectors: 10
+  in_channels: 32
+  out_channels: 10
+  num_layers: 12
+  num_features: 32
+  num_classes: 10
+  latent_shape: [7,7] # Height and Width of encoder output. Hard-coded for each dataset here.
+  conditional: True
+  checkpoint: tmp.monitor_mnist/trained_models_mnist/epoch_10
+
+  train:
+    num_epochs: 15
+    lr: 3.0e-4
+
+extension_module: cudnn
+device_id: '0'

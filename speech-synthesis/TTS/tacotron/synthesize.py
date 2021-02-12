@@ -23,8 +23,12 @@ from scipy.io import wavfile
 
 from hparams import hparams as hp
 from model.model import Tacotron
-from utils.audio import synthesize_from_spec
-from utils.text import text_normalize
+
+import sys
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
+
+from neu.tts.audio import synthesize_from_spec
+from neu.tts.text import text_normalize
 
 
 def synthesize(args):

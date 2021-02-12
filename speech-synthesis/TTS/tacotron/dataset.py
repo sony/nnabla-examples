@@ -14,6 +14,8 @@
 
 import os
 from pathlib import Path
+import sys
+sys.path.append(str(Path().cwd().parents[2] / 'utils'))
 
 import librosa as lr
 from librosa.filters import mel as librosa_mel_fn
@@ -21,8 +23,8 @@ from nnabla.utils.data_source import DataSource
 import numpy as np
 from tqdm import tqdm
 
-from utils import audio
-from utils.text import text_normalize
+from neu.tts import audio
+from neu.tts.text import text_normalize
 
 
 class LJSpeechDataSource(DataSource):

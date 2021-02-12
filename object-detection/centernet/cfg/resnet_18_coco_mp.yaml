@@ -1,0 +1,36 @@
+# Dataset
+dataset:
+  dataset: coco
+
+# Model
+model:
+  # Architecture from (resnet, dlav0)
+  arch: resnet
+  # Num. of layers from [18, 34]
+  num_layers: 18
+  # Directory contatining pretrained model directory. Use the pretrained backbone weights if specified.
+  pretrained_model_dir: weights/backbone/
+
+# Basic config
+train:
+  num_epochs: 140
+  batch_size: 32  # batch size per GPU
+
+# Learning rate
+learning_rate_config:
+  # scheduler_type: EpochStepLearningRateScheduler
+  scheduler_type: EpochCosineLearningRateScheduler
+  base_lr: 5e-4
+  warmup_epochs: 5
+  # epochs is automatically filled with train.num_epochs
+  epochs:
+  # Settings for EpochStepLearningRateScheduler
+  lr_steps: [90, 120]
+  decay_rate: 0.1
+
+# Mixed precision training config
+mixed_precision:
+  mixed_precision: true
+  channel_last: true
+  loss_scaling: 4.0
+  use_dynamic_loss_scaling: false

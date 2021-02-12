@@ -1,0 +1,61 @@
+model:
+  in_channels: 3
+  num_hidden: 256
+  num_res_layers: 2
+  embedding_dim: 256
+  num_embeddings: 128
+  commitment_cost: 1
+  saved_models_dir: tmp.monitor_cifar10/trained_models_cifar10/
+  checkpoint: tmp.monitor_cifar10/trained_models_cifar10/epoch_30
+  rng: 313
+  decay: 0.99
+
+train:
+  batch_size: 20
+  num_training_updates: 25000 
+  learning_rate: 1.0e-4
+  weight_decay: 0
+  num_epochs: 40
+  save_param_step_interval: 2
+  logger_step_interval: 100
+  learning_rate_decay_epochs: []
+  learning_rate_decay_factor: 1
+  solver: adam
+
+val:
+  batch_size: 32
+  interval: 1
+
+monitor:
+  path: tmp.monitor_cifar10/
+  train_loss: Training-loss-cifar10 
+  train_recon: Training-reconstructions-cifar10
+  val_loss: Validation-loss-cifar10 
+  val_recon: Validation-reconstructions-cifar10
+  prior_recon: Latent-reconstruction-pixelcnn-cifar10
+
+dataset:
+  name: cifar10
+  train_size: 50000
+  val_size: 10000
+  with_memory_cache: False
+  with_file_cache: False
+  shuffle: True
+
+prior:
+  num_latent_vectors: 128
+  in_channels: 256
+  out_channels: 128
+  num_layers: 12
+  num_features: 128
+  num_classes: 10
+  latent_shape: [8,8] # Height and Width of encoder output. Hard-coded for each dataset here.
+  conditional: True
+  checkpoint: tmp.monitor_cifar10/trained_models_cifar10/epoch_48
+
+  train:
+    num_epochs: 50
+    lr: 3.0e-4
+
+extension_module: cudnn
+device_id: '0'

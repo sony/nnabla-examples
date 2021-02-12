@@ -32,11 +32,11 @@ def int_div_ceil(a, b):
 
 class TrainPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list, nvjpeg_padding,
-                 prefetch_queue=3, seed=1, num_shards=1, channel_last=True,
+                 prefetch_queue=3, seed=1, device_id=0, num_shards=1, channel_last=True,
                  spatial_size=(224, 224), dtype="half",
                  mean=_pixel_mean, std=_pixel_std, pad_output=True):
         super(TrainPipeline, self).__init__(
-            batch_size, num_threads, shard_id, seed=seed, prefetch_queue_depth=prefetch_queue)
+            batch_size, num_threads, device_id, seed=seed, prefetch_queue_depth=prefetch_queue)
         self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards, shard_id=shard_id)
         self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
@@ -65,11 +65,11 @@ class TrainPipeline(Pipeline):
 class ValPipeline(Pipeline):
     def __init__(
             self, batch_size, num_threads, shard_id, image_dir, file_list,
-            nvjpeg_padding, seed=1, num_shards=1, channel_last=True,
+            nvjpeg_padding, seed=1, device_id=0, num_shards=1, channel_last=True,
             spatial_size=(224, 224), dtype='half',
             mean=_pixel_mean, std=_pixel_std, pad_output=True):
         super(ValPipeline, self).__init__(
-            batch_size, num_threads, shard_id, seed=seed)
+            batch_size, num_threads, device_id, seed=seed)
         self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
                                     random_shuffle=False, num_shards=num_shards, shard_id=shard_id)
         self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
@@ -113,6 +113,7 @@ def get_train_data_iterator(args, comm, channels, spatial_size=(224, 224), norm_
                                args.train_dir,
                                args.train_list, args.dali_nvjpeg_memory_padding,
                                seed=comm.rank + 1,
+                               device_id=int(comm.ctx.device_id),
                                num_shards=comm.n_procs,
                                channel_last=args.channel_last,
                                spatial_size=spatial_size,
@@ -135,6 +136,7 @@ def get_val_data_iterator(args, comm, channels, spatial_size=(224, 224), norm_co
     val_pipe = ValPipeline(args.batch_size, args.dali_num_threads, comm.rank,
                            args.val_dir, args.val_list, args.dali_nvjpeg_memory_padding,
                            seed=comm.rank + 1,
+                           device_id=int(comm.ctx.device_id),
                            num_shards=comm.n_procs,
                            channel_last=args.channel_last,
                            spatial_size=spatial_size,

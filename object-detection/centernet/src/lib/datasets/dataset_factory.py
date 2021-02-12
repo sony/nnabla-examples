@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2020-2021 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-import sys
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from nnabla.ext_utils import get_extension_context
+from datasets.dataset.coco_config import COCO
+from datasets.dataset.pascal_config import PascalVOC
 
-sys.path.append(str(Path(__file__).parents[4] / 'utils'))
-from neu.comm import CommunicatorWrapper
+data_source = {
+    'coco': COCO,
+    'pascal': PascalVOC,
+}
+
+
+def get_data_source(dataset):
+    source = data_source[dataset]
+    return source
