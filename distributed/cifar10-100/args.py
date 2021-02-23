@@ -52,4 +52,6 @@ def get_args(monitor_path='tmp.monitor', max_iter=234300, model_save_path='tmp.m
                         help="Use all_reduce_callback API instead of all_reduce")
     parser.add_argument('--sync-bn', action='store_true',
                         help="Use Synchronized batch normalization.")
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help='path to checkpoint file')
     return parser.parse_args()

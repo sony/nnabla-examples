@@ -29,6 +29,7 @@ import nnabla.solvers as S
 import numpy as np
 import functools
 from models import (resnet23_prediction, categorical_error, loss_function)
+from _checkpoint_nnp_util import save_checkpoint, load_checkpoint
 
 
 def backward_and_all_reduce(loss, comm, with_all_reduce_callback=False):
@@ -123,6 +124,12 @@ def train():
     warmup_slope = base_lr * (n_devices - 1) / warmup_iter
     solver.set_learning_rate(base_lr)
 
+    ## load checkpoint if file exist.
+    start_point = 0
+    if args.checkpoint is not None:
+        # load weights and solver state info from specified checkpoint file.
+        start_point = load_checkpoint(args.checkpoint, solver)
+
     # Create monitor
     from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
     monitor = Monitor(args.monitor_path)
@@ -158,7 +165,8 @@ def train():
 
     # Training-loop
     ve = nn.Variable()
-    for i in range(int(args.max_iter / n_devices)):
+    model_save_interval = 0
+    for i in range(start_point, int(args.max_iter / n_devices)):
         # Validation
         if i % int(n_train_samples / args.batch_size / n_devices) == 0:
             ve_local = 0.
@@ -186,9 +194,12 @@ def train():
             if mpi_rank == 0:
                 monitor_verr.add(i * n_devices, ve.d.copy())
                 monitor_vtime.add(i * n_devices)
-                if i % int(args.model_save_interval / n_devices) == 0:
+                if model_save_interval <= 0:
                     nn.save_parameters(os.path.join(
                         args.model_save_path, 'params_%06d.h5' % i))
+                    save_checkpoint(args.model_save_path, i, solver)
+                    model_save_interval += int(args.model_save_interval / n_devices)
+        model_save_interval -= 1
 
         # Forward/Zerograd
         image, label = tdata.next()
@@ -220,6 +231,7 @@ def train():
         nn.save_parameters(os.path.join(
             args.model_save_path,
             'params_%06d.h5' % (args.max_iter / n_devices)))
+    comm.barrier()
 
 
 if __name__ == '__main__':
