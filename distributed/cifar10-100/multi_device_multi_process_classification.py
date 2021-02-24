@@ -14,6 +14,8 @@
 
 
 import os
+import glob
+import re
 import time
 from args import get_args
 
@@ -29,7 +31,7 @@ import nnabla.solvers as S
 import numpy as np
 import functools
 from models import (resnet23_prediction, categorical_error, loss_function)
-from _checkpoint_nnp_util import save_checkpoint, load_checkpoint
+from checkpoint import save_checkpoint, load_checkpoint
 
 
 def backward_and_all_reduce(loss, comm, with_all_reduce_callback=False):
@@ -124,11 +126,16 @@ def train():
     warmup_slope = base_lr * (n_devices - 1) / warmup_iter
     solver.set_learning_rate(base_lr)
 
-    ## load checkpoint if file exist.
+    # load checkpoint if file exist.
     start_point = 0
-    if args.checkpoint is not None:
-        # load weights and solver state info from specified checkpoint file.
-        start_point = load_checkpoint(args.checkpoint, solver)
+    if args.use_latest_checkpoint:
+        files = glob.glob(f'{args.model_save_path}/checkpoint_*.json')
+        if len(files) != 0:
+            index = max(
+                [int(n) for n in [re.sub(r'.*checkpoint_(\d+).json', '\\1', f) for f in files]])
+            # load weights and solver state info from specified checkpoint file.
+            start_point = load_checkpoint(
+                f'{args.model_save_path}/checkpoint_{index}.json', solver)
 
     # Create monitor
     from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
@@ -198,7 +205,8 @@ def train():
                     nn.save_parameters(os.path.join(
                         args.model_save_path, 'params_%06d.h5' % i))
                     save_checkpoint(args.model_save_path, i, solver)
-                    model_save_interval += int(args.model_save_interval / n_devices)
+                    model_save_interval += int(
+                        args.model_save_interval / n_devices)
         model_save_interval -= 1
 
         # Forward/Zerograd
