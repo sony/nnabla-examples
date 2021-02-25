@@ -38,7 +38,8 @@ def read_video(name, frame_shape):
              [imread(os.path.join(name, frames[idx])) / 255. for idx in range(num_frames)])
 
     elif name.lower().endswith('.gif') or name.lower().endswith('.mp4') or name.lower().endswith('.mov'):
-        video = np.array(mimread(name, memtest=False))
+        video = np.array(mimread(name, memtest=False,
+                                 size=tuple(frame_shape[:2])))
         if video.shape[-1] == 4:
             video = video[..., :3]
         video_array = video / 255.
