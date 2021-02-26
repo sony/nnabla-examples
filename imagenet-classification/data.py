@@ -45,14 +45,13 @@ class TrainPipeline(Pipeline):
 
         self.rrc = ops.RandomResizedCrop(device="gpu", size=spatial_size)
         self.cmnp = ops.CropMirrorNormalize(device="gpu",
-                                            output_dtype=types.FLOAT16 if dtype == "half" else types.FLOAT,
+                                            dtype=types.FLOAT16 if dtype == "half" else types.FLOAT,
                                             output_layout=types.NHWC if channel_last else types.NCHW,
                                             crop=spatial_size,
-                                            image_type=types.RGB,
                                             mean=mean,
                                             std=std,
                                             pad_output=pad_output)
-        self.coin = ops.CoinFlip(probability=0.5)
+        self.coin = ops.random.CoinFlip(probability=0.5)
 
     def define_graph(self):
         jpegs, labels = self.input(name="Reader")
@@ -79,10 +78,9 @@ class ValPipeline(Pipeline):
         resize_shorter = A.resize_by_ratio(spatial_size[0])
         self.res = ops.Resize(device="gpu", resize_shorter=resize_shorter)
         self.cmnp = ops.CropMirrorNormalize(device="gpu",
-                                            output_dtype=types.FLOAT16 if dtype == "half" else types.FLOAT,
+                                            dtype=types.FLOAT16 if dtype == "half" else types.FLOAT,
                                             output_layout=types.NHWC if channel_last else types.NCHW,
                                             crop=spatial_size,
-                                            image_type=types.RGB,
                                             mean=mean,
                                             std=std,
                                             pad_output=pad_output)
