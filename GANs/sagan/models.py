@@ -34,82 +34,19 @@ from functools import reduce
 
 def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
     w_shape = w.shape
-    W_sn = get_parameter_or_create(
-        "W_sn", w_shape, ConstantInitializer(0), False)
-    if test:
-        return W_sn
-
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
-    w = F.reshape(w, [d0, d1], inplace=False)
     u0 = get_parameter_or_create(
         "singular-vector", [d0], NormalInitializer(), False)
-    u = F.reshape(u0, [1, d0])
-    # Power method
-    for _ in range(itr):
-        # v
-        v = F.affine(u, w)
-        v = F.div2(v, F.pow_scalar(
-            F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
-        v = F.reshape(v, [d1, 1])
-        # u
-        u = F.affine(w, v)
-        u = F.div2(u, F.pow_scalar(
-            F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
-        u = F.reshape(u, [1, d0])
-    # Iterate
-    u = F.identity(u, outputs=[u0.data])
-    u.persistent = True
-    # No grad
-    u.need_grad = False
-    v.need_grad = False
-    # Spectral normalization
-    wv = F.affine(w, v)
-    sigma = F.affine(u, wv)
-    w_sn = F.div2(w, sigma)
-    w_sn = F.reshape(w_sn, w_shape)
-    w_sn = F.identity(w_sn, outputs=[W_sn.data])
-    w_sn.persistent = True
-    return w_sn
+    return F.spectral_norm(w, u0, dim=0, itr=itr, eps=eps, test=test)
 
 
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=False):
-    W_sn = get_parameter_or_create(
-        "W_sn", w.shape, ConstantInitializer(0), False)
-    if test:
-        return W_sn
-
     d0 = np.prod(w.shape[0:-1])  # In
     d1 = np.prod(w.shape[-1])   # Out
     u0 = get_parameter_or_create(
         "singular-vector", [d1], NormalInitializer(), False)
-    u = F.reshape(u0, [d1, 1])
-    # Power method
-    for _ in range(itr):
-        # v
-        v = F.affine(w, u)
-        v = F.div2(v, F.pow_scalar(
-            F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
-        v = F.reshape(v, [1, d0])
-        # u
-        u = F.affine(v, w)
-        u = F.div2(u, F.pow_scalar(
-            F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
-        u = F.reshape(u, [d1, 1])
-    # Iterate
-    u = F.identity(u, outputs=[u0.data])
-    u.persistent = True
-    # No grad
-    u.need_grad = False
-    v.need_grad = False
-    # Spectral normalization
-    wv = F.affine(v, w)
-    sigma = F.affine(wv, u)
-    sigma = F.broadcast(
-        F.reshape(sigma, [1 for _ in range(len(w.shape))]), w.shape)
-    w_sn = F.div2(w, sigma, outputs=[W_sn.data])
-    w_sn.persistent = True
-    return w_sn
+    return F.spectral_norm(w, u0, dim=len(w.shape)-1, itr=itr, eps=eps, test=test)
 
 
 @parametric_function_api("sn_conv")
