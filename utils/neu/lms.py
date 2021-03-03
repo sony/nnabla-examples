@@ -25,7 +25,7 @@ def sechdule_scope(scheduler):
     scheduler.update_post_hook()
 
 
-def lms_scheduler(ctx, use_lms, gpu_memory_size=8e9, window_length=12e9):
+def lms_scheduler(ctx, use_lms, gpu_memory_size=8 << 30, window_length=12 << 30):
     _check_list = [x.split(":")[0] for x in ctx.backend]
     if "cudnn" not in _check_list and "cuda" not in _check_list:
         logger.warn(
@@ -33,8 +33,8 @@ def lms_scheduler(ctx, use_lms, gpu_memory_size=8e9, window_length=12e9):
         use_lms = False
 
     if use_lms:
-        logger.info("[LMS] gpu_memory_limit: {}GB, prefetch_window_length: {}GB".format(gpu_memory_size / 1e9,
-                                                                                        window_length / 1e9))
+        logger.info("[LMS] gpu_memory_limit: {}GB, prefetch_window_length: {}GB".format(float(gpu_memory_size) / (1 << 30),
+                                                                                        float(window_length) / (1 << 30)))
 
         # Change array preference so that lms works well.
         # import nnabla_ext.cuda.init as cuda_init
