@@ -1,0 +1,47 @@
+nnabla_context:
+  context: cudnn
+  device_id: 0
+  type_config: float
+
+train:
+  batch_size: 12 
+  learning_rate: !!float 4e-4
+  lr_scheme: CosineAnnealingLR_Restart
+  beta1: 0.9
+  beta2: 0.99
+  max_iter: 600000
+  cosine_period: 150000
+  cosine_num_period: 4
+  eta_min: !!float 1e-7
+  val_freq: !!float 5e3
+  manual_seed: 0
+  monitor_log_freq: 100
+  save_checkpoint_freq: !!float 10e3
+  checkpoint: False
+  eps: 1e-6
+  only_slomo: False
+
+#### network structures
+network:
+  nf: 64
+  n_frames: 7
+  groups: 8
+  num_resblock_front: 5
+  num_resblock_back: 40
+  
+data:
+  # Path to input LMDB files
+  lmdb_data_gt: ./lmdb_data/vimeo7_train_GT.lmdb
+  lmdb_data_lq: ./lmdb_data/vimeo7_train_LR.lmdb
+  cache_keys: ./authors_scripts/Vimeo7_train_keys.pkl
+  n_frames: 7
+  random_reverse: true #false
+  interval_list: [1]
+  border_mode: false
+  use_shuffle: true
+  gt_size: 128 
+  lr_size: 32
+  use_flip: true
+  use_rot: true
+  color: RGB
+  output_dir: 'model'
