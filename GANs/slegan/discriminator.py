@@ -75,11 +75,12 @@ def SLE(f_large, f_small, scope_name):
             ada_pool_size, ada_pool_size))
         h = PF.convolution(
             h, f_large.shape[1], (4, 4), apply_w=sn_w, with_bias=False, name="conv1")
-        h = F.leaky_relu(h, 0.1, inplace=True)
+        # Following the official implementation, this implementation uses swish instead of LeakyReLU here.
+        h = h * F.sigmoid(h)
         h = PF.convolution(
             h, f_large.shape[1], (1, 1), apply_w=sn_w, with_bias=False, name="conv2")
         h = F.sigmoid(h)
-        h = f_large * F.broadcast(h, f_large.shape)
+        h = f_large * h
     return h
 
 
@@ -104,7 +105,7 @@ def SimpleDecoder(fea, scope_name):
     return img
 
 
-def Discriminator(img, label="real", scope_name="Discriminator", ndf=64, big=True):
+def Discriminator(img, label="real", scope_name="Discriminator", ndf=64):
     with nn.parameter_scope(scope_name):
         if type(img) is not list:
             img_small = F.interpolate(img, output_size=(128, 128))
@@ -135,26 +136,15 @@ def Discriminator(img, label="real", scope_name="Discriminator", ndf=64, big=Tru
 
         # Calc base features
         f_256 = h
-        if big:
-            f_128 = DownsampleComp(f_256, ndf//2, "down256->128")
-            f_64 = DownsampleComp(f_128, ndf*1, "down128->64")
-            f_32 = DownsampleComp(f_64, ndf*2, "down64->32")
-        else:
-            f_128 = Downsample(f_256, ndf//2, "down256->128")
-            f_64 = Downsample(f_128, ndf*1, "down128->64")
-            f_32 = Downsample(f_64, ndf*2, "down64->32")
+        f_128 = DownsampleComp(f_256, ndf//2, "down256->128")
+        f_64 = DownsampleComp(f_128, ndf*1, "down128->64")
+        f_32 = DownsampleComp(f_64, ndf*2, "down64->32")
 
         # Apply SLE
         f_32 = SLE(f_32, f_256, "sle256->32")
-        if big:
-            f_16 = DownsampleComp(f_32, ndf*4, "down32->16")
-        else:
-            f_16 = Downsample(f_32, ndf*4, "down32->16")
+        f_16 = DownsampleComp(f_32, ndf*4, "down32->16")
         f_16 = SLE(f_16, f_128, "sle128->16")
-        if big:
-            f_8 = DownsampleComp(f_16, ndf*16, "down16->8")
-        else:
-            f_8 = Downsample(f_16, ndf*16, "down16->8")
+        f_8 = DownsampleComp(f_16, ndf*16, "down16->8")
         f_8 = SLE(f_8, f_64, "sle64->8")
 
         # Conv + BN + LeakyRely + Conv -> logits (5x5)
@@ -184,8 +174,8 @@ def Discriminator(img, label="real", scope_name="Discriminator", ndf=64, big=Tru
         # Reconstruct images
         rec_img_big = SimpleDecoder(f_8, "dec_big")
         rec_img_small = SimpleDecoder(fea_dec_small, "dec_small")
-        part_ax2 = F.randint(shape=(img.shape[0],))
-        part_ax3 = F.randint(shape=(img.shape[0],))
+        part_ax2 = F.rand(shape=(img.shape[0],))
+        part_ax3 = F.rand(shape=(img.shape[0],))
         f_16_ax2 = F.where(F.greater_scalar(part_ax2, 0.5),
                            f_16[:, :, :8, :], f_16[:, :, 8:, :])
         f_16_part = F.where(F.greater_scalar(part_ax3, 0.5),

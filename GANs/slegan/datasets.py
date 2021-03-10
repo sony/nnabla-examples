@@ -29,7 +29,7 @@ def data_iterator(img_path, batch_size, imsize=(256, 256), num_samples=100, shuf
 
 
 def data_iterator_fewshot(img_path, batch_size, imsize=(256, 256), num_samples=1000, shuffle=True, rng=None):
-    imgs = glob.glob("{}/*.jpg".format(img_path))
+    imgs = glob.glob("{}/**/*.jpg".format(img_path), recursive=True)
     if num_samples == -1:
         num_samples = len(imgs)
     else:

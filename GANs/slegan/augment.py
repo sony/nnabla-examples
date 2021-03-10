@@ -38,8 +38,6 @@ def augment(batch, aug_list, p_aug=1.0):
     if "translation" in aug_list and batch.shape[2] >= 8:
         rnd = F.rand(shape=[batch.shape[0], ])
         # Currently nnabla does not support random_shift with border_mode="noise"
-        # batch_aug = F.random_shift(batch, shifts=(batch.shape[2]//8, batch.shape[3]//8), border_mode="reflect")
-        # batch = F.where(F.greater(F.tile(p_aug, batch.shape[0]), rnd), batch_aug, batch)
         mask = np.ones((1, 3, batch.shape[2], batch.shape[3]))
         mask[:, :, :, 0] = 0
         mask[:, :, :, -1] = 0

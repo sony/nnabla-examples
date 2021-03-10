@@ -68,7 +68,6 @@ def train(args):
     # generator loss
     z = nn.Variable([args.batch_size, args.latent, 1, 1])
     x_fake = Generator(z, scope_name=scope_gen, img_size=args.image_size)
-    x_fake[0].persistent = True
     p_fake = Discriminator([augment(xf, aug_list)
                             for xf in x_fake], label="fake", scope_name=scope_dis)
     lossG = loss_gen(p_fake)
@@ -80,19 +79,19 @@ def train(args):
         x_real_aug, label="real", scope_name=scope_dis)
     lossD_fake = loss_dis_fake(p_fake)
     lossD_real = loss_dis_real(p_real, rec_imgs, part, x_real_aug)
+    lossD = lossD_fake + lossD_real
     # generator with fixed latent values for test
+    # Use train=True even in an inference phase
     z_test = nn.Variable.from_numpy_array(
         np.random.randn(args.batch_size, args.latent, 1, 1))
     x_test = Generator(z_test, scope_name=scope_gen,
-                       train=False, img_size=args.image_size)[0]
+                       train=True, img_size=args.image_size)[0]
 
     # Exponential Moving Average (EMA) model
-    # x_train_ema is for updating batch stats in the model
+    # Use train=True even in an inference phase
     scope_gen_ema = "Generator_EMA"
-    x_train_ema = Generator(z, scope_name=scope_gen_ema,
-                            train=True, img_size=args.image_size)[0]
     x_test_ema = Generator(z_test, scope_name=scope_gen_ema,
-                           train=False, img_size=args.image_size)[0]
+                           train=True, img_size=args.image_size)[0]
     copy_params(scope_gen, scope_gen_ema)
     update_ema_var = make_ema_updater(scope_gen_ema, scope_gen, 0.999)
 
@@ -143,10 +142,8 @@ def train(args):
         solver_dis.zero_grad()
         x_real.d = di.next()[0]
         z.d = np.random.randn(args.batch_size, args.latent, 1, 1)
-        lossD_real.forward()
-        lossD_real.backward()
-        lossD_fake.forward()
-        lossD_fake.backward()
+        lossD.forward()
+        lossD.backward()
         solver_dis.update()
 
         # Train generator
@@ -157,9 +154,8 @@ def train(args):
         lossG.backward()
         solver_gen.update()
 
-        # Update EMA model and finetune batch stats in EMA model
+        # Update EMA model
         update_ema_var.forward()
-        x_train_ema.forward(clear_buffer=True)
 
         # Monitor
         monitor_loss_gen.add(i, lossG.d)
