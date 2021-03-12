@@ -16,18 +16,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenmpi-dev \
     openmpi-bin \
     ssh \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    python${PYTHON_VER} \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN umask 0 \
-    && wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda3 \
-    && rm -rf Miniconda3-latest-Linux-x86_64.sh \
-    && conda install -y python=${PYTHON_VER} \
-    && pip install -U setuptools \
-    && conda install -y opencv jupyter
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VER} 0
+
+RUN pip3 install --upgrade pip
+RUN pip install wheel setuptools
+RUN pip install opencv-python || true
+RUN pip install jupyter
 
 RUN umask 0 \
     && pip install nnabla-ext-cuda`echo $CUDA_VER | sed 's/\.//g'`-nccl2-mpi2-1-1
 
 RUN umask 0 \
     && pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/${CUDA_VER} nvidia-dali==${DALI_VER}
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VER} 0
