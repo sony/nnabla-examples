@@ -99,6 +99,14 @@ $ python data_generation.py --save-image-path [path to save the images] --attr-d
 
 All the 40 attributes of CelebA will not work as the data generation process depends on the random generation of a pre-trained stylegan2 model. So if a particular attribute is not generated sufficiently by a stylegan2 model, then the attribute manipulation direction in the stylegan2 latent space cannot be learnt. 
 
+## Pretrained Weights
+
+Pretrained weights of the Pix2PixHD (global generator) model for different attribute manipulation tasks can be downloaded from the following links
+
+- [Age](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/age.h5)
+- [Gender](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/gender.h5)
+- [Face morphing](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/face_morph.h5)
+
 ## References
 [https://github.com/EvgenyKashin/stylegan2-distillation](https://github.com/EvgenyKashin/stylegan2-distillation)        
 [StyleGAN2 Distillation for Feed-forward Image Manipulation](https://arxiv.org/abs/2003.03581)
