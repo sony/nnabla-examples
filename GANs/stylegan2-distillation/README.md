@@ -103,9 +103,9 @@ All the 40 attributes of CelebA will not work as the data generation process dep
 
 Pretrained weights of the Pix2PixHD (global generator) model for different attribute manipulation tasks can be downloaded from the following links
 
-- [Age](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/age.h5)
-- [Gender](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/gender.h5)
-- [Face morphing](nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/face_morph.h5)
+- [Age](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/age.h5)
+- [Gender](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/gender.h5)
+- [Face morphing](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2-distillation/face_morph.h5)
 
 ## References
 [https://github.com/EvgenyKashin/stylegan2-distillation](https://github.com/EvgenyKashin/stylegan2-distillation)        
