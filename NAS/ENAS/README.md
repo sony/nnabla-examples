@@ -47,7 +47,7 @@ For re-training the model recommended as a result of architecture search, just r
 python macro_retrain.py --device-id 0 --context 'cudnn' \
                             --recommended-arch <path to npy file> \
                             --monitor-path 'result.monitor' \
-                            --monitor-save-path 'result.monitor' 
+                            --model-save-path 'result.monitor' 
 ```
 
 This time the weights parameters are stored in `--monitor-save-path` along with other training records in `--monitor-path`.

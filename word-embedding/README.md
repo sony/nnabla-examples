@@ -24,7 +24,7 @@ By default, the script will be executed with GPU.
 If you prefer to run with CPU, try
 
 ```shell
-python train.py -c cpu
+python word_embedding.py -c cpu
 ```
 
 After the learning completes successfully, the output shows some of similar word search demonstrations 

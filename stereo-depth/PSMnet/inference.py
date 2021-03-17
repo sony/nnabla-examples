@@ -115,23 +115,23 @@ def main():
     pred = np.squeeze(pred, axis=1)
     pred = pred[0]
     pred = 2*(pred - np.min(pred))/np.ptp(pred)-1
-    imsave('stereo_depth.png', (pred + 1) * 0.5))
+    imsave('stereo_depth.png', (pred + 1) * 0.5)
 
     print("Done")
 
     # Save NNP file (used in C++ inference later.).
     if args.save_nnp:
-        runtime_contents={
-        'networks': [
-            {'name': 'runtime',
-             'batch_size': 1,
-             'outputs': {'y0': pred_test},
-             'names': {'x0': var_left, 'x1': var_right}}],
-        'executors': [
-            {'name': 'runtime',
-             'network': 'runtime',
-             'data': ['x0', 'x1'],
-             'output': ['y0']}]}
+        runtime_contents = {
+            'networks': [
+                {'name': 'runtime',
+                 'batch_size': 1,
+                 'outputs': {'y0': pred_test},
+                 'names': {'x0': var_left, 'x1': var_right}}],
+            'executors': [
+                {'name': 'runtime',
+                 'network': 'runtime',
+                 'data': ['x0', 'x1'],
+                 'output': ['y0']}]}
         import nnabla.utils.save
         nnabla.utils.save.save(args.nnp, runtime_contents)
 

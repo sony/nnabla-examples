@@ -82,7 +82,7 @@ done
 
 ### PASCAL VOC
 
-For PASCAL VOC, see the example script located on ```src/tools/get_pascal_voc.sh```. It downloads the dataset, the annotations already in COCO format and merges them.
+For PASCAL VOC, see the example script located on ```src/lib/tools/get_pascal_voc.sh```. It downloads the dataset, the annotations already in COCO format and merges them.
 
 ## Training
 
@@ -93,8 +93,8 @@ For example, if you want to use a pretrained weight file for DLAv0 with 34 layer
 
 ```bash
 mkdir -p weights/backbone
-cd (weights/backbone && \
-    curl -L https://nnabla.org/pretrained-models/nnabla-examples/object-detection/ceneternet/backbone/resnet18_nhwc_imagenet.h5)
+cd weights/backbone && \
+    curl -L -O https://nnabla.org/pretrained-models/nnabla-examples/object-detection/ceneternet/backbone/resnet18_nhwc_imagenet.h5
 ```
 
 | Arch. | Num. of layers | Pretrained parameters |

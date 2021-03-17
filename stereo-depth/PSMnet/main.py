@@ -89,8 +89,8 @@ def main():
     from iterator import data_iterator
 
     # Data list for sceneflow data set
-    train_list = "./sceneflow_train.csv"
-    test_list = "./sceneflow_test.csv"
+    train_list = "./dataset/sceneflow_train.csv"
+    test_list = "./dataset/sceneflow_test.csv"
     train = True
     validation = True
 

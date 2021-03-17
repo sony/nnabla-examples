@@ -54,7 +54,7 @@ Validate models using some metrics.
 ```python
 python validate.py --device-id 0 \
                    --img-path <path to images> \
-                   --evaluation-metric <swd or ms-ssim> \
+                   --validation-metric <swd or ms-ssim> \
                    --monitor-path <monitor path>
 ```
 

@@ -40,7 +40,7 @@ def stack_lstm(x, prev_h, prev_c, state_size):
     for layer_id, (_h, _c) in enumerate(zip(prev_h, prev_c)):
         inputs = x if layer_id == 0 else next_h[layer_id - 1]
         with nn.parameter_scope(str(layer_id)):
-            curr_h, curr_c = PF.lstm(inputs, _h, _c, state_size)
+            curr_h, curr_c = PF.lstm_cell(inputs, _h, _c, state_size)
         next_h[layer_id] = curr_h
         next_c[layer_id] = curr_c
     return next_h, next_c

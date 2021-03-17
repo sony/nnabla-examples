@@ -49,7 +49,7 @@ You can also try training of various types of binary neural network
 classification models on MNIST dataset.
 
 ```
-python classification_bnn.py [-c cuda.cunn] [-h|--help]
+python classification_bnn.py [-c cuda.cudnn] [-h|--help]
 ```
 
 

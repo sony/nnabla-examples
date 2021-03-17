@@ -83,7 +83,7 @@ def generate(args):
     for i in range(di_a.size):
         x_real_a.d = di_a.next()[0]
         images = []
-        images.append(x_data_a)
+        images.append(x_real_a.d.copy())
         for _ in range(args.num_repeats):
             x_fake_b.forward(clear_buffer=True)
             images.append(x_fake_b.d.copy())
@@ -94,9 +94,8 @@ def generate(args):
         x_real_a.d = di_a.next()[0]
     for i in range(di_b.size):
         x_real_b.d = di_b.next()[0]
-        x_fake_a.forward(clear_buffer=True)
         images = []
-        images.append(x_data_b)
+        images.append(x_real_b.d.copy())
         for _ in range(args.num_repeats):
             x_fake_a.forward(clear_buffer=True)
             images.append(x_fake_a.d.copy())

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 
 def get_macro_args():
     """
@@ -96,7 +98,10 @@ def get_macro_args():
     parser.add_argument("--model-save-path", "-o",
                         type=str, default='tmp.macro_monitor')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not os.path.isdir(args.model_save_path):
+        os.makedirs(args.model_save_path)
+    return args
 
 
 def get_micro_args():
@@ -182,4 +187,7 @@ def get_micro_args():
     parser.add_argument("--model-save-path", "-o",
                         type=str, default='tmp.micro_monitor')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not os.path.isdir(args.model_save_path):
+        os.makedirs(args.model_save_path)
+    return args

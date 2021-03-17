@@ -29,7 +29,7 @@ def get_sliced_images(filenames, resize=True):
         x = imread(filename)
         x = x[45:173, 25:153, :]
         if resize:
-            x = imresize(x, size=[64, 64], interpolate='lanczos')
+            x = imresize(x, size=(64, 64), interpolate='lanczos')
         xs.append(x)
     return xs
 

@@ -35,8 +35,8 @@ cp VOCdevkit/VOC2012/JPEGImages/* images/
 # Donwload PASCAL VOC annotations in COCO format and move them to $VOC_ROOT/annotations.
 # Or, you also convert them yourself, for example in a similar way with https://github.com/soumenpramanik/Convert-Pascal-VOC-to-COCO/blob/master/convertVOC2COCO.py
 wget https://s3.amazonaws.com/images.cocodataset.org/external/external_PASCAL_VOC.zip
-unzip PASCAL_VOC.zip
-rm PASCAL_VOC.zip
+unzip external_PASCAL_VOC.zip
+rm external_PASCAL_VOC.zip
 mv PASCAL_VOC annotations/
 
 
