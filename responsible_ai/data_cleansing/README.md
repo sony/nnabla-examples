@@ -21,8 +21,7 @@ Identifying the influence of training data for data cleansing can improve the ac
       primaryClass={cs.LG}
 }
 
-## Installation
-* Neural Network Libraries
+## Installation of Neural Network Libraries
 Please follow the installation guide of the Neural Network Libraries on https://nnabla.org/download/
 
 ## How to Run
