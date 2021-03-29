@@ -28,12 +28,13 @@ Please follow the installation guide of the Neural Network Libraries on https://
 All processes are executed with the following example command.
 
 ```
-python train_infl_eval.py -o output -ds mnist -nt 1
+python train_infl_eval.py -o output -ds cifar10 -nt 1
 ```
+
  | option | input parameters | items |
  |--------|------------------|-------|
  | -o  | {user setting}   | output folder |
- | -ds |  mnist, cifar10, stl10 | datasets|
+ | -ds |  cifar10, mnist, stl10 | dataset|
  | -nt  |  {number(int)}  | number of trials   |
 
 The detailed infomation for each option is described in train_infl_eval.py
