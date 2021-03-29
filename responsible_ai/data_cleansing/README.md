@@ -22,7 +22,7 @@ Identifying the influence of training data for data cleansing can improve the ac
 }
 
 ## Installation of Neural Network Libraries
-Please follow the installation guide of the Neural Network Libraries on https://nnabla.org/download/
+Please follow the installation guide of the Neural Network Libraries on https://nnabla.org/install/
 
 ## How to Run
 All processes are executed with the following example command.
