@@ -44,7 +44,7 @@ python train_infl_eval.py -o output -ds cifar10 -nt 1
  | -ds |  cifar10, mnist, stl10 | dataset|
  | -nt  |  {number(int)}  | number of trials   |
 
-The detailed infomation for each option is described in train_infl_eval.py
+There are other options. The detailed infomation for each option is described in train_infl_eval.py
 This consists of the processes below. 
 
 ### Training
