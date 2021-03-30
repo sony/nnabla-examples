@@ -24,6 +24,13 @@ Identifying the influence of training data for data cleansing can improve the ac
 ## Installation of Neural Network Libraries
 Please follow the installation guide of the Neural Network Libraries on https://nnabla.org/install/
 
+## Installation of related packages
+Please install some related packages using the following command:
+
+```
+pip install -r requirements.txt
+```
+
 ## How to Run
 All processes are executed with the following example command.
 
