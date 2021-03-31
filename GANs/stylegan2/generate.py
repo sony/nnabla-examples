@@ -24,8 +24,17 @@ from networks import mapping_network, conv_block
 from nnabla.ext_utils import get_extension_context
 from nnabla.utils.image_utils import imsave
 
+resolution_dict = {
+    'horse': 256,
+    'church': 256,
+    'car': 512,
+    'cat': 256,
+    'imagenet': 512,
+    'human_faces': 1024
+}
 
-def synthesis(w, constant_bc, noise_seed, mix_after):
+
+def synthesis(w, constant_bc, noise_seed, mix_after, resolution=1024):
     """
         given latent vector w, constant input and noise seed,
         synthesis the image.
@@ -43,7 +52,7 @@ def synthesis(w, constant_bc, noise_seed, mix_after):
     inmaps = 512
 
     # resolution 8 x 8 - 1024 x 1024
-    for i in range(1, 9):
+    for i in range(1, int(np.log2(resolution)-1)):
 
         w_1 = w[0] if (2+i)*2-5 <= mix_after else w[1]
         w_2 = w[0] if (2+i)*2-4 <= mix_after else w[1]
@@ -72,7 +81,7 @@ def synthesis(w, constant_bc, noise_seed, mix_after):
     return torgb
 
 
-def generate(batch_size, style_noises, noise_seed, mix_after, truncation_psi=0.5):
+def generate(batch_size, style_noises, noise_seed, mix_after, truncation_psi=0.5, resolution=1024):
     """
         given style noises, noise seed and truncation value, generate an image.
     """
@@ -96,7 +105,8 @@ def generate(batch_size, style_noises, noise_seed, mix_after, truncation_psi=0.5
                     name="G_synthesis/4x4/Const/const",
                     shape=(1, 512, 4, 4))
     constant_bc = F.broadcast(constant, (batch_size,) + constant.shape[1:])
-    rgb_output = synthesis(w, constant_bc, noise_seed, mix_after)
+    rgb_output = synthesis(w, constant_bc, noise_seed,
+                           mix_after, resolution=resolution)
     return rgb_output
 
 
@@ -106,6 +116,12 @@ def main():
                         help="name of an output image file.")
     parser.add_argument('--output-dir', '-d', type=str, default="results",
                         help="directory where the generated image is saved.")
+
+    parser.add_argument('--dataset-type', type=str,
+                        choices=['horse', 'church', 'car',
+                                 'cat', 'imagenet', 'human_faces'],
+                        default='human_faces',
+                        help='type of objects to generate')
 
     parser.add_argument('--seed', type=int, required=True,
                         help="seed for primal style noise.")
@@ -130,19 +146,23 @@ def main():
 
     args = parser.parse_args()
 
-    assert 0 < args.mix_after < 17, "specify --mix-after from 1 to 16."
+    resolution = resolution_dict[args.dataset_type]
 
-    if not os.path.isfile("styleGAN2_G_params.h5"):
+    batch_size = args.batch_size
+    num_layers = int(np.log2(resolution)-1)*2
+
+    assert 0 < args.mix_after < num_layers-1, f"specify --mix-after from 1 to {num_layers-2}."
+
+    file_path = f'{args.dataset_type}.h5' if args.dataset_type != 'human_faces' else 'styleGAN2_G_params.h5'
+
+    if not os.path.isfile(file_path):
         print("Downloading the pretrained weight. Please wait...")
-        url = "https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/styleGAN2_G_params.h5"
+        url = f"https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/{file_path}"
         from nnabla.utils.data_source_loader import download
         download(url, url.split('/')[-1], False)
 
     ctx = get_extension_context(args.context)
     nn.set_default_context(ctx)
-
-    batch_size = args.batch_size
-    num_layers = 18
 
     rnd = np.random.RandomState(args.seed)
     z = rnd.randn(batch_size, 512)
@@ -168,9 +188,9 @@ def main():
         style_noises = [nn.NdArray.from_numpy_array(z) for _ in range(2)]
 
     nn.set_auto_forward(True)
-    nn.load_parameters("styleGAN2_G_params.h5")
+    nn.load_parameters(file_path)
     rgb_output = generate(batch_size, style_noises,
-                          args.stochastic_seed, args.mix_after, args.truncation_psi)
+                          args.stochastic_seed, args.mix_after, args.truncation_psi, resolution)
 
     # convert to uint8 to save an image file
     image = convert_images_to_uint8(rgb_output, drange=[-1, 1])
