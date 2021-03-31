@@ -8,7 +8,7 @@ Figure: Generated image samples. (resized to 256x256)
 </p>
 
 This is a NNabla implementation of [StyleGAN2](https://github.com/NVlabs/stylegan2).
-Currently, only inference (for face generation) is supported.
+Currently, only inference (for 6 generation types of datasets) is supported.
 
 # Preparation
 
@@ -19,18 +19,39 @@ Currently, only inference (for face generation) is supported.
 
 ## Pretrained Weight
 
-We converted the pretrained weight provided by the authors, originally released as a part of pretrained models which can be found [here](https://github.com/NVlabs/stylegan2#using-pre-trained-networks).
-Running `generate.py` will automatically download the converted weight, but you can manually download the weight from [here](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/styleGAN2_G_params.h5).  Note that this pretrained weight is the one trained on [FFHQ dataset](https://github.com/NVlabs/ffhq-dataset), so this example focuses on face image generation.
+We converted the pretrained weight of different works (which can be found [here](https://github.com/justinpinkney/awesome-pretrained-stylegan2)) to the format compatible that is compatible with Nnabla. 
+
+Running `generate.py` will automatically download the converted weight, but you can manually download the weights of different datasets from the following links:
+
+| Object | Human Face | Car | Cat |
+| :---: | :---: | :---: | :---: |
+| Resolution | 1024x1024 | 512x512 | 256x256 |
+| Sample | <a href="url"><img src="./images/human_face.png" align="center" height="256" ></a> | <a href="url"><img src="./images/car.png" align="center" height="256" ></a> | <a href="url"><img src="./images/cat.png" align="center" height="256" ></a> | 
+| Pretrained Weights | [download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/styleGAN2_G_params.h5) | [download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/car.h5) | [download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/cat.h5) |
+
+| Object | Horse | Church | ImageNet |
+| :---: | :---: | :---: | :---: |
+| Resolution | 256x256 | 256x256 | 512x512 |
+| Sample | <a href="url"><img src="./images/horse.png" align="center" height="256" ></a> | <a href="url"><img src="./images/church.png" align="center" height="256" ></a> | <a href="url"><img src="./images/imagenet.png" align="center" height="256" ></a> |
+| Pretrained Weights | [download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/horse.h5) |[download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/church.h5) | [download](https://nnabla.org/pretrained-models/nnabla-examples/GANs/stylegan2/imagenet.h5) |
 
 ## Generation
 
 You can generate non-existent person's face by;
 
 ```
-python generate.py --seed 217 --batch-size 4
+python generate.py --seed 217 --batch-size 4 --dataset-type human_faces
 ```
 
 With `--seed` option, you need to specify the random seed used to obtain latent code (**z** in the paper). With `--batch-size` option, you can specify the number of images to generate.
+
+With `--dataset-type` option, you can specify the type of object to be generated. Currently 6 choices are supported for this option which are as follows: 
+
+```
+human_faces, car, cat, horse, church, imagenet
+```
+
+`human_faces` is the default option. 
 
 As written in the paper, truncation trick is used by default. You can change the value for that by `--truncation-psi`. Also, seed used for noise input to the synthesis network (input to **B** block in the paper) can be specified by `--stochastic-seed`. For example;
 
