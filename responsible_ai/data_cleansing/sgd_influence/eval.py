@@ -28,7 +28,8 @@ def select_model_file(retrain_all, output_path, start_epoch):
     if retrain_all:
         fn = '%s/epoch%02d/weights/model_step%04d.h5' % (output_path, 0, 0)
     else:
-        fn = '%s/epoch%02d/weights/final_model.h5' % (output_path, start_epoch - 1)
+        fn = '%s/epoch%02d/weights/final_model.h5' % (
+            output_path, start_epoch - 1)
     return fn
 
 
@@ -46,7 +47,8 @@ def retrain(model_info_dict, file_dir_dict, retrain_all, escape_list=[]):
     score_filename = file_dir_dict['score_filename']
     info_file_path = os.path.join(save_dir, info_filename)
     # setup
-    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
+    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(
+        file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
     testset = setup_nnabla_dataset(file_dir_dict['test_csv'])
     ntest = testset.size
     n_channels, _h, _w = image_shape
@@ -78,10 +80,12 @@ def retrain(model_info_dict, file_dir_dict, retrain_all, escape_list=[]):
     for epoch in tqdm(range(start_epoch, end_epoch), desc='retrain'):
         for step_info in info[epoch]:
             idx, seeds, lr = step_info['idx'], step_info['seeds'], step_info['lr']
-            X, y = get_batch_data(trainset, idx_train, idx, resize_size, test=False, seeds=seeds, escape_list=escape_list)
+            X, y = get_batch_data(trainset, idx_train, idx, resize_size,
+                                  test=False, seeds=seeds, escape_list=escape_list)
             if len(X) == 0:
                 continue
-            _, loss_train, input_image_train = adjust_batch_size(train_model, solver, len(X), loss_train)
+            _, loss_train, input_image_train = adjust_batch_size(
+                train_model, solver, len(X), loss_train)
             input_image_train["image"].d = X
             input_image_train["label"].d = y
 
@@ -92,11 +96,14 @@ def retrain(model_info_dict, file_dir_dict, retrain_all, escape_list=[]):
                 param.g *= len(X) / idx.size
             solver.update()
         # evaluation
-        loss_val, acc_val = eval_model(val_model, solver, valset, idx_val, batch_size, resize_size)
-        loss_test, acc_test = eval_model(val_model, solver, testset, idx_test, batch_size, resize_size)
+        loss_val, acc_val = eval_model(
+            val_model, solver, valset, idx_val, batch_size, resize_size)
+        loss_test, acc_test = eval_model(
+            val_model, solver, testset, idx_test, batch_size, resize_size)
         score.append((loss_val, loss_test, acc_val, acc_test))
         # save
-    save_to_csv(filename=score_filename, header=['val_loss', 'test_loss', 'val_accuracy', 'test_accuracy', ], list_to_save=score, data_type='float,float,float,float')
+    save_to_csv(filename=score_filename, header=[
+                'val_loss', 'test_loss', 'val_accuracy', 'test_accuracy', ], list_to_save=score, data_type='float,float,float,float')
 
 
 def get_escape_list(infl_filename, n_to_remove):
@@ -120,4 +127,5 @@ def run_train_for_eval(model_info_dict, file_dir_dict, n_to_remove, retrain_all)
 
     # train
     escape_list = get_escape_list(infl_filename, n_to_remove)
-    retrain(model_info_dict, file_dir_dict, retrain_all, escape_list=escape_list)
+    retrain(model_info_dict, file_dir_dict,
+            retrain_all, escape_list=escape_list)

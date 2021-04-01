@@ -45,8 +45,10 @@ def eval_model(val_model, solver, dataset, idx_list_to_data, batch_size, resize_
     idx = np.array_split(np.arange(n), batch_size)
     loss_fn = None
     for _, i in enumerate(idx):
-        X, y = get_batch_data(dataset, idx_list_to_data, i, resize_size, test=True)
-        pred, loss_fn, input_image = adjust_batch_size(val_model, solver, len(X), loss_fn)
+        X, y = get_batch_data(dataset, idx_list_to_data,
+                              i, resize_size, test=True)
+        pred, loss_fn, input_image = adjust_batch_size(
+            val_model, solver, len(X), loss_fn)
         input_image["image"].d = X
         input_image["label"].d = y
         loss_fn.forward()
@@ -71,7 +73,8 @@ def train(model_info_dict, file_dir_dict, use_all_params, need_evaluate, bundle_
     model_filename = file_dir_dict['model_filename']
     score_filename = file_dir_dict['score_filename']
     # setup
-    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
+    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(
+        file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
     n_channels, _h, _w = image_shape
     resize_size = get_image_size((_h, _w))
     # Create training graphs
@@ -104,11 +107,15 @@ def train(model_info_dict, file_dir_dict, use_all_params, need_evaluate, bundle_
         for j, i in enumerate(idx):
             seeds = list(range(seed_train, seed_train + i.size))
             seed_train += i.size
-            epoch_info.append({'epoch': epoch, 'step': j, 'idx': i, 'lr': lr, 'seeds': seeds})
+            epoch_info.append({'epoch': epoch, 'step': j,
+                               'idx': i, 'lr': lr, 'seeds': seeds})
             if (use_all_params) & (epoch >= infl_end_epoch):
-                params_dict, c, k = save_all_params(params_dict, c, k, j, bundle_size, len(idx), save_dir, epoch)
-            X, y = get_batch_data(trainset, idx_train, i, resize_size, test=False, seeds=seeds)
-            _, loss_train, input_image_train = adjust_batch_size(train_model, solver, len(X), loss_train)
+                params_dict, c, k = save_all_params(
+                    params_dict, c, k, j, bundle_size, len(idx), save_dir, epoch)
+            X, y = get_batch_data(trainset, idx_train, i,
+                                  resize_size, test=False, seeds=seeds)
+            _, loss_train, input_image_train = adjust_batch_size(
+                train_model, solver, len(X), loss_train)
             input_image_train["image"].d = X
             input_image_train["label"].d = y
 
@@ -121,14 +128,18 @@ def train(model_info_dict, file_dir_dict, use_all_params, need_evaluate, bundle_
         if epoch >= infl_end_epoch-1:
             dn = os.path.join(save_dir, 'epoch%02d' % (epoch), 'weights')
             ensure_dir(dn)
-            nn.save_parameters(os.path.join(dn, model_filename), params=nn.get_parameters(grad_only=False), extension=".h5")
+            nn.save_parameters(os.path.join(dn, model_filename), params=nn.get_parameters(
+                grad_only=False), extension=".h5")
         # evaluation
         if need_evaluate:
-            loss_tr, acc_tr = eval_model(val_model, solver, trainset, idx_train, batch_size, resize_size)
-            loss_val, acc_val = eval_model(val_model, solver, valset, idx_val, batch_size, resize_size)
+            loss_tr, acc_tr = eval_model(
+                val_model, solver, trainset, idx_train, batch_size, resize_size)
+            loss_val, acc_val = eval_model(
+                val_model, solver, valset, idx_val, batch_size, resize_size)
             score.append((loss_tr, loss_val, acc_tr, acc_val))
     # save epoch and step info
     np.save(os.path.join(save_dir, info_filename), arr=info)
     # save score
     if need_evaluate:
-        save_to_csv(filename=score_filename, header=['train_loss', 'val_loss', 'train_accuracy', 'val_accuracy'], list_to_save=score, data_type='float,float,float,float')
+        save_to_csv(filename=score_filename, header=[
+                    'train_loss', 'val_loss', 'train_accuracy', 'val_accuracy'], list_to_save=score, data_type='float,float,float,float')

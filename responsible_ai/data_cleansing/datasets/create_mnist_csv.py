@@ -62,7 +62,8 @@ class MnistDataSource(DataSource):
         #       self._labels = numpy.frombuffer(f.read(), numpy.uint8).reshape(-1, 1)
         #
         label_output_file = get_filename_to_download(output_dir, label_uri)
-        r = download(label_uri, output_file=label_output_file)  # file object returned
+        # file object returned
+        r = download(label_uri, output_file=label_output_file)
         data = zlib.decompress(r.read(), zlib.MAX_WBITS | 32)
         _, size = struct.unpack('>II', data[0:8])
         self._labels = numpy.frombuffer(data[8:], numpy.uint8).reshape(-1, 1)
@@ -139,7 +140,7 @@ def data_iterator_to_csv(csv_path, csv_file_name, data_path, data_iterator):
     index = 0
     csv_data = []
     with data_iterator as data:
-        line = ['x:image','y:label']
+        line = ['x:image', 'y:label']
         csv_data.append(line)
         pbar = tqdm.tqdm(total=data.size, unit='images')
         initial_epoch = data.epoch
@@ -147,8 +148,10 @@ def data_iterator_to_csv(csv_path, csv_file_name, data_path, data_iterator):
             d = data.next()
             for i in range(len(d[0])):
                 label = d[1][i][0]
-                file_name = data_path + '/{}'.format(label) + '/{}.png'.format(index)
-                full_path = os.path.join(csv_path, file_name.replace('/', os.path.sep))
+                file_name = data_path + \
+                    '/{}'.format(label) + '/{}.png'.format(index)
+                full_path = os.path.join(
+                    csv_path, file_name.replace('/', os.path.sep))
                 directory = os.path.dirname(full_path)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
@@ -191,23 +194,29 @@ def create_data_csv(seed):
     # Create original training set
     logger.log(99, 'Downloading MNIST training set images...')
     output_dir = os.path.join(path, 'download')
-    train_di = data_iterator_mnist(60000, True, None, False, output_dir=output_dir)
+    train_di = data_iterator_mnist(
+        60000, True, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "mnist_training.csv"... ')
-    train_csv = data_iterator_to_csv(base_dir, 'mnist_training.csv', 'training', train_di)
+    train_csv = data_iterator_to_csv(
+        base_dir, 'mnist_training.csv', 'training', train_di)
 
     # Create original test set
     logger.log(99, 'Downloading MNIST test set images...')
-    validation_di = data_iterator_mnist(10000, False, None, False, output_dir=output_dir)
+    validation_di = data_iterator_mnist(
+        10000, False, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "mnist_test.csv"... ')
-    test_csv = data_iterator_to_csv(base_dir, 'mnist_test.csv', 'validation', validation_di)
+    test_csv = data_iterator_to_csv(
+        base_dir, 'mnist_test.csv', 'validation', validation_di)
 
     # Create one-hot training set
     logger.log(99, 'Creating "mnist_training_onehot.csv"... ')
-    create_onehot_dataset(train_csv, os.path.join(base_dir, "mnist_training_onehot.csv"), 10)
-    
+    create_onehot_dataset(train_csv, os.path.join(
+        base_dir, "mnist_training_onehot.csv"), 10)
+
     # Create one-hot test set
     logger.log(99, 'Creating "mnist_test_onehot.csv"... ')
-    create_onehot_dataset(test_csv, os.path.join(base_dir, "mnist_test_onehot.csv"), 10)
+    create_onehot_dataset(test_csv, os.path.join(
+        base_dir, "mnist_test_onehot.csv"), 10)
 
     # Create 100 data training set for semi-supervised learning
     logger.log(99, 'Creating "mnist_training_100.csv"... ')
@@ -224,7 +233,7 @@ def create_data_csv(seed):
     with open(os.path.join(base_dir, "mnist_training_100.csv"), 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(csv_data)
-    
+
     # Create unlabeled training set for semi-supervised learning
     logger.log(99, 'Creating "mnist_training_unlabeled.csv"... ')
     labels = numpy.zeros(10)
@@ -244,7 +253,7 @@ def create_data_csv(seed):
     csv_data = []
     for i, line in enumerate(train_csv):
         if i == 0:
-            csv_data.append(['x:image','y:9'])
+            csv_data.append(['x:image', 'y:9'])
         else:
             label = line[1]
             if label == 4 or label == 9:
@@ -258,14 +267,14 @@ def create_data_csv(seed):
     with open(os.path.join(base_dir, "small_mnist_4or9_training.csv"), 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(csv_data)
-    
+
     # Create small test set
     logger.log(99, 'Creating "small_mnist_4or9_test.csv"... ')
     labels = numpy.zeros(2)
     csv_data = []
     for i, line in enumerate(test_csv):
         if i == 0:
-            csv_data.append(['x:image','y:9'])
+            csv_data.append(['x:image', 'y:9'])
         else:
             label = line[1]
             if label == 4 or label == 9:
@@ -279,10 +288,10 @@ def create_data_csv(seed):
     with open(os.path.join(base_dir, "small_mnist_4or9_test.csv"), 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(csv_data)
-    
+
     # Create small test set with initial memory
     logger.log(99, 'Creating "small_mnist_4or9_test_w_initmemory.csv"... ')
-    memory_size=256
+    memory_size = 256
     for i in range(len(csv_data)):
         if i == 0:
             for i2 in range(memory_size):
@@ -292,14 +301,17 @@ def create_data_csv(seed):
     with open(os.path.join(base_dir, "small_mnist_4or9_test_w_initmemory.csv"), 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(csv_data)
-    
+
     logger.log(99, 'Dataset creation completed successfully.')
 
     # split based on seed
     # Create original training set
-    train_csv, val_csv = split_data_into_train_val(train_csv, val_size=10000, seed=seed)
-    save_list_to_csv(train_csv, base_dir, 'mnist_training' + '_' + str(seed) + '.csv')
-    save_list_to_csv(val_csv, base_dir, 'mnist_validation' + '_' + str(seed) + '.csv')
+    train_csv, val_csv = split_data_into_train_val(
+        train_csv, val_size=10000, seed=seed)
+    save_list_to_csv(train_csv, base_dir, 'mnist_training' +
+                     '_' + str(seed) + '.csv')
+    save_list_to_csv(val_csv, base_dir, 'mnist_validation' +
+                     '_' + str(seed) + '.csv')
 
 
 def main(args):
@@ -310,7 +322,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='csv data', formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument(    
+    parser.add_argument(
         '-s', '--seed', help='seed num', default=0, type=int, required=True)
     args = parser.parse_args()
     main(args)

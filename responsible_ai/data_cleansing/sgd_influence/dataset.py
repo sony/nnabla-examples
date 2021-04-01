@@ -41,8 +41,10 @@ class MeanStd(object):
         self.ch_std = nn.Variable.from_numpy_array(ch_std)
 
     def _init_multi_channel(self, resize_size):
-        ch_mean = np.array([np.full(resize_size, 0.4914), np.full(resize_size, 0.4822), np.full(resize_size, 0.4465)])
-        ch_std = np.array([np.full(resize_size, 0.2023), np.full(resize_size, 0.1994), np.full(resize_size, 0.2010)])
+        ch_mean = np.array([np.full(resize_size, 0.4914), np.full(
+            resize_size, 0.4822), np.full(resize_size, 0.4465)])
+        ch_std = np.array([np.full(resize_size, 0.2023), np.full(
+            resize_size, 0.1994), np.full(resize_size, 0.2010)])
         self.ch_mean = nn.Variable.from_numpy_array(ch_mean)
         self.ch_std = nn.Variable.from_numpy_array(ch_std)
 
@@ -94,7 +96,8 @@ class CsvDataSourceFilename(CsvDataSource):
             # https://github.com/sony/nnabla/blob/f5eff2de5329ef02c40e7a5d7344abd91b19ece8/python/src/nnabla/utils/data_source_loader.py#L343
             if func_dict[target](column_value):
                 return i
-        raise RuntimeError('{} info is not in {}.'.format(target, self._filename))
+        raise RuntimeError(
+            '{} info is not in {}.'.format(target, self._filename))
 
     def get_filepath_to_data(self, idx):
         """
@@ -145,7 +148,8 @@ def get_batch_data(dataset, idx_list_to_data, idx_list_to_idx, resize_size, test
     for idx, seed in zip(idx_list_to_idx, seeds):
         if idx_list_to_data[idx] in escape_list:
             continue
-        image, label = get_data(dataset, idx_list_to_data[idx], resize_size, test, seed)
+        image, label = get_data(
+            dataset, idx_list_to_data[idx], resize_size, test, seed)
         X.append(image)
         y.append(label)
     y = np.array(y).reshape(-1, 1)
@@ -166,7 +170,7 @@ def transform(x, resize_size, seed, test):
     if not test:
         # random crop
         random.seed(seed)
-        x = F.image_augmentation(x, shape=resize_size, pad=(4,4), seed=seed)
+        x = F.image_augmentation(x, shape=resize_size, pad=(4, 4), seed=seed)
         # random horizontal flip
         random.seed(seed)
         x = F.image_augmentation(x, flip_lr=True, seed=seed)

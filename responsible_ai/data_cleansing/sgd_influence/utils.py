@@ -63,7 +63,8 @@ def save_to_csv(filename, header, list_to_save, data_type):
     with open(filename, 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerow(header)
-        writer.writerows(np.array([tuple(row) for row in list_to_save], dtype=data_type))
+        writer.writerows(np.array([tuple(row)
+                                   for row in list_to_save], dtype=data_type))
 
 
 def read_csv(filename):
