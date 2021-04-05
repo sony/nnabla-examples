@@ -22,12 +22,14 @@ import nnabla.functions as F
 def block(x, scope_name, n_channels, kernel, pad, test):
     with nn.parameter_scope(scope_name):
         with nn.parameter_scope('conv1'):
-            h = PF.convolution(x, n_channels, kernel=kernel, pad=pad, with_bias=True)
+            h = PF.convolution(x, n_channels, kernel=kernel,
+                               pad=pad, with_bias=True)
             h = PF.batch_normalization(h, batch_stat=not test)
             h = F.relu(h)
 
         with nn.parameter_scope('conv2'):
-            h = PF.convolution(h, n_channels, kernel=kernel, pad=pad, with_bias=True)
+            h = PF.convolution(h, n_channels, kernel=kernel,
+                               pad=pad, with_bias=True)
             h = F.relu(h)
             h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))
     return h
@@ -54,7 +56,8 @@ def loss_function(pred, label, reduction='mean'):
 
 
 def calc_acc(pred, label, method='mean'):
-    acc_sum = (np.argmax(pred, axis=1).reshape(-1, 1) == np.array(label).reshape(-1, 1)).sum()
+    acc_sum = (np.argmax(pred, axis=1).reshape(-1, 1)
+               == np.array(label).reshape(-1, 1)).sum()
     acc_dict = {
         'mean': acc_sum / len(label),
         'sum': acc_sum
@@ -64,7 +67,8 @@ def calc_acc(pred, label, method='mean'):
 
 def setup_model(net_func, n_classes, n_channels, resize_size, batch_size, test, reduction='mean'):
     prediction = functools.partial(net_func, n_classes=n_classes)
-    image = nn.Variable((batch_size, n_channels, resize_size[0], resize_size[1]))
+    image = nn.Variable(
+        (batch_size, n_channels, resize_size[0], resize_size[1]))
     label = nn.Variable((batch_size, 1))
     pred = prediction(image, test)
     loss_fn = loss_function(pred, label, reduction)

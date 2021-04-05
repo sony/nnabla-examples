@@ -46,7 +46,7 @@ class STL10DataSource(DataSource):
         binary_dir = os.path.join(output_dir, "stl10_binary")
         with tarfile.open(fileobj=r, mode="r:gz") as tar:
             tar.extractall(path=output_dir)
-        
+
         for member in os.listdir(binary_dir):
             if train:
                 if 'train_' not in member:
@@ -108,6 +108,7 @@ class STL10DataSource(DataSource):
     def images(self):
         '''Get copy of whole data with a shape of (N, 1, H, W).'''
         return self._images.copy()
+
     @property
     def labels(self):
         '''Get copy of whole label with a shape of (N, 1).'''
@@ -159,12 +160,15 @@ def data_iterator_to_csv(csv_path, csv_file_name, data_path, data_iterator):
             d = data.next()
             for i in range(len(d[0])):
                 label = d[1][i][0]
-                file_name = data_path + '/{}'.format(label) + '/{}.png'.format(index)
-                full_path = os.path.join(csv_path, file_name.replace('/', os.path.sep))
+                file_name = data_path + \
+                    '/{}'.format(label) + '/{}.png'.format(index)
+                full_path = os.path.join(
+                    csv_path, file_name.replace('/', os.path.sep))
                 directory = os.path.dirname(full_path)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                imwrite(full_path, d[0][i].reshape(3, 96, 96).transpose(1, 2, 0))
+                imwrite(full_path, d[0][i].reshape(
+                    3, 96, 96).transpose(1, 2, 0))
                 csv_data.append([file_name, label])
                 index += 1
                 pbar.update(1)
@@ -182,17 +186,24 @@ def create_data_csv(seed):
     # Create original training set
     logger.log(99, 'Downloading STL10 dataset...')
     output_dir = os.path.join(path, 'download')
-    train_di = data_iterator_stl10(5000, True, None, False, output_dir=output_dir)
+    train_di = data_iterator_stl10(
+        5000, True, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "stl10_training.csv"... ')
-    train_csv = data_iterator_to_csv(base_dir, 'stl10_training.csv', 'training', train_di)
-    train_csv, val_csv = split_data_into_train_val(train_csv, val_size=1000, seed=seed)
-    save_list_to_csv(train_csv, base_dir, 'stl10_training' + '_' + str(seed) + '.csv')
-    save_list_to_csv(val_csv, base_dir, 'stl10_validation' + '_' + str(seed) + '.csv')
+    train_csv = data_iterator_to_csv(
+        base_dir, 'stl10_training.csv', 'training', train_di)
+    train_csv, val_csv = split_data_into_train_val(
+        train_csv, val_size=1000, seed=seed)
+    save_list_to_csv(train_csv, base_dir, 'stl10_training' +
+                     '_' + str(seed) + '.csv')
+    save_list_to_csv(val_csv, base_dir, 'stl10_validation' +
+                     '_' + str(seed) + '.csv')
 
     # Validation
-    validation_di = data_iterator_stl10(8000, False, None, False, output_dir=output_dir)
+    validation_di = data_iterator_stl10(
+        8000, False, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "stl10_test.csv"... ')
-    test_csv = data_iterator_to_csv(base_dir, 'stl10_test.csv', 'validation', validation_di)
+    test_csv = data_iterator_to_csv(
+        base_dir, 'stl10_test.csv', 'validation', validation_di)
     logger.log(99, 'Dataset creation completed successfully.')
 
 
@@ -204,7 +215,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='csv data', formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument(    
+    parser.add_argument(
         '-s', '--seed', help='seed num', default=0, type=int, required=True)
     args = parser.parse_args()
     main(args)

@@ -138,7 +138,7 @@ def data_iterator_to_csv(csv_path, data_path, data_iterator, seed=0):
     index = 0
     csv_data = []
     with data_iterator as data:
-        line = ['x:image','y:label']
+        line = ['x:image', 'y:label']
         csv_data.append(line)
         pbar = tqdm.tqdm(total=data.size, unit='images')
         initial_epoch = data.epoch
@@ -146,12 +146,15 @@ def data_iterator_to_csv(csv_path, data_path, data_iterator, seed=0):
             d = data.next()
             for i in range(len(d[0])):
                 label = d[1][i][0]
-                file_name = data_path + '/{}'.format(label) + '/{}.png'.format(index)
-                full_path = os.path.join(csv_path, file_name.replace('/', os.path.sep))
+                file_name = data_path + \
+                    '/{}'.format(label) + '/{}.png'.format(index)
+                full_path = os.path.join(
+                    csv_path, file_name.replace('/', os.path.sep))
                 directory = os.path.dirname(full_path)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                imwrite(full_path, d[0][i].reshape(3, 32, 32).transpose(1, 2, 0))
+                imwrite(full_path, d[0][i].reshape(
+                    3, 32, 32).transpose(1, 2, 0))
                 csv_data.append([file_name, label])
                 index += 1
                 pbar.update(1)
@@ -169,12 +172,16 @@ def create_data_csv(seed):
     train_di = data_iterator_cifar10(50000, output_dir=output_dir)
     logger.log(99, 'Creating "cifar10_training.csv"... ')
     train_csv = data_iterator_to_csv(base_dir, 'training', train_di)
-    train_csv, val_csv = split_data_into_train_val(train_csv, val_size=10000, seed=seed)
+    train_csv, val_csv = split_data_into_train_val(
+        train_csv, val_size=10000, seed=seed)
 
-    save_list_to_csv(train_csv, base_dir, 'cifar10_training' + '_' + str(seed) + '.csv')
-    save_list_to_csv(val_csv, base_dir, 'cifar10_validation' + '_' + str(seed) + '.csv')
+    save_list_to_csv(train_csv, base_dir,
+                     'cifar10_training' + '_' + str(seed) + '.csv')
+    save_list_to_csv(val_csv, base_dir, 'cifar10_validation' +
+                     '_' + str(seed) + '.csv')
     # Create original test set
-    validation_di = data_iterator_cifar10(10000, False, None, False, output_dir=output_dir)
+    validation_di = data_iterator_cifar10(
+        10000, False, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "cifar10_test.csv"... ')
     test_csv = data_iterator_to_csv(base_dir, 'validation', validation_di)
     save_list_to_csv(test_csv, base_dir, 'cifar10_test.csv')
@@ -190,7 +197,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='csv data', formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument(    
+    parser.add_argument(
         '-s', '--seed', help='seed num', default=0, type=int, required=True)
     args = parser.parse_args()
     main(args)

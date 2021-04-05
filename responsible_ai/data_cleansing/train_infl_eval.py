@@ -80,7 +80,8 @@ def train_and_infl(args, shuffle_infl):
     # train
     # only for the round where all params are calculated to avoid duplicated calculation
     if calc_infl_with_all_params:
-        train(model_info_dict, file_dir_dict, calc_infl_with_all_params, need_evaluate)
+        train(model_info_dict, file_dir_dict,
+              calc_infl_with_all_params, need_evaluate)
     # infl
     if shuffle_infl:
         base_path = os.path.dirname(os.path.dirname(args.output))
@@ -88,12 +89,14 @@ def train_and_infl(args, shuffle_infl):
         shutil.copy(fn, args.output)
         make_random_file(args.output)
     else:
-        infl_sgd(model_info_dict, file_dir_dict, calc_infl_with_all_params, need_evaluate)
+        infl_sgd(model_info_dict, file_dir_dict,
+                 calc_infl_with_all_params, need_evaluate)
 
 
 def eval(args, method_score_dir, score_basename):
     for idx, n_to_remove in enumerate(args.remove_n_list):
-        args.score_output = os.path.join(method_score_dir, score_basename + str(n_to_remove) + '_seed_' + str(args.seed) + '.csv')
+        args.score_output = os.path.join(
+            method_score_dir, score_basename + str(n_to_remove) + '_seed_' + str(args.seed) + '.csv')
         print(args.score_output)
         if os.path.exists(args.score_output):
             print('already exists')
@@ -103,7 +106,8 @@ def eval(args, method_score_dir, score_basename):
         file_dir_dict = config.file_dir_dict
         if not has_enough_data(file_dir_dict['train_csv'], n_to_remove):
             continue
-        run_train_for_eval(model_info_dict, file_dir_dict, n_to_remove, args.retrain_all)
+        run_train_for_eval(model_info_dict, file_dir_dict,
+                           n_to_remove, args.retrain_all)
 
 
 def create_csv_files(dataset_name, seed: int):
@@ -117,7 +121,8 @@ def create_csv_files(dataset_name, seed: int):
 
 def generate_dataset(dataset_name, seed):
     fd = {}
-    base_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'datasets', dataset_name)
+    base_dir = os.path.join(os.path.abspath(
+        os.path.dirname(__file__)), 'datasets', dataset_name)
     fd['training'] = os.path.join(base_dir, f'{dataset_name}_training_{str(seed)}.csv')
     fd['validation'] = os.path.join(base_dir, f'{dataset_name}_validation_{str(seed)}.csv')
     fd['test'] = os.path.join(base_dir, f'{dataset_name}_test.csv')
@@ -143,11 +148,13 @@ def run(args):
     for i, seed in enumerate(seeds):
         args.seed = seed
         fd = generate_dataset(args.dataset, seed)
-        args.input_train, args.input_val, args.input_test = fd['training'], fd['validation'], fd['test']
+        args.input_train, args.input_val, args.input_test = fd[
+            'training'], fd['validation'], fd['test']
         for method_name, calc_setting in method_dict.items():
             # setup params
             method_score_dir = os.path.join(output_dir, 'score', method_name)
-            method_infl_dir = os.path.join(output_dir, 'influence', method_name)
+            method_infl_dir = os.path.join(
+                output_dir, 'influence', method_name)
             ensure_dir(method_score_dir)
             ensure_dir(method_infl_dir)
             args.calc_infl_method = calc_setting['calc_infl_method']
@@ -155,7 +162,8 @@ def run(args):
             shuffle_infl = calc_setting['shuffle_infl']
             args.weight_output = os.path.join(weight_dir, 'seed_%02d' % (seed))
             ensure_dir(args.weight_output)
-            args.output = os.path.join(method_infl_dir, 'influence_' + str(seed) + '.csv')
+            args.output = os.path.join(
+                method_infl_dir, 'influence_' + str(seed) + '.csv')
             # train and infl
             train_and_infl(args, shuffle_infl)
             # eval

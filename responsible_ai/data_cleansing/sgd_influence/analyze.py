@@ -56,7 +56,8 @@ def get_summary_df(file_dir, method_list, baseline_name):
 def analyze_result(score_dir, baseline_name='No Removal'):
     # obtain method
     files = os.listdir(score_dir)
-    methods = np.array([f for f in files if os.path.isdir(os.path.join(score_dir, f))])
+    methods = np.array(
+        [f for f in files if os.path.isdir(os.path.join(score_dir, f))])
     # read data
     summary_df = get_summary_df(score_dir, methods, baseline_name)
     return summary_df
@@ -71,7 +72,8 @@ def plot_result(acc, output_dir, baseline_name, fig_save_dir_name='fig'):
     labels.remove(baseline_name)
     labels.append(baseline_name)
 
-    dataset = [(df[df[hue] == x]['n_drops'].values.tolist(), df[df[hue] == x]['test_accuracy'].values.tolist()) for x in labels]
+    dataset = [(df[df[hue] == x]['n_drops'].values.tolist(
+    ), df[df[hue] == x]['test_accuracy'].values.tolist()) for x in labels]
     for label, dataset in zip(labels, dataset):
         x, y = dataset[0], dataset[1]
         if label == baseline_name:

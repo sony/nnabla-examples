@@ -27,7 +27,8 @@ from .utils import ensure_dir, get_indices, save_to_csv
 def select_modelfile_for_infl(use_all_params, final_model_path, save_dir, epoch, step):
     if use_all_params:
         weights_dir = 'weights'
-        fn = '%s/epoch%02d/%s/model_step%04d.h5' % (save_dir, epoch, weights_dir, step)
+        fn = '%s/epoch%02d/%s/model_step%04d.h5' % (
+            save_dir, epoch, weights_dir, step)
     else:
         fn = final_model_path
     return fn
@@ -40,7 +41,8 @@ def save_infl_for_analysis(infl_list, use_all_params, save_dir, infl_filename, e
     else:
         dn = os.path.join(dn, 'infl_arranged')
     ensure_dir(dn)
-    save_to_csv(filename=os.path.join(dn, os.path.basename(infl_filename)), header=header, list_to_save=infl_list, data_type=data_type)
+    save_to_csv(filename=os.path.join(dn, os.path.basename(infl_filename)),
+                header=header, list_to_save=infl_list, data_type=data_type)
 
 
 def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
@@ -56,11 +58,13 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
     info_filename = file_dir_dict['info_filename']
     infl_filename = file_dir_dict['infl_filename']
     final_model_name = file_dir_dict['model_filename']
-    final_model_path = os.path.join(save_dir, 'epoch%02d' % (target_epoch - 1), 'weights', final_model_name)
+    final_model_path = os.path.join(save_dir, 'epoch%02d' % (
+        target_epoch - 1), 'weights', final_model_name)
     input_dir_name = os.path.dirname(file_dir_dict['train_csv'])
 
     # setup
-    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
+    trainset, valset, image_shape, n_classes, ntr, nval = init_dataset(
+        file_dir_dict['train_csv'], file_dir_dict['val_csv'], seed)
     n_channels, _h, _w = image_shape
     resize_size = get_image_size((_h, _w))
     idx_train = get_indices(ntr, seed)
@@ -76,7 +80,8 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
     solver = S.Sgd(lr=lr)
     solver.set_parameters(trained_params)
     # gradient
-    u = compute_gradient(grad_model, solver, valset, batch_size, idx_val, target_epoch, resize_size)
+    u = compute_gradient(grad_model, solver, valset,
+                         batch_size, idx_val, target_epoch, resize_size)
 
     test = False
     infl_model = functools.partial(
@@ -88,8 +93,10 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
     for epoch in tqdm(range(target_epoch - 1, end_epoch - 1, -1), desc='calc influence (3/3 steps)'):
         for step_info in info[epoch][::-1]:
             idx, seeds, lr, step = step_info['idx'], step_info['seeds'], step_info['lr'], step_info['step']
-            fn = select_modelfile_for_infl(use_all_params, final_model_path, save_dir, epoch, step)
-            _, loss_fn, input_image = adjust_batch_size(infl_model, solver, 1, loss_fn)
+            fn = select_modelfile_for_infl(
+                use_all_params, final_model_path, save_dir, epoch, step)
+            _, loss_fn, input_image = adjust_batch_size(
+                infl_model, solver, 1, loss_fn)
             nn.load_parameters(fn)
             params = nn.get_parameters(grad_only=False)
             solver = S.Sgd(lr=lr)
@@ -98,7 +105,8 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
             y = []
             for i, seed in zip(idx, seeds):
                 i = int(i)
-                image, label = get_data(trainset, idx_train[i], resize_size, test, seed=seed)
+                image, label = get_data(
+                    trainset, idx_train[i], resize_size, test, seed=seed)
                 X.append(image)
                 y.append(label)
                 input_image["image"].d = image
@@ -119,7 +127,8 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
                 infl_dict[csv_idx] = [file_name, label, infl]
 
             # update u
-            _, loss_fn, input_image = adjust_batch_size(infl_model, solver, len(idx), loss_fn)
+            _, loss_fn, input_image = adjust_batch_size(
+                infl_model, solver, len(idx), loss_fn)
             input_image["image"].d = X
             input_image["label"].d = np.array(y).reshape(-1, 1)
             loss_fn.forward()
@@ -150,8 +159,10 @@ def infl_sgd(model_info_dict, file_dir_dict, use_all_params, need_evaluate):
         header = ['x:image', 'y:label', 'influence', 'datasource_index']
         data_type = 'object,int,float,int'
         if need_evaluate:
-            save_infl_for_analysis(infl_list, use_all_params, save_dir, infl_filename, epoch, header, data_type)
-    save_to_csv(filename=infl_filename, header=header, list_to_save=infl_list, data_type=data_type)
+            save_infl_for_analysis(
+                infl_list, use_all_params, save_dir, infl_filename, epoch, header, data_type)
+    save_to_csv(filename=infl_filename, header=header,
+                list_to_save=infl_list, data_type=data_type)
 
 
 def compute_gradient(grad_model, solver, dataset, batch_size, idx_list_to_data, epoch, resize_size):
@@ -160,8 +171,10 @@ def compute_gradient(grad_model, solver, dataset, batch_size, idx_list_to_data, 
     u = {}
     loss_fn = None
     for i in tqdm(grad_idx, desc='calc gradient (2/3 steps)'):
-        X, y = get_batch_data(dataset, idx_list_to_data, i, resize_size, test=True)
-        _, loss_fn, input_image = adjust_batch_size(grad_model, solver, len(X), loss_fn)
+        X, y = get_batch_data(dataset, idx_list_to_data,
+                              i, resize_size, test=True)
+        _, loss_fn, input_image = adjust_batch_size(
+            grad_model, solver, len(X), loss_fn)
         input_image["image"].d = X
         input_image["label"].d = y
         loss_fn.forward()

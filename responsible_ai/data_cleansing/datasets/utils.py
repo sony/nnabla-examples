@@ -34,7 +34,7 @@ def save_list_to_csv(csv_data, csv_path, csv_file_name):
 
 
 def split_data_into_train_val(data_list, val_size=10000, seed=0):
-    n = len(data_list) - 1 # forst row is title
+    n = len(data_list) - 1  # forst row is title
     np.random.seed(seed)
     idx_val = np.random.permutation(n)[:val_size]
     idx_train = np.setdiff1d(np.arange(n), idx_val)
