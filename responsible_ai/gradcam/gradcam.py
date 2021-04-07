@@ -33,10 +33,10 @@ def gradcam(middle_layer):
     """
     conv_layer_output = middle_layer.d
     conv_layer_grad = middle_layer.g
-    pooled_grad = conv_layer_grad.mean(axis=(0,2,3), keepdims=True)
+    pooled_grad = conv_layer_grad.mean(axis=(0, 2, 3), keepdims=True)
     heatmap = pooled_grad * conv_layer_output
     heatmap = np.maximum(heatmap, 0)    # ReLU
-    heatmap = heatmap.mean(axis=(0,1))
+    heatmap = heatmap.mean(axis=(0, 1))
     max_v, min_v = np.max(heatmap), np.min(heatmap)
     if max_v != min_v:
         heatmap = (heatmap - min_v) / (max_v - min_v)
@@ -62,7 +62,8 @@ def overlay_images(base_img, overlay_img, overlay_coef=1.0):
         2D array of overlaid image
     """
     # resize
-    _overlay_img = cv2.resize(overlay_img, (base_img.shape[1], base_img.shape[0]))
+    _overlay_img = cv2.resize(
+        overlay_img, (base_img.shape[1], base_img.shape[0]))
     # normalize
     _overlay_img = 255 * _overlay_img / _overlay_img.max()
     _overlay_img = _overlay_img.astype('uint8')
