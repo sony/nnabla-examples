@@ -1,22 +1,23 @@
+# TracIn
+
 ## Overview
-NNabla example code of TracIn mislabel detection algorithm.  
+This is an implementation of Neural Network Libraries for estimating training data influence by tracing gradient descent called TracIn.
+The goal is to identify the influence of training data points.  
 TracIn computes the influence of a training sample by tracing the training loss changes as below.
 <img src="./figure/equation.png" width="650px">  
-TracInCP will increase if sample have a good or bad influence for learning model because of its absolute value of influence.  
-However, After the beggining of trainig,  mislabelled (bad influence) sample's would have larger influence than other samples.  
-So, you can pick up mislabelled samples only for 20% of training data inspection as below. 
+This code is an example of mislabeled data detection with TracIn. 
+
 <img src="./figure/self_influence_distribution.png" width="440px"><img src="./figure/score_curve.png" width="440px">
 
-
 ## Setup
-Install the dependencies as below.
+Install the dependencies as below:
 
 ```
 pip install -r requirements.txt
 ```
 
-## Training(shuffle label)
-If you wanna varificate the efficiency of incorrect labelled sample detection by TracIn algorithm, you must train the network by partially shuffled label(default is `10%`) as below. 
+## Training(shuffled label)
+In order to check the efficiency of mislabelled sample detection by TracIn, please train the network by partially shuffled label (default is `10%`) as below: 
 <br>
 
 ```python
@@ -42,13 +43,13 @@ python -u train.py --output output \
 <br>
 
 ## Incorrect Labelled Data Detection
+After the training is completed, **self-influence** is calculated to find the incorrect labelled sample. The **Self-influence** means the influence of a training point on its own loss.
 
-After the incorrect(shuffle) labelled training completes successfully,  calculate self-influence to find the incorrect labelled sample
 <br>
 
 ### Calculate Self Influence
 
-Calculate the self-influence as below.
+Calculate the self-influence as below:
 <br>
 
 ```python
@@ -73,7 +74,7 @@ python -u calculate_score.py --output output \
 
 ### Mislabel Analyesis
 
-analyse the efficiency of mislabelled detection task by self-influence as below.
+Analyze the efficiency of mislabelled detection task by self-influence as below:
 <br>
 
 ```python
@@ -88,4 +89,4 @@ python mislabel_analysis.py --input output \
 <br>
 
 ## Reference
-- Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.[Estimating Training Data Influence by Tracing Gradient Descent](https://arxiv.org/pdf/2002.08484.pdf),arXiv:2002.08484,2020,
+- Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.[Estimating Training Data Influence by Tracing Gradient Descent](https://arxiv.org/pdf/2002.08484.pdf),arXiv:2002.08484,2020.
