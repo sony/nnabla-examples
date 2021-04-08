@@ -2,7 +2,7 @@
 ## Overview
 NNabla example code of TracIn mislabel detection algorithm.  
 you can pick up mislabelled samples only for 20% of training data inspection by proposed method as below.
-![](./figure/score_distribution.png)
+![](./figure/self_influence_distribution.png)
 ![](./figure/score_curve.png)
 
 
