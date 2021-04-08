@@ -1,11 +1,10 @@
 ## Overview
 NNabla example code of TracIn mislabel detection algorithm.  
-TracIn computes the influence of a training sample by tracing the loss changes as below.
+TracIn computes the influence of a training sample by tracing the training loss changes as below.
 <img src="./figure/equation.png" width="650px">  
-It shows the absolute value of training sample's influence.  
-So, it will increase if sample have a good or bad influence for learning model.  
-After the beggining of trainig, mislabel(bad influence) sample's influecence would be larger than good influence samples.
-So, you can pick up mislabelled samples only for 20% of training data inspection as below following this algorithm.
+TracInCP will increase if sample have a good or bad influence for learning model because of its absolute value of influence.  
+However, After the beggining of trainig,  mislabelled (bad influence) sample's would have larger influence than other samples.  
+So, you can pick up mislabelled samples only for 20% of training data inspection as below. 
 <img src="./figure/self_influence_distribution.png" width="440px"><img src="./figure/score_curve.png" width="440px">
 
 
@@ -15,7 +14,6 @@ Install the dependencies as below.
 ```
 pip install -r requirements.txt
 ```
-
 
 ## Training(shuffle label)
 If you wanna varificate the efficiency of incorrect labelled sample detection by TracIn algorithm, you must train the network by partially shuffled label(default is `10%`) as below. 
@@ -30,6 +28,7 @@ python train.py [-c cudnn] \
 
 - shuffled label dataset(`.npy`) will be saved at `output_path`
 - model parameters will be saved at log directory(default is `tmp.monitor`)
+<br>
 
 (Example)
 ```python
@@ -40,6 +39,7 @@ python -u train.py --output output \
                    --shuffle_label True \
                    -c cudnn
 ```
+<br>
 
 ## Incorrect Labelled Data Detection
 
@@ -69,7 +69,7 @@ python -u calculate_score.py --output output \
                              --input output \
                              -c cudnn
 ```
-
+<br>
 
 ### Mislabel Analyesis
 
@@ -80,13 +80,12 @@ analyse the efficiency of mislabelled detection task by self-influence as below.
 python mislabel_analysis.py [--input path to npy files] \
                             [--output output_path]
 ```
-<br>
-
 (Example)
 ```pyhton
 python mislabel_analysis.py --input output \
                             --output figure
 ```
+<br>
 
 ## Reference
 - Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.[Estimating Training Data Influence by Tracing Gradient Descent](https://arxiv.org/pdf/2002.08484.pdf),arXiv:2002.08484,2020,
