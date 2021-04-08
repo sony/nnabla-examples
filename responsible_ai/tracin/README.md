@@ -1,9 +1,7 @@
 # TracIn
 
 ## Overview
-This is an implementation of Neural Network Libraries for estimating training data influence by tracing gradient descent called TracIn.
-The goal is to identify the influence of training data points.  
-TracIn computes the influence of a training sample by tracing the training loss changes as below.
+This is an implementation of Neural Network Libraries for estimating training data influence by tracing gradient descent called TracIn. The goal is to identify the influence of training data points. TracIn computes the influence of a training sample by tracing the training loss changes as below:
 <img src="./figure/equation.png" width="650px">  
 This code is an example of mislabeled data detection with TracIn. 
 
