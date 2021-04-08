@@ -64,10 +64,10 @@ def save_distribution(score, raw, shuffle):
     plt.figure()
 
     sns.distplot(correct, label='correct_label', color='blue')
-    sns.distplot(wrong, label='shuffled label', color='red')
+    sns.distplot(wrong, label='shuffled_label', color='red')
     plt.legend()
-    plt.xlabel('Self Influence Score')
-    plt.savefig(os.path.join(args.output, 'score_distribution.png'))
+    plt.xlabel('Self Influence')
+    plt.savefig(os.path.join(args.output, 'self_influence_distribution.png'))
     plt.close()
 
 
