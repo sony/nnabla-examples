@@ -3,11 +3,15 @@
 ## Overview
 This is an implementation of Neural Network Libraries for estimating training data influence by tracing gradient descent called TracIn. The goal is to identify the influence of training data points. TracIn computes the influence of a training sample by tracing the training loss changes as below:
 
+<p align="center">
 <img src="./figure/equation.png" width="650px">  
+</p>
 
 This code is an example of mislabeled data detection with TracIn. 
 
+<p align="center">
 <img src="./figure/self_influence_distribution.png" width="440px"><img src="./figure/score_curve.png" width="440px">
+</p>
 
 ## Setup
 Install the dependencies as below:
