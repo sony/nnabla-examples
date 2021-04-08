@@ -85,7 +85,8 @@ def rank_ckpt_influence(raw, shuffle, extract_percentage=0.10):
     analysis of the trend of influence samples between extracted checkpoints
     '''
     raw, shuffle = np.squeeze(raw), np.squeeze(shuffle)
-    labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    labels = ['airplane', 'automobile', 'bird', 'cat',
+              'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
     ckpt_influences = sorted(glob(os.path.join(args.input, '*_influence.npy')))
     for ckpt_influence in ckpt_influences:
         counter = np.zeros(10)
@@ -108,13 +109,16 @@ def rank_ckpt_influence(raw, shuffle, extract_percentage=0.10):
 
 
 def save_extracted_images(images, score, raw, shuffle):
-    labels_name = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    labels_name = ['airplane', 'automobile', 'bird', 'cat',
+                   'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
     iteration = int(len(images)/10)
     check_num = [int(i) for i in np.arange(0, len(images), len(images)/10)]
     for num in check_num:
         # prepare save directory
-        correct_dir = os.path.join(args.output, 'extracted_samples', str(num+iteration), 'correct_label')
-        incorrect_dir = os.path.join(args.output, 'extracted_samples', str(num+iteration), 'incorrect_label')
+        correct_dir = os.path.join(
+            args.output, 'extracted_samples', str(num+iteration), 'correct_label')
+        incorrect_dir = os.path.join(
+            args.output, 'extracted_samples', str(num+iteration), 'incorrect_label')
         for dir in [correct_dir, incorrect_dir]:
             if not os.path.exists(dir):
                 os.makedirs(dir)
@@ -145,8 +149,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='evaluation classification')
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
-    parser.add_argument('--ckpt_analysis', type=strtobool, default=False, help='whether verify the difference of most influence sample trend between checkpoint or not')
-    parser.add_argument('--save_extracted', type=strtobool, default=False, help='whethre save the extracted images at certain threshold of self influence score')
+    parser.add_argument('--ckpt_analysis', type=strtobool, default=False,
+                        help='whether verify the difference of most influence sample trend between checkpoint or not')
+    parser.add_argument('--save_extracted', type=strtobool, default=False,
+                        help='whethre save the extracted images at certain threshold of self influence score')
     args = parser.parse_args()
 
     if not os.path.exists(args.output):

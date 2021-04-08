@@ -35,7 +35,8 @@ CHECKPOINTS_PATH_FORMAT = "params_{}.h5"
 
 
 def load_ckpt_path():
-    checkpoints = [os.path.join(args.checkpoint, CHECKPOINTS_PATH_FORMAT.format(str(i))) for i in range(29, 299, 30)]
+    checkpoints = [os.path.join(args.checkpoint, CHECKPOINTS_PATH_FORMAT.format(
+        str(i))) for i in range(29, 299, 30)]
     return checkpoints
 
 
@@ -108,7 +109,8 @@ def get_scores(dataloader, iteration, ckpt_paths):
         ckpt_influences = calculate_ckpt_score(
             dataloader, iteration, image_val, label_val, pred_val, hidden, loss_val)
         if args.save_every_epoch:
-            np.save(os.path.join(args.output, (epoch+'_influence.npy')), np.array([float(score.data) for score in ckpt_influences]))
+            np.save(os.path.join(args.output, (epoch+'_influence.npy')),
+                    np.array([float(score.data) for score in ckpt_influences]))
         ckpt_scores.append(ckpt_influences)
 
     sum_ckpt_scores = []
@@ -144,10 +146,11 @@ if __name__ == "__main__":
     parser.add_argument('--input', type=str)
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument('--output', type=str)
-    parser.add_argument('--context','-c', default='cudnn')
+    parser.add_argument('--context', '-c', default='cudnn')
     parser.add_argument('--device-id', type=str, default='0')
     parser.add_argument('--model', type=str, choices=['resnet23', 'resnet56'])
-    parser.add_argument('--save_every_epoch', type=strtobool, default=False, help='whether save influence score between every epoch or not')
+    parser.add_argument('--save_every_epoch', type=strtobool, default=False,
+                        help='whether save influence score between every epoch or not')
     parser.add_argument("--type_config",
                         "-t",
                         type=str,
