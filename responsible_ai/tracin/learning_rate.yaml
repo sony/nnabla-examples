@@ -1,0 +1,8 @@
+learning_rate_config:
+    scheduler_type: EpochStepLearningRateScheduler
+    base_lr: 1.0
+    warmup_epochs: 15
+    epochs:
+    lr_steps: [90, 180, 240]
+    decay_rate: 0.1
+    legacy_warmup: False
