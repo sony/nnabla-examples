@@ -11,7 +11,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 ---
 
-## Data cleansing with with Storage-efficient Approximation of Influence Functions
+## Data cleansing with with Storage-efficient Approximation of Influence Functions [code](./data_cleansing/)
 
 > [**Data Cleansing for Deep Neural Networks with Storage-efficient Approximation of Influence Functions**]((https://arxiv.org/abs/2103.11807).),
 > Kenji Suzuki, Yoshiyuki Kobayashi, Takuya Narihira
@@ -19,8 +19,9 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 ![](./data_cleansing/imgs/datacleansing.png)
 
-### Code
-The code to data cleansing is provided by the following repository. Please give it a try.
+## TracIn [code](./tracin/)
+> [**Estimating Training Data Influence by Tracing Gradient Descent**]((https://arxiv.org/abs/2002.08484).),
+> Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale
+> *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
 
-[code](./data_cleansing/)
 
