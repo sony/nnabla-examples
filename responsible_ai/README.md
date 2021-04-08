@@ -26,4 +26,6 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 This is an implementation of Neural Network Libraries for estimating training data influence by tracing gradient descent called TracIn. The goal is to identify the influence of training data points. TracIn computes the influence of a training sample by tracing the training loss changes. This code is an example of mislabeled data detection with TracIn. 
 
+<p align="center">
 <img src="./tracin/figure/self_influence_distribution.png" width="440px"><img src="./tracin/figure/score_curve.png" width="440px">
+</p>
