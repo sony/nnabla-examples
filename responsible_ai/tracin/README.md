@@ -2,8 +2,7 @@
 ## Overview
 NNabla example code of TracIn mislabel detection algorithm.  
 you can pick up mislabelled samples only for 20% of training data inspection by proposed method as below.
-![](./figure/score_distribution.png)
-![](./figure/score_curve.png)
+![](./figure/score_distribution_example.png)
 
 
 ## Setup
@@ -35,16 +34,16 @@ python -u train.py --output output --monitor-path output --model resnet23 --mode
 After the incorrect(shuffle) labelled training completes successfully,  calculate self-influence score to find the incorrect labelled sample
 <br>
 
-### Calculate Self Influence
+### Calculate Self Influence Scores
 
-Calculate the self-influence as below.
+Calculate the self-influence score as below.
 <br>
 
 ```
 python calculate_score.py [-c cudnn] [--input path to npy files] [--model resnet56] [--checkpoint ckpt_path] [--output output_path]
 ```
 
-- self influence score will be saved at `output_path`
+- influence score will be saved at `output_path`
 
 Example
 ```
@@ -54,7 +53,7 @@ python -u calculate_score.py --output output --checkpoint output --model resnet2
 
 ### Mislabel Analyesis
 
-analyse the efficiency of mislabelled detection task by self-influence as below.
+analyse the efficiency of mislabelled detection task by self-influence score as below.
 <br>
 
 ```
