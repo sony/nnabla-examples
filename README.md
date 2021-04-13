@@ -54,3 +54,9 @@ We have prepared interactive demos, where you can play around without having to 
 | [Virtual Adversarial Training](https://arxiv.org/abs/1704.03976) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/vat_semi_supervised_learning.ipynb) | Semi-Supervised Learning ||
 | [SiameseNet](https://arxiv.org/abs/1606.09549) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/siamese_feature_embedding.ipynb) | Feature Embedding ||
 | [Variational Auto-encoder](https://arxiv.org/abs/1312.6114) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/vae_unsupervised_learning.ipynb) | Unsupervised Learning ||
+
+**eXplainable AI**
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Grad-CAM |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
+ 
