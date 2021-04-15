@@ -47,7 +47,7 @@ python -u train.py --output output \
 <br>
 
 ## Incorrect Labelled Data Detection
-After the training is completed, **self-influence** is calculated to find the incorrect labelled sample. The **Self-influence** means the influence of a training point on its own loss.
+After the training is completed, **self-influence** is calculated to find the incorrect labelled sample. The **self-influence** means the influence of a training point on its own loss.
 
 <br>
 
