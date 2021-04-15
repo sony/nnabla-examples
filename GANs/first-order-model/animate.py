@@ -179,8 +179,8 @@ def animate(args):
                         kp_source["jacobian"],
                         kp_driving_initial["value"],
                         kp_driving_initial["jacobian"]])
-        source_area = ConvexHull(kp_source['value'][0].d).volume
-        driving_area = ConvexHull(kp_driving_initial['value'][0].d).volume
+        source_area = ConvexHull(kp_source['value'].d[0]).volume
+        driving_area = ConvexHull(kp_driving_initial['value'].d[0]).volume
         adapt_movement_scale = np.sqrt(source_area) / np.sqrt(driving_area)
     else:
         adapt_movement_scale = 1
