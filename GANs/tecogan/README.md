@@ -99,7 +99,6 @@ python train.py \
      --output_dir {path to save trained model} \
      --num_resblock 10 \
      --max_iter 500000 \
-     --tecogan False \
 ```
 #### Distributed Training
 For distributed training [install NNabla package compatible with Multi-GPU execution](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html#pip-installation-distributed). Use the below code to start the distributed training.
@@ -110,7 +109,6 @@ mpirun -n {no. of devices} python train.py \
      --output_dir {path to save trained model} \
      --num_resblock 10 \
      --max_iter 500000 \
-     --tecogan False \
 ```
 ### Training TecoGAN
 TecoGAN uses feature maps from a pre-trained VGG19 network to encourage generator to produce similar feature maps as ground truth.
@@ -133,7 +131,7 @@ python train.py \
      --max_iter 900000 \
      --vgg_pre_trained_weights {path to VGG19 trained model} \
      --pre_trained_frvsr_weights {path to FRVSR trained model}
-     --tecogan True \
+     --tecogan \
 ```
 #### Distributed training
 ```
@@ -145,7 +143,7 @@ mpirun -n {no. of devices} python train.py \
      --max_iter 900000 \
      --vgg_pre_trained_weights {path to VGG19 trained model} \
      --pre_trained_frvsr_weights {path to FRVSR trained model}
-     --tecogan True \
+     --tecogan \
 ```
 
 #### Evaluation
