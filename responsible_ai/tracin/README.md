@@ -20,25 +20,17 @@ If you wanna varificate the efficiency of incorrect labelled sample detection by
 <br>
 
 ```python
-python train.py [-c cudnn] \
-                [--shuffle_label True] \
-                [--model resnet56] \
-                [--output output_path]
+python train.py --output output_path \
+                --monitor-path tmp.monitor \
+                --model resnet23 \
+                --model_save_path tmp.monitor \
+                --shuffle_label True \
+                -c cudnn
 ```
 
 - shuffled label dataset(`.npy`) will be saved at `output_path`
 - model parameters will be saved at log directory(default is `tmp.monitor`)
-<br>
 
-(Example)
-```python
-python train.py --output output \
-                --monitor-path output \
-                --model resnet23 \
-                --model_save_path output \
-                --shuffle_label True \
-                -c cudnn
-```
 <br>
 
 ## Incorrect Labelled Data Detection
@@ -52,23 +44,16 @@ Calculate the self-influence as below.
 <br>
 
 ```python
-python calculate_score.py [-c cudnn] \
-                          [--input path to npy files] \
-                          [--model resnet56] \
-                          [--checkpoint ckpt_path] \
-                          [--output output_path]
+python calculate_score.py --output output_path \
+                        　--checkpoint tmp.monitor \
+                        　--model resnet56 \
+                        　--input dataset_path \
+                        　-c cudnn
 ```
 
 - self influence score will be saved at `output_path`
 
-(Example)
-```python
-python calculate_score.py --output output \
-                        　--checkpoint output \
-                        　--model resnet23 \
-                        　--input output \
-                        　-c cudnn
-```
+
 <br>
 
 ### Mislabel Analyesis
@@ -76,13 +61,9 @@ python calculate_score.py --output output \
 analyse the efficiency of mislabelled detection task by self-influence as below.
 <br>
 
-```python
-python mislabel_analysis.py [--input path to npy files] \
-                            [--output output_path]
-```
-(Example)
+
 ```pyhton
-python mislabel_analysis.py --input output \
+python mislabel_analysis.py --input  dataset_path \
                             --output figure
 ```
 <br>
