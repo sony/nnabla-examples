@@ -35,14 +35,15 @@ CHECKPOINTS_PATH_FORMAT = "params_{}.h5"
 
 
 def load_ckpt_path():
-    checkpoints = [os.path.join(args.checkpoint, CHECKPOINTS_PATH_FORMAT.format(str(i))) for i in range(29, 299, 30)]
+    checkpoints = [os.path.join(args.checkpoint, CHECKPOINTS_PATH_FORMAT.format(
+        str(i))) for i in range(29, 299, 30)]
     return checkpoints
 
 
 def load_data():
-    x = np.load(os.path.join(args.input, 'x_train.npy'))
-    y = np.load(os.path.join(args.input, 'y_train.npy'))
-    y_shuffle = np.load(os.path.join(args.input, 'y_shuffle_train.npy'))
+    x = np.load(os.path.join(args.input, 'x_train.npy'))[:50]
+    y = np.load(os.path.join(args.input, 'y_train.npy'))[:50]
+    y_shuffle = np.load(os.path.join(args.input, 'y_shuffle_train.npy'))[:50]
 
     data_source = Cifar10NumpySource(x, y, y_shuffle)
     data_num = len(data_source.labels)
@@ -107,7 +108,8 @@ def get_scores(dataloader, data_num, ckpt_paths):
         ckpt_influences = calculate_ckpt_score(
             dataloader, data_num, image_val, label_val, pred_val, hidden, loss_val)
         if args.save_every_epoch:
-            np.save(os.path.join(args.output, (epoch+'_influence.npy')), np.array([float(score.data) for score in ckpt_influences]))
+            np.save(os.path.join(args.output, (epoch+'_influence.npy')),
+                    np.array([float(score) for score in ckpt_influences]))
 
         infl_scores[:, ckpt_ind] = ckpt_influences
     sum_ckpt_scores = infl_scores.sum(axis=-1)
@@ -141,7 +143,8 @@ if __name__ == "__main__":
     parser.add_argument('--context', '-c', default='cudnn')
     parser.add_argument('--device-id', type=str, default='0')
     parser.add_argument('--model', type=str, choices=['resnet23', 'resnet56'])
-    parser.add_argument('--save_every_epoch', type=strtobool, default=False, help='whether save influence score between every epoch or not')
+    parser.add_argument('--save_every_epoch', type=strtobool, default=False,
+                        help='whether save influence score between every epoch or not')
     parser.add_argument("--type_config",
                         "-t",
                         type=str,

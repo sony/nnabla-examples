@@ -56,7 +56,8 @@ def load_data(bs_train, bs_valid):
     train_samples, val_samples = len(data_source_train.labels), len(
         data_source_val.labels
     )
-    train_loader = data_iterator(data_source_train, bs_train, None, False, False)
+    train_loader = data_iterator(
+        data_source_train, bs_train, None, False, False)
     val_loader = data_iterator(data_source_val, bs_valid, None, False, False)
 
     return train_loader, val_loader, train_samples, val_samples
@@ -92,26 +93,33 @@ def train():
         n_train_samples = len(train_data_source.labels)
         n_val_samples = len(val_data_source.labels)
         # Data Iterator
-        train_loader = data_iterator(train_data_source, bs_train, None, False, False)
-        val_loader = data_iterator(val_data_source, bs_valid, None, False, False)
+        train_loader = data_iterator(
+            train_data_source, bs_train, None, False, False)
+        val_loader = data_iterator(
+            val_data_source, bs_valid, None, False, False)
 
         if args.shuffle_label:
             if not os.path.exists(args.output):
                 os.makedirs(args.output)
-            np.save(os.path.join(args.output, "x_train.npy"), train_data_source.images)
+            np.save(os.path.join(args.output, "x_train.npy"),
+                    train_data_source.images)
             np.save(
                 os.path.join(args.output, "y_shuffle_train.npy"),
                 train_data_source.labels,
             )
-            np.save(os.path.join(args.output, "y_train.npy"), train_data_source.raw_label)
-            np.save(os.path.join(args.output, "x_val.npy"), val_data_source.images)
-            np.save(os.path.join(args.output, "y_val.npy"), val_data_source.labels)
+            np.save(os.path.join(args.output, "y_train.npy"),
+                    train_data_source.raw_label)
+            np.save(os.path.join(args.output, "x_val.npy"),
+                    val_data_source.images)
+            np.save(os.path.join(args.output, "y_val.npy"),
+                    val_data_source.labels)
 
     if args.model == "resnet23":
         model_prediction = resnet23_prediction
     elif args.model == "resnet56":
         model_prediction = resnet56_prediction
-    prediction = functools.partial(model_prediction, ncls=10, nmaps=64, act=F.relu, seed=args.seed)
+    prediction = functools.partial(
+        model_prediction, ncls=10, nmaps=64, act=F.relu, seed=args.seed)
 
     # Create training graphs
     test = False
@@ -155,7 +163,8 @@ def train():
     # save_nnp
     contents = save_nnp({"x": image_valid}, {"y": pred_valid}, bs_valid)
     save.save(
-        os.path.join(args.model_save_path, (args.model+"_epoch0_result.nnp")), contents
+        os.path.join(args.model_save_path,
+                     (args.model+"_epoch0_result.nnp")), contents
     )
 
     train_iter = math.ceil(n_train_samples / bs_train)
@@ -211,12 +220,14 @@ def train():
         monitor_time.add(i)
 
     nn.save_parameters(
-        os.path.join(args.model_save_path, "params_%06d.h5" % (args.train_epochs))
+        os.path.join(args.model_save_path, "params_%06d.h5" %
+                     (args.train_epochs))
     )
 
     # save_nnp_lastepoch
     contents = save_nnp({"x": image_valid}, {"y": pred_valid}, bs_valid)
-    save.save(os.path.join(args.model_save_path, (args.model+"_result.nnp")), contents)
+    save.save(os.path.join(args.model_save_path,
+              (args.model+"_result.nnp")), contents)
 
 
 if __name__ == "__main__":

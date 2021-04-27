@@ -142,7 +142,7 @@ def resnet56_prediction(image, test=False, ncls=10, nmaps=64, act=F.relu, seed=0
                                          max_scale=1.2,
                                          flip_lr=True,
                                          seed=seed)
-            
+
             image.need_grad = False
         h = PF.convolution(image,
                            channels[0],

@@ -94,6 +94,7 @@ class Cifar10DataSource(DataSource):
     '''
     Get data directly from cifar10 dataset from Internet(yann.lecun.com).
     '''
+
     def _get_data(self, position):
         image = self._images[self._indexes[position]]
         label = self._labels[self._indexes[position]]
@@ -182,7 +183,7 @@ class Cifar10DataSource(DataSource):
         else:
             self._indexes = np.arange(self._size)
         super(Cifar10DataSource, self).reset()
-        
+
     def raw_label(self):
         return self.raw_label.copy()
 
