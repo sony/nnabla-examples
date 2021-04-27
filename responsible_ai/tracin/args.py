@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2021 Sony Group Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -93,28 +93,13 @@ def get_args(monitor_path='tmp.monitor',
 
     parser.add_argument('--val_batch_size',
                         type=int,
-                        default=128,
+                        default=100,
                         help='Batch size for eval. (per replica)')
 
     parser.add_argument('--train_epochs',
                         type=int,
                         default=270,
                         help='Number of epochs to train for.')
-
-    parser.add_argument('--warmup_epochs',
-                        type=int,
-                        default=15,
-                        help='Number of epochs of warmup.')
-
-    parser.add_argument('--boundaries',
-                        nargs='*',
-                        default=[15, 90, 180, 240],
-                        help='Boundaries for learning rate decay.')
-
-    parser.add_argument('--multipliers',
-                        nargs='*',
-                        default=[1.0, 0.1, 0.01, 0.001],
-                        help='Multipliers for learning rate decay.')
 
     parser.add_argument('--seed',
                         '-s',
