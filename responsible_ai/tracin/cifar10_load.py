@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2021 Sony Group Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -174,7 +174,6 @@ class Cifar10DataSource(DataSource):
             convert_label = np.array([i for _ in range(len(extract_ind))])
             convert_label[-extract_num:] = artificial_label
 
-            # 後ろから数個分のラベル変更
             self._labels[extract_ind] = convert_label.reshape(-1, 1)
 
     def reset(self):
