@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2021 Sony Group Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -134,7 +134,6 @@ def train():
     cfg = read_yaml("./learning_rate.yaml")
     print(cfg)
     lr_sched = create_learning_rate_scheduler(cfg.learning_rate_config)
-
     solver = S.Momentum(momentum=0.9, lr=lr_sched.get_lr())
     solver.set_parameters(nn.get_parameters())
     start_point = 0
