@@ -32,12 +32,12 @@ python train.py [-c cudnn] \
 
 (Example)
 ```python
-python -u train.py --output output \
-                   --monitor-path output \
-                   --model resnet23 \
-                   --model_save_path output \
-                   --shuffle_label True \
-                   -c cudnn
+python train.py --output output \
+                --monitor-path output \
+                --model resnet23 \
+                --model_save_path output \
+                --shuffle_label True \
+                -c cudnn
 ```
 <br>
 
@@ -63,11 +63,11 @@ python calculate_score.py [-c cudnn] \
 
 (Example)
 ```python
-python -u calculate_score.py --output output \
-                             --checkpoint output \
-                             --model resnet23 \
-                             --input output \
-                             -c cudnn
+python calculate_score.py --output output \
+                        　--checkpoint output \
+                        　--model resnet23 \
+                        　--input output \
+                        　-c cudnn
 ```
 <br>
 
