@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2021 Sony Group Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,18 +45,18 @@ def load_data():
     y_shuffle = np.load(os.path.join(args.input, 'y_shuffle_train.npy'))
 
     data_source = Cifar10NumpySource(x, y, y_shuffle)
-    iteration = len(data_source.labels)
+    data_num = len(data_source.labels)
     loader = data_iterator(data_source, 1, None, False, False)
 
-    return loader, iteration, x, y, y_shuffle
+    return loader, data_num, x, y, y_shuffle
 
 
-def calculate_ckpt_score(dataloader, iteration, image_val, label_val, pred_val, hidden, loss_val):
+def calculate_ckpt_score(dataloader, data_num, image_val, label_val, pred_val, hidden, loss_val):
     ckpt_scores = []
     labels, shuffle = [], []
 
-    bar = tqdm(total=iteration)
-    for i in range(iteration):
+    bar = tqdm(total=data_num)
+    for i in range(data_num):
         bar.update(1)
         inputs = dataloader.next()
         for name, param in nn.get_parameters().items():
@@ -76,13 +76,11 @@ def calculate_ckpt_score(dataloader, iteration, image_val, label_val, pred_val, 
                 grads.append(param.grad)
         grad_mul = [F.sum(grad * grad) for grad in grads]
         score = F.add_n(*grad_mul)
-        ckpt_scores.append(score)
+        ckpt_scores.append(score.data)
     return ckpt_scores
 
 
-def get_scores(dataloader, iteration, ckpt_paths):
-    ckpt_scores = []
-
+def get_scores(dataloader, data_num, ckpt_paths):
     if args.model == 'resnet23':
         model_prediction = resnet23_prediction
     elif args.model == 'resnet56':
@@ -100,26 +98,22 @@ def get_scores(dataloader, iteration, ckpt_paths):
     pred_val, hidden = prediction(image_val, test)
     loss_val = loss_function(pred_val, label_val)
 
-    for ckpt_path in ckpt_paths:
+    infl_scores = np.zeros((data_num, len(ckpt_paths)), dtype=np.float32)
+    for ckpt_ind, ckpt_path in enumerate(ckpt_paths):
         epoch = os.path.splitext(os.path.basename(ckpt_path))[0].split('_')[-1]
         print(f'Epoch: {epoch}')
         nn.load_parameters(ckpt_path)
 
         ckpt_influences = calculate_ckpt_score(
-            dataloader, iteration, image_val, label_val, pred_val, hidden, loss_val)
+            dataloader, data_num, image_val, label_val, pred_val, hidden, loss_val)
         if args.save_every_epoch:
             np.save(os.path.join(args.output, (epoch+'_influence.npy')), np.array([float(score.data) for score in ckpt_influences]))
-        ckpt_scores.append(ckpt_influences)
 
-    sum_ckpt_scores = []
-    for ind in range(iteration):
-        tmp = 0
-        for ckpt_score in ckpt_scores:
-            tmp += float(ckpt_score[ind].data)
-        sum_ckpt_scores.append(tmp)
+        infl_scores[:, ckpt_ind] = ckpt_influences
+    sum_ckpt_scores = infl_scores.sum(axis=-1)
 
     return {
-        'scores': np.array(sum_ckpt_scores)
+        'scores': sum_ckpt_scores
     }
 
 
@@ -130,10 +124,10 @@ def main():
                                 type_config=args.type_config)
     nn.set_default_context(ctx)
 
-    dataloader, iteration, images, labels, labels_shuffle = load_data()
+    dataloader, data_num, images, labels, labels_shuffle = load_data()
     ckpt_paths = load_ckpt_path()
 
-    results = get_scores(dataloader, iteration, ckpt_paths)
+    results = get_scores(dataloader, data_num, ckpt_paths)
 
     np.save(os.path.join(args.output, 'influence_all_epoch.npy'),
             results['scores'])
@@ -144,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument('--input', type=str)
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument('--output', type=str)
-    parser.add_argument('--context','-c', default='cudnn')
+    parser.add_argument('--context', '-c', default='cudnn')
     parser.add_argument('--device-id', type=str, default='0')
     parser.add_argument('--model', type=str, choices=['resnet23', 'resnet56'])
     parser.add_argument('--save_every_epoch', type=strtobool, default=False, help='whether save influence score between every epoch or not')
