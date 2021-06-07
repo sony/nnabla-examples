@@ -46,6 +46,7 @@ We have prepared interactive demos, where you can play around without having to 
 **Audio**
 |Name | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
+| [D3Net](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/d3net/music-source-separation/D3Net-MSS.ipynb) | Music Source Separation ||
 | [X-UMX](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/x-umx/X-UMX.ipynb) | Music Source Separation |<a href="url"><img src="https://github.com/sony/ai-research-code/raw/master/x-umx/imgs/umx-network-vs-x-umx-network.png" align="center" height="90" ></a>|
 
 **Machine Learning**
