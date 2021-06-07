@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 We have prepared interactive demos, where you can play around without having to worry about the codes and the internal mechanism. You can run it directly on [Colab](https://colab.research.google.com/) from the links in the table below.
 
-**Vision: Generation, Enhancement, Animation**
+### Vision: Generation, Enhancement, Animation
 |Name  | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
 | [SLE-GAN](https://arxiv.org/abs/2101.04775) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/slegan.ipynb) | Image Generation |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/GANs/slegan/example.png" align="center" height="90" ></a>|
@@ -34,7 +34,7 @@ We have prepared interactive demos, where you can play around without having to 
 | [StarGAN](https://arxiv.org/abs/1711.09020) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/stargan.ipynb) | Image Translation |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/GANs/stargan/imgs/sample_black_haired_female.png" align="center" height="90" ></a><a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/GANs/stargan/imgs/sample_blond_haired_female.png" align="center" height="90" ></a>|
 | [DCGAN](https://arxiv.org/abs/1511.06434) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/dcgan_image_generation.ipynb) | Image Generation ||
 
-**Vision: Recognition**
+### Vision: Recognition
 |Name  | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
 | [CenterNet](https://arxiv.org/abs/1904.07850) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/centernet.ipynb) | Object Detection |<a href="url"><img src="https://blog.nnabla.org/wp-content/uploads/sites/2/2021/02/02093255/centernet_result_resized.jpg" align="center" height="90" ></a>|
@@ -43,13 +43,13 @@ We have prepared interactive demos, where you can play around without having to 
 | [YOLO v2](https://arxiv.org/abs/1612.08242) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/yolov2.ipynb) | Object Detection ||
 | [ResNet](https://arxiv.org/abs/1512.03385)/[ResNeXt](https://arxiv.org/abs/1611.05431)/[SENet](https://arxiv.org/abs/1709.01507) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/imagenet_classification.ipynb) | Image Classification |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/imagenet-classification/results/rn50-mp-cos90-loss.png" align="center" height="90" ></a>|
 
-**Audio**
+### Audio
 |Name | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
 | [D3Net](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/d3net/music-source-separation/D3Net-MSS.ipynb) | Music Source Separation ||
 | [X-UMX](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/x-umx/X-UMX.ipynb) | Music Source Separation |<a href="url"><img src="https://github.com/sony/ai-research-code/raw/master/x-umx/imgs/umx-network-vs-x-umx-network.png" align="center" height="90" ></a>|
 
-**Machine Learning**
+### Machine Learning
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
  [Out-of-Core training](https://arxiv.org/abs/2010.14109) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/out_of_core_training.ipynb) | Out-of-Core training |<a href="url"><img src="https://github.com/sony/ai-research-code/blob/master/out-of-core-training/imgs/overview.png?raw=true" align="center" height="90" ></a>|
@@ -58,7 +58,7 @@ We have prepared interactive demos, where you can play around without having to 
 | [SiameseNet](https://arxiv.org/abs/1606.09549) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/siamese_feature_embedding.ipynb) | Feature Embedding ||
 | [Variational Auto-encoder](https://arxiv.org/abs/1312.6114) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/vae_unsupervised_learning.ipynb) | Unsupervised Learning ||
 
-**eXplainable AI**
+### eXplainable AI
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
  [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Grad-CAM |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
