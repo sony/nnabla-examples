@@ -44,7 +44,7 @@ def get_config():
     parser.add_argument('--vgg_pre_trained_weights', type=str,
                         default=conf.train.vgg_pre_trained_weights,
                         help='path to pre-trained weights for the vgg19')
-    parser.add_argument('--tecogan', type=bool,
+    parser.add_argument('--tecogan', action='store_true',
                         default=conf.train.tecogan,
                         help='True for Tecogan training False for FRVSR training')
     parser.add_argument('--checkpoint', type=str,

@@ -17,7 +17,7 @@ import glob
 import shutil
 import numpy as np
 import six
-import requests
+import urllib.request as request
 import tqdm
 import zipfile
 from PIL import Image
@@ -68,8 +68,7 @@ class FacadeDataSource(DataSource):
                 download_path = os.path.join(
                     FacadeDataSource.DEFAULT_DATASET_ROOT_PATH, os.path.basename(url))
                 # Make Download Progress Bar
-                tsize = int(requests.get(
-                    url, stream=True).headers['Content-Length'])
+                tsize = int(request.urlopen(url).headers.get('Content-Length'))
                 with tqdm.tqdm(total=tsize) as bar:
                     def update_bar(bcount, bsize, total, bar=bar): return bar.update(
                         bsize)

@@ -13,9 +13,14 @@
 # limitations under the License.
 
 # This file is forked from;
-# https://github.com/BVLC/caffe/blob/master/docker/cpu/Dockerfile 
+# https://github.com/BVLC/caffe/blob/master/docker/cpu/Dockerfile
 
 FROM ubuntu:16.04
+
+ARG PIP_INS_OPTS
+ARG PYTHONWARNINGS
+ARG CURL_OPTS
+ARG WGET_OPTS
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -49,12 +54,12 @@ WORKDIR $CAFFE_ROOT
 ENV CLONE_TAG=1.0
 
 RUN git clone -b ${CLONE_TAG} --depth 1 https://github.com/BVLC/caffe.git . && \
-    wget https://raw.githubusercontent.com/hujie-frank/SENet/master/include/caffe/layers/axpy_layer.hpp && \
-    wget https://raw.githubusercontent.com/hujie-frank/SENet/master/src/caffe/layers/axpy_layer.cpp && \
+    wget ${WGET_OPTS} https://raw.githubusercontent.com/hujie-frank/SENet/master/include/caffe/layers/axpy_layer.hpp && \
+    wget ${WGET_OPTS} https://raw.githubusercontent.com/hujie-frank/SENet/master/src/caffe/layers/axpy_layer.cpp && \
     mv axpy_layer.hpp include/caffe/layers && \
     mv axpy_layer.cpp src/caffe/layers && \
-    pip install --upgrade pip && \
-    cd python && for req in $(cat requirements.txt) pydot; do pip install $req; done && cd .. && \
+    pip install ${PIP_INS_OPTS} --upgrade pip && \
+    cd python && for req in $(cat requirements.txt) pydot; do pip install ${PIP_INS_OPTS} $req; done && cd .. && \
     mkdir build && cd build && \
     cmake -DCPU_ONLY=1 .. && \
     make -j"$(nproc)"
@@ -64,7 +69,7 @@ ENV PYTHONPATH $PYCAFFE_ROOT:$PYTHONPATH
 ENV PATH $CAFFE_ROOT/build/tools:$PYCAFFE_ROOT:$PATH
 RUN echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf && ldconfig
 
-RUN pip install jupyter
-RUN pip install nnabla
+RUN pip install ${PIP_INS_OPTS} jupyter
+RUN pip install ${PIP_INS_OPTS} nnabla
 
 WORKDIR /workspace

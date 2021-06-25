@@ -28,7 +28,7 @@ train:
   # Whether perform the random crop
   random_crop: True
   # True for Tecogan training False for FRVSR training
-  tecogan: True
+  tecogan: False
   # Whether use constant moving first frame randomly
   movingFirstFrame: True
   # The crop size of the training image
