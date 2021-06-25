@@ -14,6 +14,6 @@ Figure: Visual explanations on the image samples.
 **eXplainable AI**
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
-Facial evaluation for skin colors | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial-plugin.ipynb) | Facial evaluation |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
+Facial evaluation for skin colors | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nnabla/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial-plugin.ipynb) | Facial evaluation |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
  
 
