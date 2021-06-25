@@ -5,7 +5,7 @@ The ITA is implemented in CIE-Lab space. The ITA of the skin color mesurement is
 
 
 <p align="center">
-<img src='ITA.png'>
+<img src='ITA.png', width='70%'>
 </p>
 
 Where the L axis and b quantify luminance and yellowness.
@@ -24,8 +24,8 @@ Figure:  Individual Typology Angle (ITA) scores with different faces by the Mask
 # Interactive demo
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
-Masked Images | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nnabla/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial_plugin.ipynb) | Facial evaluation for skin color |<a href="url"><img src="Masked_Images.png" align="center" height="90" ></a>|
-Masked Images Using Landmarks | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nnabla/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial.ipynb) | Facial evaluation for skin color |<a href="url"><img src="Landmark.png" align="center" height="90" ></a>|
+Skin Color (Masked Images) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nnabla/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial_plugin.ipynb) | Facial evaluation for skin color |<a href="url"><img src="Masked_Images.png" align="center" height="90" ></a>|
+Skin Color (Masked Images Using Landmarks) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nnabla/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial.ipynb) | Facial evaluation for skin color |<a href="url"><img src="Landmark.png" align="center" height="90" ></a>|
 
 ## Ciatation
 Diversity in Faces
