@@ -4,11 +4,11 @@ This is a colab interactive demo of facial evaluation for skin colors by using I
 The ITA is implemented in CIE-Lab space. The ITA of the skin color mesurement is defined by the following equation:
 
 
-| Skin color | Measure |
-|:---------:|:-------------:|
-| Individual Typology Angle (ITA) | $$ \frac{arctan(\frac{L-50}{b})\times180}{\pi} $$|
+<p align="center">
+<img src='ITA.png'>
+</p>
 
-Where the $ L $ axis and $b$ quantify luminance and yellowness.
+Where the L axis and b quantify luminance and yellowness.
 
 The ITA is calculated by the following steps :
 1. Extract masked images in the face. We provide two methods that are to be divided by 9 rectangle region (**Masked Images**) or to be extracted to chin and two cheeks by landmark (**Masked Images Using Landmarks**). 
