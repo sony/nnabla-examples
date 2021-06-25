@@ -1,7 +1,7 @@
 # Facial evaluation for skin color
 This is a colab interactive demo of facial evaluation for skin colors by using Individual Typology Angle (ITA), which represents skin color.
 
-The ITA is implemented in CIE-Lab space. The ITA of the skin color mesurement is defined by the following equation:
+The ITA is implemented in CIE-Lab space. The ITA of the skin color measurement is defined by the following equation:
 
 
 <p align="center">
