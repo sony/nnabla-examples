@@ -80,17 +80,17 @@ def main():
     for i in range(max_iter):
         inputs_raw.d = np.array([inference_data.inputs[i]]).astype(np.float32)
         if i != 0:
-            pre_gen_warp.forward()
+            pre_gen_warp.forward(clear_buffer=True))
             pre_warp.data.copy_from(pre_gen_warp.data)
-        outputs.forward()
-        output_frame = outputs.d
+        outputs.forward(clear_buffer = True))
+        output_frame=outputs.d
 
         if i >= 5:
-            name, _ = os.path.splitext(
+            name, _=os.path.splitext(
                 os.path.basename(str(inference_data.paths_lr[i])))
-            filename = args.output_name+'_'+name
+            filename=args.output_name+'_'+name
             print('saving image %s' % filename)
-            out_path = os.path.join(args.output_dir, "%s.%s" %
+            out_path=os.path.join(args.output_dir, "%s.%s" %
                                     (filename, args.output_ext))
             save_img(out_path, output_frame[0])
         else:  # First 5 is a hard-coded symmetric frame padding, ignored but time added!

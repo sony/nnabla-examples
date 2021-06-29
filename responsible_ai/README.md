@@ -35,3 +35,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <p align="center">
 <img src="./tracin/figure/self_influence_distribution.png" width="440px"><img src="./tracin/figure/score_curve.png" width="440px">
 </p>
+
+## Facial evaluation for skin color [code](./face_evaluation/)
+This is a colab interactive demo of facial evaluation for skin colors by using Individual Typology Angle (ITA), which represents skin color.
+> **Diversity in Faces**
+> Michele Merler, Nalini Ratha, Rogerio S. Feris, John R. Smith.
+> *arXiv technical report ([arxiv 1901.10436](https://arxiv.org/abs/1901.10436))* 
+
+<p align="center">
+<img src="./face_evaluation/skin_color.png">
+</p>
