@@ -46,7 +46,7 @@ We have prepared interactive demos, where you can play around without having to 
 ### Audio
 |Name | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
-| [D3Net](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/d3net/music-source-separation/D3Net-MSS.ipynb) | Music Source Separation ||
+| [D3Net](https://arxiv.org/abs/2011.11844) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/d3net/music-source-separation/D3Net-MSS.ipynb) | Music Source Separation ||
 | [X-UMX](https://arxiv.org/abs/2010.04228) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/ai-research-code/blob/master/x-umx/X-UMX.ipynb) | Music Source Separation |<a href="url"><img src="https://github.com/sony/ai-research-code/raw/master/x-umx/imgs/umx-network-vs-x-umx-network.png" align="center" height="90" ></a>|
 
 ### Machine Learning
@@ -61,5 +61,6 @@ We have prepared interactive demos, where you can play around without having to 
 ### eXplainable AI
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
- [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Grad-CAM |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
+ [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
+ [SHAP](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/shap.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/shap/images/sample.png" align="center" height="90" ></a>|
  [Skin color (Masked Images)](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial_plugin.ipynb) | Facial evaluation for skin color |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/face_evaluation/Masked_Images.png" align="center" height="90" ></a>|
