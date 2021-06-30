@@ -84,9 +84,13 @@ def train_and_infl(args, shuffle_infl):
               calc_infl_with_all_params, need_evaluate)
     # infl
     if shuffle_infl:
-        base_path = os.path.dirname(os.path.dirname(args.output))
-        fn = os.path.join(base_path, next(iter(method_dict.keys())), f'influence_{str(args.seed)}.csv')
-        shutil.copy(fn, args.output)
+        from_path = os.path.join(
+            os.path.dirname(os.path.dirname(args.output)),
+            next(iter(method_dict.keys()))
+        )
+        files = os.listdir(from_path)
+        fn = [f for f in files if f'_{str(args.seed)}' in f][0]
+        shutil.copy(os.path.join(from_path, fn), args.output)
         make_random_file(args.output)
     else:
         infl_sgd(model_info_dict, file_dir_dict,
@@ -163,7 +167,7 @@ def run(args):
             args.weight_output = os.path.join(weight_dir, 'seed_%02d' % (seed))
             ensure_dir(args.weight_output)
             args.output = os.path.join(
-                method_infl_dir, 'influence_' + str(seed) + '.csv')
+                method_infl_dir, 'influence_' + method_name.lower() + '_' + str(seed) + '.csv')
             # train and infl
             train_and_infl(args, shuffle_infl)
             # eval
@@ -177,7 +181,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='check performance of SGD-influence', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
-        '-o', '--output_dir', help='path to output dir', required=True)
+        '-o', '--output_dir', help='path to output dir', default='output_sgd_influence')
     parser.add_argument(
         '-e', '--n_epochs', help="epoch for SGD influence calculation(int) default=20", default=20, type=int)
     parser.add_argument(
