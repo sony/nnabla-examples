@@ -100,14 +100,16 @@ def shap(model_graph, X, label, interim_layer_index, num_samples,
             if interim_layer_index == 0:
                 samples_delta[j][k] = (x - im.copy()).copy()
             else:
-                samples_delta[j][k] = get_interim_input(input_layer, middle_layer, output_layer, samples_input[j][k])[0]
+                samples_delta[j][k] = get_interim_input(
+                    input_layer, middle_layer, output_layer, samples_input[j][k])[0]
 
         grads = []
 
         for b in range(0, num_samples, batch_size):
             batch_last = min(b + batch_size, num_samples)
             batch = samples_input[j][b:batch_last].copy()
-            grads.append(gradient(model_layers, input_layer, middle_layer, output_layer, batch, label))
+            grads.append(gradient(model_layers, input_layer,
+                         middle_layer, output_layer, batch, label))
         grad = [np.concatenate([g for g in grads], 0)]
         samples = grad[0] * samples_delta[0]
         phis[0][j] = samples.mean(0)
