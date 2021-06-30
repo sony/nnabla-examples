@@ -15,8 +15,6 @@
 
 import numpy as np
 import nnabla as nn
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -30,69 +28,58 @@ def red_blue_map():
     return LinearSegmentedColormap.from_list("red_transparent_blue", colors)
 
 
-def get_model_layers(model, inputs):
-    if len(inputs.shape) == 3:
-        batch_size = 1
-    else:
-        batch_size = len(inputs)
-
-    x = nn.Variable((batch_size,) + model.input_shape)
-    # set training True since gradient of variable is necessary for SHAP
-    model_with_inputs = model(x, training=True, returns_net=True)
+def get_model_layers(model_graph):
     model_layers = dict()
-    for k, v in model_with_inputs.variables.items():
-        if ("W" in k) or ("b" in k):
+    for k, v in model_graph.variables.items():
+        if ("/W" in k) or ("/b" in k):
             continue
         else:
             model_layers[k] = v
-
     return model_layers
 
 
-def gradient(model, inputs, idx, interim_layer_index):
-    model_layers = get_model_layers(model, inputs)
+def get_middle_layer(model_layers, interim_layer_index):
+    return list(model_layers.values())[interim_layer_index]
+
+
+def gradient(model_layers, input_layer, target_layer, output_layer, inputs, idx):
 
     for v in model_layers.values():
         v.grad.zero()
         v.need_grad = True
-    input_layer = list(model_layers.values())[-1]
-    if interim_layer_index == 0:
-        layer = input_layer
-    else:
-        layer = list(model_layers.values())[interim_layer_index]
-    pred = list(model_layers.values())[-2]
-    selected = pred[:, idx]
+    selected = output_layer[:, idx]
     input_layer.d = inputs
     selected.forward()
     selected.backward()
-    grad = layer.g.copy()
-
+    grad = target_layer.g.copy()
     return grad
 
 
-def get_interim_input(model, inputs, interim_layer_index):
-    model_layers = get_model_layers(model, inputs)
-
-    input_layer = list(model_layers.values())[-1]
+def get_interim_input(input_layer, middle_layer, output_layer, inputs):
     input_layer.d = inputs
-    try:
-        middle_layer = list(model_layers.values())[interim_layer_index]
-    except IndexError:
-        print('The interim layer should be an integer between 1 and the number of layers of the model!')
-    pred = list(model_layers.values())[-2]
-    pred.forward()
+    output_layer.forward()
     middle_layer_d = middle_layer.d.copy()
-
     return middle_layer_d
 
 
-def shap(model, X, label, interim_layer_index, num_samples,
+def shap(model_graph, X, label, interim_layer_index, num_samples,
          dataset, batch_size, num_epochs=1):
+    input_layer = list(model_graph.inputs.values())[0]
+    model_layers = get_model_layers(model_graph)
+    middle_layer = get_middle_layer(model_layers, interim_layer_index)
+    output_layer = list(model_graph.outputs.values())[0]
     # get data
+    if len(X.shape) == 3:
+        batch_size = 1
+    else:
+        batch_size = len(X)
+
+    x = nn.Variable((batch_size,) + input_layer.shape)
+    # set training True since gradient of variable is necessary for SHAP
     if interim_layer_index == 0:
         data = X.reshape((1,) + X.shape)
     else:
-        data = get_interim_input(model, X, interim_layer_index)
+        data = get_interim_input(input_layer, middle_layer, output_layer, X)
 
     samples_input = [np.zeros((num_samples, ) + X.shape)]
     samples_delta = [np.zeros((num_samples, ) + data.shape[1:])]
@@ -113,16 +100,14 @@ def shap(model, X, label, interim_layer_index, num_samples,
             if interim_layer_index == 0:
                 samples_delta[j][k] = (x - im.copy()).copy()
             else:
-                samples_delta[j][k] = get_interim_input(
-                                        model, samples_input[j][k],
-                                        interim_layer_index)[0]
+                samples_delta[j][k] = get_interim_input(input_layer, middle_layer, output_layer, samples_input[j][k])[0]
 
         grads = []
 
         for b in range(0, num_samples, batch_size):
             batch_last = min(b + batch_size, num_samples)
             batch = samples_input[j][b:batch_last].copy()
-            grads.append(gradient(model, batch, label, interim_layer_index))
+            grads.append(gradient(model_layers, input_layer, middle_layer, output_layer, batch, label))
         grad = [np.concatenate([g for g in grads], 0)]
         samples = grad[0] * samples_delta[0]
         phis[0][j] = samples.mean(0)
@@ -132,6 +117,8 @@ def shap(model, X, label, interim_layer_index, num_samples,
 
 
 def visualize(X, output_phis, output, ratio_num=10):
+    import matplotlib
+    matplotlib.use('Agg')
     img = X.copy()
     height = img.shape[1]
     width = img.shape[2]
@@ -154,19 +141,16 @@ def visualize(X, output_phis, output, ratio_num=10):
 
     ax.imshow(img_gray, cmap=plt.get_cmap('gray'), alpha=0.15,
               extent=(-1, shap_plot.shape[1], shap_plot.shape[0], -1))
-    im = ax.imshow(shap_plot, cmap=red_blue_map(),
-                   vmin=min_border, vmax=max_border)
+    ax.imshow(shap_plot, cmap=red_blue_map(), vmin=min_border, vmax=max_border)
     ax.axis("off")
-
     fig.tight_layout()
-
     fig.savefig(output)
     fig.clf()
     plt.close()
 
 
-def shap_computation(model, X, label, interim_layer_index, num_samples,
+def shap_computation(model_graph, X, label, interim_layer_index, num_samples,
                      dataset, batch_size, output):
-    output_phis = shap(model, X, label, interim_layer_index, num_samples,
+    output_phis = shap(model_graph, X, label, interim_layer_index, num_samples,
                        dataset, batch_size)
     visualize(X, output_phis, output)
