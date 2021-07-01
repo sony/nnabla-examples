@@ -1,4 +1,5 @@
-# Copyright (c) 2021 Sony Corporation. All Rights Reserved.
+
+# Copyright 2021 Sony Group Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +15,52 @@
 
 import argparse
 import os
+
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--device-id', '-d',
                         type=int,
                         default=0,
                         help='device id (default: 0)')
-    parser.add_argument('--context', '-c', type=str,
-                        default='cudnn', help="Extension path. ex) cpu, cudnn.")
     parser.add_argument(
-        "--frame_propagate", default=False, type=bool, help="propagation mode, , please check the paper")
-    parser.add_argument("--image_size", type=int, default=[216 * 2, 384 * 2], nargs ="+", help="the image size, eg. 432 768")
-    parser.add_argument("--input_path", type=str, default="./sample_videos/clips/v32", help="path of input clips")
-    parser.add_argument("--ref_path", type=str, default="./sample_videos/ref/test", help="path of refernce images")
-    parser.add_argument("--output_path", type=str, default="./sample_videos/output", help="path of output clips")
-    parser.add_argument("--output_video", type=str, default = "video.avi", help = "Video output in *.avi format\. ex) video.avi")
+        '--context',
+        '-c',
+        type=str,
+        default='cudnn',
+        help="Extension path. ex) cpu, cudnn.")
+    parser.add_argument(
+        "--frame_propagate",
+        default=False,
+        type=bool,
+        help="propagation mode, , please check the paper")
+    parser.add_argument(
+        "--image_size",
+        type=int,
+        default=[
+            216 * 2,
+            384 * 2],
+        nargs="+",
+        help="the image size, eg. 432 768")
+    parser.add_argument(
+        "--input_path",
+        type=str,
+        default="./images/clips/v32",
+        help="path of input clips")
+    parser.add_argument(
+        "--ref_path",
+        type=str,
+        default="./images/ref/v32",
+        help="path of refernce images")
+    parser.add_argument(
+        "--output_path",
+        type=str,
+        default="./images/output",
+        help="path of output clips")
+    parser.add_argument(
+        "--output_video",
+        type=str,
+        default="video.avi",
+        help="Video output in *.avi format\\. ex) video.avi")
     args = parser.parse_args()
     return args

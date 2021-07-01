@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Group Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 from utils_nn import *
 
-def vgg_net(input_var, pre_process = True, fix = True):
+
+def vgg_net(input_var, pre_process=True, fix=True):
     if pre_process:
         input_var = vgg_pre_process(input_var)
-        
+
     act1_1 = F.relu(PF.convolution(input_var, outmaps=64, kernel=(
         3, 3), pad=(1, 1), fix_parameters=fix, name="conv1_1"))
     act1_2 = F.relu(PF.convolution(act1_1, outmaps=64, kernel=(
