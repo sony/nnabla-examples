@@ -45,3 +45,12 @@ This is a colab interactive demo of facial evaluation for skin colors by using I
 <p align="center">
 <img src="./face_evaluation/skin_color.png">
 </p>
+
+## SHAP [code](./shap/)
+This is a colab interactive demo of SHAP. In this example, SHAP visualizes the judgement of an image classification model in colors that represent positive/negative impact.
+
+> **SHAP: A Unified Approach to Interpreting Model Predictions**
+> Scott Lundberg, Su-In Lee
+> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
+
+![](./shap/images/sample.png)
