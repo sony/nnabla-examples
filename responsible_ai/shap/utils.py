@@ -12,11 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import os
 import numpy as np
 import nnabla as nn
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from nnabla.ext_utils import get_extension_context
+from nnabla.utils.load import load
+
+
+def get_context(device_id):
+    # for cli app use
+    try:
+        context = 'cudnn'
+        ctx = get_extension_context(context, device_id=device_id)
+    except (ModuleNotFoundError, ImportError):
+        context = 'cpu'
+        ctx = get_extension_context(context, device_id=device_id)
+    # for nnc use
+    config_filename = 'net.nntxt'
+    if os.path.isfile(config_filename):
+        config_info = load([config_filename])
+        ctx = config_info.global_config.default_context
+    return ctx
 
 
 def red_blue_map():
@@ -153,6 +171,8 @@ def visualize(X, output_phis, output, ratio_num=10):
 
 def shap_computation(model_graph, X, label, interim_layer_index, num_samples,
                      dataset, batch_size, output):
+    ctx = get_context(0)
+    nn.set_default_context(ctx)
     output_phis = shap(model_graph, X, label, interim_layer_index, num_samples,
                        dataset, batch_size)
     visualize(X, output_phis, output)
