@@ -15,8 +15,6 @@
 import nnabla as nn
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
-from utils import *
-
 
 def conv_rl(
     x, out_ch, kernel=(
@@ -83,7 +81,14 @@ def conv_up(x, out_ch, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name=None):
     return conv
 
 
-def ExampleColorNetCheckBoardInstanceNorm(x):
+def colorvidnet(x):
+    '''
+    Colorization Network 
+    Args:
+        x : NNabla Variable 
+    Returns:
+        Prediction output 
+    '''
     conv1_0 = F.relu(
         PF.convolution(
             x, 32, kernel=(
@@ -168,15 +173,3 @@ def ExampleColorNetCheckBoardInstanceNorm(x):
             1, 1), pad=None, name='conv10_ab', act=False)
     pred_ab = F.tanh(conv10_ab) * 128
     return pred_ab
-
-# from nnabla.ext_utils import get_extension_context
-# extension_module = "cudnn"
-# ctx = get_extension_context(extension_module)
-# nn.set_default_context(ctx)
-# var = np.random.randn(1,7,216,384)
-# inp = nn.Variable.from_numpy_array(var)
-# out = ExampleColorNetCheckBoardInstanceNorm(inp)
-# out.forward(clear_no_need_grad=True)
-# p = nn.get_parameters()
-# for k,v in p.items():
-    # print(k, v.shape)

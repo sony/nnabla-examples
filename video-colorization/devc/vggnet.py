@@ -14,7 +14,7 @@
 
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
-from utils_nn import *
+from utils_nn import vgg_pre_process
 
 
 def vgg_net(input_var, pre_process=True, fix=True):

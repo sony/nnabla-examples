@@ -12,15 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys 
 
 import nnabla as nn
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
-from vggnet import vgg_net
-from colornet import ExampleColorNetCheckBoardInstanceNorm
-from utils_nn import *
-import pdb
 
+from vggnet import vgg_net
+from colornet import colorvidnet
+from utils_nn import gray2rgb_batch, feature_normalize
 
 def res_block(x, out_ch, name):
     with nn.parameter_scope(name):
@@ -163,14 +163,7 @@ def pad_replicate(x):
 
 
 def nonlocal_net(B_lab_map,
-                 A_relu2_1,
-                 A_relu3_1,
-                 A_relu4_1,
-                 A_relu5_1,
-                 B_relu2_1,
-                 B_relu3_1,
-                 B_relu4_1,
-                 B_relu5_1,
+                 relu_layers,
                  temperature=0.001 * 5,
                  detach_flag=False,
                  WTA_scale_weight=1,
@@ -188,17 +181,17 @@ def nonlocal_net(B_lab_map,
     inter_channels = 256
 
     # layer2_1
-    A_feature2_1 = layer2_1(A_relu2_1)
-    B_feature2_1 = layer2_1(B_relu2_1)
+    A_feature2_1 = layer2_1(relu_layers[0])
+    B_feature2_1 = layer2_1(relu_layers[4])
     # layer3_1
-    A_feature3_1 = layer3_1(A_relu3_1)
-    B_feature3_1 = layer3_1(B_relu3_1)
+    A_feature3_1 = layer3_1(relu_layers[1])
+    B_feature3_1 = layer3_1(relu_layers[5])
     # layer4_1
-    A_feature4_1 = layer4_1(A_relu4_1)
-    B_feature4_1 = layer4_1(B_relu4_1)
+    A_feature4_1 = layer4_1(relu_layers[2])
+    B_feature4_1 = layer4_1(relu_layers[6])
     # layer5_1
-    A_feature5_1 = layer5_1(A_relu5_1)
-    B_feature5_1 = layer5_1(B_relu5_1)
+    A_feature5_1 = layer5_1(relu_layers[3])
+    B_feature5_1 = layer5_1(relu_layers[7])
 
     if A_feature5_1.shape[2] != A_feature2_1.shape[2] or A_feature5_1.shape[3] != A_feature2_1.shape[3]:
         A_feature5_1 = pad_replicate(A_feature5_1)
@@ -219,7 +212,6 @@ def nonlocal_net(B_lab_map,
             B_feature5_1,
             axis=1),
         feature_channel * 4)
-    # pdb.set_trace()
     # pairwise cosine similarity
     theta = PF.convolution(
         A_features, inter_channels, kernel=(
@@ -248,8 +240,6 @@ def nonlocal_net(B_lab_map,
     phi_re = F.div2(phi_re, phi_norm)
     # 2*(feature_height*feature_width)*(feature_height*feature_width)
     f = F.batch_matmul(theta_permute, phi_re)
-    # if detach_flag:
-    #f = f.detach()
 
     f_shape = f.shape
     f = F.reshape(f, (1,) + f_shape)
@@ -298,25 +288,22 @@ def warp_color(IA_l, IB_lab, features_B, feature_noise=0, temperature=0.01):
     # change to rgb for feature extraction
     IA_rgb_from_gray = gray2rgb_batch(IA_l)
 
-    # with torch.no_grad():
     A_relu1_1, A_relu2_1, A_relu3_1, A_relu4_1, A_relu5_1 = vgg_net(
         IA_rgb_from_gray, pre_process=True, fix=True)
     B_relu1_1, B_relu2_1, B_relu3_1, B_relu4_1, B_relu5_1 = features_B
 
     # NOTE: output the feature before normalization
     features_A = [A_relu1_1, A_relu2_1, A_relu3_1, A_relu4_1, A_relu5_1]
-
-    A_relu2_1 = feature_normalize(A_relu2_1)
-    A_relu3_1 = feature_normalize(A_relu3_1)
-    A_relu4_1 = feature_normalize(A_relu4_1)
-    A_relu5_1 = feature_normalize(A_relu5_1)
-    B_relu2_1 = feature_normalize(B_relu2_1)
-    B_relu3_1 = feature_normalize(B_relu3_1)
-    B_relu4_1 = feature_normalize(B_relu4_1)
-    B_relu5_1 = feature_normalize(B_relu5_1)
-
+    layers = [A_relu2_1,A_relu3_1, A_relu4_1, A_relu5_1, B_relu2_1, B_relu3_1, B_relu4_1, B_relu5_1]
+    def feature_norm_relu(layers):
+        f_norms = []
+        for relu_l in layers:
+            f_norm  = feature_normalize(relu_l)
+            f_norms.append(f_norm)
+        return f_norms
+    layers = feature_norm_relu(layers)
     nonlocal_BA_lab, similarity_map = nonlocal_net(
-        IB_lab, A_relu2_1, A_relu3_1, A_relu4_1, A_relu5_1, B_relu2_1, B_relu3_1, B_relu4_1, B_relu5_1, temperature=0.01)
+        IB_lab, layers, temperature=0.01)
 
     return nonlocal_BA_lab, similarity_map, features_A
 
@@ -333,8 +320,6 @@ def frame_colorization(IA_lab,
     IA_l = IA_lab[:, 0:1, :, :]
 
     # if luminance_noise:
-    #    IA_l = IA_l + torch.randn_like(IA_l, requires_grad=False) * luminance_noise
-
     nonlocal_BA_lab, similarity_map, features_A_gray = warp_color(
         IA_l, IB_lab, features_B, feature_noise, temperature=temperature)
     nonlocal_BA_ab = nonlocal_BA_lab[:, 1:3, :, :]
@@ -345,8 +330,6 @@ def frame_colorization(IA_lab,
         IA_last_lab,
         axis=1)
     with nn.parameter_scope('colornet'):
-        IA_ab_predict = ExampleColorNetCheckBoardInstanceNorm(color_input)
+        IA_ab_predict = colorvidnet(color_input)
 
     return IA_ab_predict, nonlocal_BA_lab, features_A_gray
-
-#x = nn.Variable(1,3,216,384)

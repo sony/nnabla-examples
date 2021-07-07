@@ -15,10 +15,20 @@
 
 import argparse
 import os
+from utils import *
 
 
-def get_args():
+def get_config():
+    """
+    Get command line arguments.
+    Arguments set the default values of command line arguments
+    """
+
     parser = argparse.ArgumentParser()
+    parser.add_argument('--cfg', default="./config.yaml")
+    args, _ = parser.parse_known_args()
+    conf = read_yaml(args.cfg)
+
     parser.add_argument('--device-id', '-d',
                         type=int,
                         default=0,
@@ -28,12 +38,12 @@ def get_args():
         '-c',
         type=str,
         default='cudnn',
-        help="Extension path. ex) cpu, cudnn.")
+        help="Extension path: cpu or cudnn.")
     parser.add_argument(
-        "--frame_propagate",
+        "--frame_propagation",
         default=False,
         type=bool,
-        help="propagation mode, , please check the paper")
+        help="color propogation mode")
     parser.add_argument(
         "--image_size",
         type=int,
@@ -45,13 +55,13 @@ def get_args():
     parser.add_argument(
         "--input_path",
         type=str,
-        default="./images/clips/v32",
+        default="./images/input/v32",
         help="path of input clips")
     parser.add_argument(
         "--ref_path",
         type=str,
         default="./images/ref/v32",
-        help="path of refernce images")
+        help="path of reference images")
     parser.add_argument(
         "--output_path",
         type=str,
@@ -61,6 +71,14 @@ def get_args():
         "--output_video",
         type=str,
         default="video.avi",
-        help="Video output in *.avi format\\. ex) video.avi")
+        help="Video output in *.avi for example video.avi")
     args = parser.parse_args()
-    return args
+
+    conf.data.image_size = args.image_size
+    conf.data.input_path = args.input_path
+    conf.data.ref_path = args.ref_path
+    conf.data.output_path = args.output_path
+    conf.data.output_video = args.output_video
+    conf.data.frame_propagation = args.frame_propagation
+
+    return conf

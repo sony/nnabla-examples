@@ -22,15 +22,6 @@ from PIL import Image, ImageOps
 import nnabla.functions as F
 from skimage import color, io
 
-rgb_from_xyz = np.array(
-    [[3.24048134, -0.96925495, 0.05564664],
-     [-1.53715152, 1.87599, -0.20404134],
-     [-0.49853633, 0.04155593, 1.05731107]],
-    dtype=np.float32)
-l_norm, ab_norm = 1.0, 1.0
-l_mean, ab_mean = 50.0, 0
-
-
 def rgb2lab(img):
     return color.rgb2lab(img)
 
@@ -81,43 +72,6 @@ def centerpad(img, newsize):
         start_width = (width_resize - width) // 2
         img_pad[:, :, :] = img_resize[:, start_width: (start_width + width), :]
     return img_pad
-
-
-def pad_func(img, padding, fill=0):
-    """
-    Pad the given PIL Image on all sides with the given "pad" value.
-
-    Args:
-        img (PIL Image): Image to be padded.
-        padding (int or tuple): Padding on each border. If a single int is provided this
-            is used to pad all borders. If tuple of length 2 is provided this is the padding
-            on left/right and top/bottom respectively. If a tuple of length 4 is provided
-            this is the padding for the left, top, right and bottom borders
-            respectively.
-        fill: Pixel fill value. Default is 0. If a tuple of
-            length 3, it is used to fill R, G, B channels respectively.
-
-    Returns:
-        PIL Image: Padded image.
-    """
-
-    if not isinstance(padding, (numbers.Number, tuple)):
-        raise TypeError('Got inappropriate padding arg')
-    if not isinstance(fill, (numbers.Number, str, tuple)):
-        raise TypeError('Got inappropriate fill arg')
-
-    if isinstance(
-            padding,
-            collections.Sequence) and len(padding) not in [
-            2,
-            4]:
-        raise ValueError(
-            "Padding must be an int or a 2, or 4 element tuple, not a " +
-            "{} element tuple".format(
-                len(padding)))
-
-    return ImageOps.expand(img, border=padding, fill=fill)
-
 
 def crop_func(img, i, j, h, w):
     """Crop the given PIL Image.
@@ -178,9 +132,6 @@ def center_crop(inputs, size, padding=0):
     if isinstance(size, numbers.Number):
         size = (int(size), int(size))
 
-    if padding > 0:
-        inputs = custom_func(inputs, pad_func, padding)
-
     if isinstance(inputs, list):
         i, j, h, w = get_params(inputs[0], size)
     else:
@@ -189,9 +140,9 @@ def center_crop(inputs, size, padding=0):
     return np.array(image)
 
 
-def normalize_fn(arr, mean, std):
+def standardize(arr, mean, std):
     """
-    Normalize an image with mean and standard deviation.
+    Standardize the input with mean and standard deviation.
 
     Args:
         arr (nd array): arr/image of size (C, H, W) to be normalized.
@@ -213,10 +164,19 @@ def normalize_fn(arr, mean, std):
     return norm_arr
 
 
-def normalize(inputs):
-    inputs[0:1, :, :] = normalize_fn(inputs[0:1, :, :], 50, 1)
-    inputs[1:3, :, :] = normalize_fn(inputs[1:3, :, :], (0, 0), (1, 1))
-    return inputs
+def normalize(image):
+    """
+    Normalize the input
+
+    Args:
+        image :  Input image (numpy)
+    Returns:
+        Normalized image in dtype float32
+
+    """
+    image[0, :, :] = standardize(image[0:1, :, :], 50, 1)
+    image[1:3, :, :] = standardize(image[1:3, :, :], (0, 0), (1, 1))
+    return image.astype(np.float32)
 
 
 def lab2rgb(input):
@@ -270,18 +230,18 @@ def lab2rgb(input):
     return F.stack(var_R, var_G, var_B, axis=1)
 
 
-def uncenter_l(l):
-    return l * l_norm + l_mean
+def uncenter_l(l, conf):
+    return l * conf.l_norm + conf.l_mean
 
 
-def batch_lab2rgb_transpose(img_l_mc, img_ab_mc, nrow=8):
+def batch_lab2rgb_transpose(conf, img_l_mc, img_ab_mc, nrow=8):
     img_l_mc = img_l_mc
     img_ab_mc = img_ab_mc
 
     assert img_l_mc.ndim == 4 and img_ab_mc.ndim == 4, "only for batch input"
 
-    img_l = img_l_mc * l_norm + l_mean
-    img_ab = img_ab_mc * ab_norm + ab_mean
+    img_l = img_l_mc * conf.l_norm + conf.l_mean
+    img_ab = img_ab_mc * conf.ab_norm + conf.ab_mean
     pred_lab = np.concatenate((img_l, img_ab), axis=1)
     grid_lab = pred_lab.squeeze().astype(np.float64)
     return (
@@ -308,7 +268,6 @@ def save_frames(image, image_folder, index=None, frame_name=None):
 def frames2vid(frame_folder, frame_shape, output_dir, filename):
     frames = sorted([img for img in os.listdir(
         frame_folder) if img.endswith(".jpg")])
-    # sort the frames in order
     # get the height and width
     height, width = frame_shape
     print(f"writing to video file: {os.path.join(output_dir, filename)}")
