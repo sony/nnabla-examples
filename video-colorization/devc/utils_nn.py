@@ -23,6 +23,7 @@ from args import get_config
 
 conf = get_config()
 
+
 def vgg_pre_process(x):
     x_bgr = F.concatenate(
         x[:, 2:3, :, :], x[:, 1:2, :, :], x[:, 0:1, :, :], axis=1)

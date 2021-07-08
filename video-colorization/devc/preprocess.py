@@ -22,6 +22,7 @@ from PIL import Image, ImageOps
 import nnabla.functions as F
 from skimage import color, io
 
+
 def rgb2lab(img):
     return color.rgb2lab(img)
 
@@ -72,6 +73,7 @@ def centerpad(img, newsize):
         start_width = (width_resize - width) // 2
         img_pad[:, :, :] = img_resize[:, start_width: (start_width + width), :]
     return img_pad
+
 
 def crop_func(img, i, j, h, w):
     """Crop the given PIL Image.

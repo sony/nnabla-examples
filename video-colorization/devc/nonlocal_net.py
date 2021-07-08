@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys 
+import sys
 
 import nnabla as nn
 import nnabla.functions as F
@@ -21,6 +21,7 @@ import nnabla.parametric_functions as PF
 from vggnet import vgg_net
 from colornet import colorvidnet
 from utils_nn import gray2rgb_batch, feature_normalize
+
 
 def res_block(x, out_ch, name):
     with nn.parameter_scope(name):
@@ -294,11 +295,13 @@ def warp_color(IA_l, IB_lab, features_B, feature_noise=0, temperature=0.01):
 
     # NOTE: output the feature before normalization
     features_A = [A_relu1_1, A_relu2_1, A_relu3_1, A_relu4_1, A_relu5_1]
-    layers = [A_relu2_1,A_relu3_1, A_relu4_1, A_relu5_1, B_relu2_1, B_relu3_1, B_relu4_1, B_relu5_1]
+    layers = [A_relu2_1, A_relu3_1, A_relu4_1, A_relu5_1,
+              B_relu2_1, B_relu3_1, B_relu4_1, B_relu5_1]
+
     def feature_norm_relu(layers):
         f_norms = []
         for relu_l in layers:
-            f_norm  = feature_normalize(relu_l)
+            f_norm = feature_normalize(relu_l)
             f_norms.append(f_norm)
         return f_norms
     layers = feature_norm_relu(layers)

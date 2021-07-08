@@ -40,5 +40,5 @@ Arguments:
 | --input_path |  Path to input frames to be colorized |   
 | --ref_path |  Path to reference image(s)  |
 |--output_path |  Path to output folder (A folder will be created for every reference image in this location) | 
-|--context or -c |  Context. (Extension modules : `cpu` or `cudnn`)  |
+|--context or -c |  Context (Extension modules : `cpu` or `cudnn`)  |
 

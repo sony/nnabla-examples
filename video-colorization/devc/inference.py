@@ -63,6 +63,7 @@ def interpolate(image, scale):
     image = np.expand_dims(np.transpose(image, (2, 0, 1)), 0)
     return image
 
+
 def interpolate_nn(image, frame, scale):
     '''
     Linear Interpolation on Variable image and frame
@@ -73,10 +74,11 @@ def interpolate_nn(image, frame, scale):
         linear interpolated image and frame 
     '''
     image = F.interpolate(image, scale)
-    frame  = F.interpolate(frame, scale)
+    frame = F.interpolate(frame, scale)
     return image, frame
 
-def get_rgb_frame(ia_lab_large,i_current_ab_predict_nn, conf):
+
+def get_rgb_frame(ia_lab_large, i_current_ab_predict_nn, conf):
 
     curr_bs_l = ia_lab_large[:, 0:1, :, :]
     curr_predict = interpolate(
@@ -103,6 +105,7 @@ def get_rgb_frame(ia_lab_large,i_current_ab_predict_nn, conf):
             conf, curr_bs_l[:32], curr_predict[:32, ...])
     return ia_predict_rgb
 
+
 def colorize_video(conf, ref):
     '''
     Colorize the input frames and save the output as colorized frames and video
@@ -114,9 +117,10 @@ def colorize_video(conf, ref):
         nn.load_parameters('../../devc_vgg19_conv.h5')
         nn.load_parameters('../../devc_nonlocal.h5')
         nn.load_parameters('../../devc_colornet.h5')
-    
+
     reference_file = os.path.join(conf.data.ref_path, ref)
-    output_path = os.path.join(conf.data.output_path, 'out_' + ref.split(".")[0])
+    output_path = os.path.join(
+        conf.data.output_path, 'out_' + ref.split(".")[0])
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     filenames = [f for f in os.listdir(conf.data.input_path)
@@ -135,12 +139,15 @@ def colorize_video(conf, ref):
     print(f"reference = {ref_name}")
     # Preprocess reference image
     frame_ref = np.array(Image.open(ref_name))
-    ib_lab_large = nn.Variable.from_numpy_array(transform(frame_ref, conf.data.image_size))
+    ib_lab_large = nn.Variable.from_numpy_array(
+        transform(frame_ref, conf.data.image_size))
     for iter_num, frame_name in enumerate(filenames):
         print("input =", frame_name)
         frame = Image.open(os.path.join(conf.data.input_path, frame_name))
-        ia_lab_large = nn.Variable.from_numpy_array(transform(np.array(frame), conf.data.image_size))
-        ia_lab, ib_lab = interpolate_nn(ia_lab_large, ib_lab_large, scale = (0.5,0.5))
+        ia_lab_large = nn.Variable.from_numpy_array(
+            transform(np.array(frame), conf.data.image_size))
+        ia_lab, ib_lab = interpolate_nn(
+            ia_lab_large, ib_lab_large, scale=(0.5, 0.5))
         ia_l = ia_lab[:, 0:1, :, :]
         if i_last_lab_predict is None:
             if conf.data.frame_propagation:
@@ -178,6 +185,7 @@ def colorize_video(conf, ref):
         frame_shape=conf.data.image_size,
         output_dir=output_path,
         filename=conf.data.output_video)
+
 
 def main():
     conf = get_config()

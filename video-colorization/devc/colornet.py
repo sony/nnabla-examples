@@ -16,6 +16,7 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
 
+
 def conv_rl(
     x, out_ch, kernel=(
         3, 3), stride=(
