@@ -71,7 +71,7 @@ def get_config():
         "--output_video",
         type=str,
         default="video.avi",
-        help="Video output in *.avi for example video.avi")
+        help="Video output in *.avi for example, video.avi")
     args = parser.parse_args()
 
     conf.data.image_size = args.image_size
@@ -80,5 +80,7 @@ def get_config():
     conf.data.output_path = args.output_path
     conf.data.output_video = args.output_video
     conf.data.frame_propagation = args.frame_propagation
+    conf.nnabla_context.context = args.context
+    conf.nnabla_context.device_id: args.device_id
 
     return conf

@@ -12,18 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
+
 import nnabla as nn
 import nnabla.functions as F
 import numpy as np
-import sys
 
-l_norm, ab_norm = 1., 1.
-l_mean, ab_mean = 50., 0
+from preprocess import uncenter_l
+from args import get_config
 
-
-def uncenter_l(l):
-    return l * l_norm + l_mean
-
+conf = get_config()
 
 def vgg_pre_process(x):
     x_bgr = F.concatenate(
@@ -48,6 +46,6 @@ def feature_normalize(feature_in):
 
 def gray2rgb_batch(l):
     # gray image tensor to rgb image tensor
-    l_uncenter = uncenter_l(l)
-    l_uncenter = l_uncenter / (2 * l_mean)
+    l_uncenter = uncenter_l(l, conf)
+    l_uncenter = l_uncenter / (2 * conf.l_mean)
     return F.concatenate(l_uncenter, l_uncenter, l_uncenter, axis=1)

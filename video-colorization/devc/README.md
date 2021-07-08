@@ -1,6 +1,6 @@
 # Deep Exemplar-based Video Colorization 
 
-This repository contains the code for "[Deep Exemplar-based Video Colorization ](https://arxiv.org/abs/1906.09909)" 
+This repository contains the inference code for "[Deep Exemplar-based Video Colorization ](https://arxiv.org/abs/1906.09909)" 
 paper by [Bo Zhang et al.](https://github.com/zhangmozhe/Deep-Exemplar-based-Video-Colorization).
 
 ## Introduction
@@ -27,7 +27,7 @@ __Result Examples__
 ## Inference
 
 ### Pre-trained Weights
-Pre-trained weights can be downloaded from the following link 
+Pre-trained weights can be downloaded from the following link:  
 ### Inference using pre-trained weights provided by original authors
 Run the below inference command to generate colorized video from given input frames in images/input/v32 directory:
 
@@ -35,9 +35,10 @@ Run the below inference command to generate colorized video from given input fra
 python inference.py --input_path images/input/v32 --ref_path images/ref/v32 --output_path images/output/ -c cudnn 
 ```
 Arguments:  
---input_path :  Path to input frames to be colorized  
---ref_path :  Path to reference image(s)  
---output_path :  Path to output folder (A folder will be created for every reference image in this location)  
---context / -c:  Context. (Extension modules : `cpu` or `cudnn`)  
+|Arguments  | Description | 
+| --- | --- |  
+| --input_path |  Path to input frames to be colorized |   
+| --ref_path |  Path to reference image(s)  |
+|--output_path |  Path to output folder (A folder will be created for every reference image in this location) | 
+|--context or -c |  Context. (Extension modules : `cpu` or `cudnn`)  |
 
-## Training: Train the colorization model from scratch (**coming soon**)

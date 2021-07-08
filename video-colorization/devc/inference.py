@@ -110,6 +110,11 @@ def colorize_video(conf, ref):
         conf: conf object
         ref: refrence image
     '''
+    def load_weights():
+        nn.load_parameters('../../devc_vgg19_conv.h5')
+        nn.load_parameters('../../devc_nonlocal.h5')
+        nn.load_parameters('../../devc_colornet.h5')
+    
     reference_file = os.path.join(conf.data.ref_path, ref)
     output_path = os.path.join(conf.data.output_path, 'out_' + ref.split(".")[0])
     if not os.path.exists(output_path):
@@ -125,10 +130,6 @@ def colorize_video(conf, ref):
         filenames[0] if conf.data.frame_propagation else reference_file
     i_last_lab_predict = None
     # Load the Weights
-    def load_weights():
-        nn.load_parameters('../../devc_vgg19_conv.h5')
-        nn.load_parameters('../../devc_nonlocal.h5')
-        nn.load_parameters('../../devc_colornet.h5')
     nn.clear_parameters()
     load_weights()
     print(f"reference = {ref_name}")
