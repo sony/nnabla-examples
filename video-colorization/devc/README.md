@@ -13,7 +13,11 @@ __Result Examples__
 |![](images/examples/mov1.gif) | ![](images/examples/ref1.jpg) | ![](images/examples/out1.gif) | 
 |![](images/examples/mov2.gif) | ![](images/examples/ref2.jpg) | ![](images/examples/out2.gif) |
 
+## Quick Colorization Demo using DEVC
 
+From the Colab link below, you can try using DEVC to generate colorized video from input frames. Please give it a try!
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/nnabla/nnabla-examples/tree/feature/20210628-deep-exempler-based-video-colorization/video-colorization/DEVC.ipynb)
 
 ## Getting started
 
