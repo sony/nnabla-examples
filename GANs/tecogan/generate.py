@@ -82,7 +82,7 @@ def main():
         if i != 0:
             pre_gen_warp.forward(clear_buffer=True)
             pre_warp.data.copy_from(pre_gen_warp.data)
-        outputs.forward(clear_buffer = True))
+        outputs.forward(clear_buffer = True)
         output_frame=outputs.d
 
         if i >= 5:
