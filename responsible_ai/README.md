@@ -16,6 +16,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
 > *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
 
+
 <p align="center">
 <img src="./gradcam/images/sample.png" width="500px">  
 </p>
@@ -29,6 +30,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <p align="center">
 <img src="./shap/images/sample.png" width="500px">  
 </p>
+
 
 
 ## TracIn [code](./tracin/)
