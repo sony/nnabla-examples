@@ -16,20 +16,22 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
 > *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
 
-![](./gradcam/images/sample.png)
 
-## Data cleansing with with Storage-efficient Approximation of Influence Functions [code](./data_cleansing/)
+<p align="center">
+<img src="./gradcam/images/sample.png" width="500px">  
+</p>
 
-> **Data Cleansing for Deep Neural Networks with Storage-efficient Approximation of Influence Functions**
-> Kenji Suzuki, Yoshiyuki Kobayashi, Takuya Narihira.
-> *arXiv technical report ([arXiv 2103.11807]( https://arxiv.org/abs/2103.11807))*            
 
-![](./data_cleansing/imgs/datacleansing.png)
+## SHAP [code](./shap/)
+> **A Unified Approach to Interpreting Model Predictions**
+> Scott Lundberg, Su-In Lee.
+> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
 
-## Understanding Black-box Predictions via Influence Functions [code](./data_cleansing/)
-> **Understanding Black-box Predictions via Influence Functions**
-> Pang Wei Koh, Percy Liang.
-> *arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))*            
+<p align="center">
+<img src="./shap/images/sample.png" width="500px">  
+</p>
+
+
 
 ## TracIn [code](./tracin/)
 > **Estimating Training Data Influence by Tracing Gradient Descent**
