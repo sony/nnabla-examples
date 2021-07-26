@@ -39,7 +39,7 @@ mpirun -n <number of GPUs> python main.py \
 Expected training time on 4 GeForce RTX 2080 Ti is 1 days.
 
 ## Inference
-Download mel-spectrogram samples from [here]().
+Download mel-spectrogram samples from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/HiFiGAN/mel_samples.7z).
 
 Run the following command to synthesize audios from mel spectrograms.
 
@@ -51,11 +51,11 @@ python synthesize.py --device-id <device id> \
     --f-output <output file>
 ```
 
-The pre-trained model can be downloaded from [here](?).
+The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/HiFiGAN/model.h5).
 
 
 
-Synthesized audio samples can be downloaded from [here](?).
+Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/HiFiGAN/samples.7z).
 
 # References
 1. https://github.com/jik876/hifi-gan
