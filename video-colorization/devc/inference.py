@@ -114,7 +114,7 @@ def colorize_video(conf, ref):
         ref: refrence image
     '''
     def load_weights():
-        nn.load_parameters(f'{conf.checkpoint.path}/{conf.checkpoint.vgg19}' )
+        nn.load_parameters(f'{conf.checkpoint.path}/{conf.checkpoint.vgg19}')
         nn.load_parameters(f'{conf.checkpoint.path}/{conf.checkpoint.non_local}')
         nn.load_parameters(f'{conf.checkpoint.path}/{conf.checkpoint.colornet}')
 

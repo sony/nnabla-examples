@@ -88,6 +88,6 @@ def get_config():
     conf.data.frame_propagation = args.frame_propagation
     conf.nnabla_context.context = args.context
     conf.nnabla_context.device_id: args.device_id
-    conf.checkpoint.path: args.checkpoint 
+    conf.checkpoint.path: args.checkpoint
 
     return conf
