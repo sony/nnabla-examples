@@ -17,21 +17,30 @@ __Result Examples__
 
 From the Colab link below, you can try using DEVC to generate colorized video from input frames. Please give it a try!
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/nnabla/nnabla-examples/tree/feature/20210628-deep-exempler-based-video-colorization/video-colorization/devc/DEVC.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/nnabla/nnabla-examples)
 
 ## Getting started
 
-## Prerequisites
+### Prerequisites
 * nnabla 
 * cv2 >=3.3
 * pillow
 * numpy
 * scikit-image
 
+### Installation
+
+For installation we recommend to use the [Anaconda](https://anaconda.org/) python distribution. To create a conda environment for _Deep Exemplar-based Video Colorization_, simply run:
+
+`conda env create -f environment-X.yml` where `X` is either [`cpu`, `gpu`], depending on your system. 
+
 ## Inference
 
 ### Pre-trained Weights
 Pre-trained weights can be downloaded from the following link:  
+
+Run the below command to unzip the downloaded file:  
+`unzip devc_weights.zip`
 ### Inference using pre-trained weights provided by original authors
 Run the below inference command to generate colorized video from given input frames in images/input/v32 directory:
 

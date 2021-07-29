@@ -72,6 +72,12 @@ def get_config():
         type=str,
         default="video.avi",
         help="Video output in *.avi for example, video.avi")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default="./devc_weights/",
+        help="path to checkpoint folder"
+    )
     args = parser.parse_args()
 
     conf.data.image_size = args.image_size
@@ -82,5 +88,6 @@ def get_config():
     conf.data.frame_propagation = args.frame_propagation
     conf.nnabla_context.context = args.context
     conf.nnabla_context.device_id: args.device_id
+    conf.checkpoint.path: args.checkpoint 
 
     return conf
