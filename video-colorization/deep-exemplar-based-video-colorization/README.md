@@ -47,8 +47,8 @@ Run the below inference command to generate colorized video from given input fra
 ```
 python inference.py --input_path images/input/v32 --ref_path images/ref/v32 --output_path images/output/ -c cudnn 
 ```
-Colorized videos corresponding to the reference images will be generated in the output folder.
-Arguments:  
+Colorized videos corresponding to the reference images will be generated in the output folder.    
+#### Arguments:  
 |Arguments  | Description | 
 | --- | --- |  
 | --input_path |  Path to input frames to be colorized |   
