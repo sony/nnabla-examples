@@ -56,7 +56,7 @@ def preprocess_dataset(dataframe, label_name, protected_attribute_names=["sex"],
         features_to_drop: column names to drop
 
     Returns:
-        pandas.DataFrame: pre-processed dataframe                
+        pandas.DataFrame: pre-processed dataframe
     """
     # Create a one-hot encoding of the categorical variables.
     categorical_features = sorted(set(categorical_features) - set(features_to_drop),
@@ -80,7 +80,8 @@ def preprocess_dataset(dataframe, label_name, protected_attribute_names=["sex"],
     if callable(favorable_class):
         dataframe[label_name] = dataframe[label_name].apply(favorable_class)
     else:
-        dataframe[label_name] = (dataframe[label_name] == favorable_class).astype(int)
+        dataframe[label_name] = (dataframe[label_name]
+                                 == favorable_class).astype(int)
 
     # Drop unrequested columns
     dataframe = dataframe[sorted(set(dataframe.columns.tolist()) - set(features_to_drop),
