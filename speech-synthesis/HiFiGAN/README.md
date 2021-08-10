@@ -6,6 +6,8 @@ HiFi-GAN employs generative adversarial networks (GANs) to produce raw waveforms
 
 All hyper-parameters are defined in [hparams.py](hparams.py).
 
+<center> <img src="./images/hifigan_arch.png" width=80% height=30% > </center>
+
 
 ## Requirements
 ### Python environment
@@ -36,7 +38,7 @@ mpirun -n <number of GPUs> python main.py \
     --device-id <list of GPUs>
     --context "cudnn"
 ```
-Expected training time on 4 GeForce RTX 2080 Ti is 1 days.
+Expected training time on 4 A6000 GPUs is 5~6 days.
 
 ## Inference
 Download mel-spectrogram samples from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/HiFiGAN/mel_samples.7z).
