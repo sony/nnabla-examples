@@ -95,7 +95,7 @@ class PoseDLA(object):
                         with_bias=True,
                         channel_last=self.channel_last
                     )
-                    out = F.relu(out, inplace=True)
+                    out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
                     w_init_param = torch_initializer(
                         features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init

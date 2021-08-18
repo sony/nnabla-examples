@@ -44,7 +44,7 @@ def invertible_conv(x, reverse, rng, scope):
 
 
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
-    in_act = F.add2(input_a, input_b, inplace=True)
+    in_act = F.add2(input_a, input_b)
     t_act = F.tanh(in_act[:, :n_channels, :])
     s_act = F.sigmoid(in_act[:, n_channels:, :])
     return t_act * s_act

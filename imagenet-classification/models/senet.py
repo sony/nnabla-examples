@@ -105,7 +105,7 @@ class SEBottleneckBlock(BottleneckBlock):
         with nn.parameter_scope("bottleneck_s"):
             s = shortcut(x, ochannels, stride, self.shortcut_type,
                          self.test, channel_last=self.channel_last)
-        return F.relu(F.add2(h, s, inplace=True), inplace=True)
+        return F.relu(F.add2(h, s))
 
 
 class SENet(ResNetBase):

@@ -46,7 +46,7 @@ def downblock(x, out_features, norm=False, kernel_size=4, pool=False, sn=False, 
     if norm:
         out = PF.instance_normalization(out)
 
-    out = F.leaky_relu(out, 0.2, inplace=True)
+    out = F.leaky_relu(out, 0.2)
 
     if pool:
         out = F.average_pooling(out, kernel=(2, 2))

@@ -44,7 +44,7 @@ def resnetblock(x, dim, padding_type, norm_layer, use_dropout, use_bias):
     h = PF.convolution(h, dim, kernel=(3, 3), pad=(
         p, p), w_init=w_init, with_bias=use_bias, name="1st")
     h = norm_layer(h, name="1st")
-    h = F.relu(h, inplace=True)
+    h = F.relu(h)
 
     if use_dropout:
         h = F.dropout(h, 0.5)
@@ -72,7 +72,7 @@ def encode(input_variable, input_nc, n_downsampling, ngf, norm_layer, use_dropou
     h = PF.convolution(h, ngf, kernel=(7, 7), w_init=w_init,
                        with_bias=use_bias, name="enc_initial_conv")
     h = norm_layer(h, name="enc_initial_norm")
-    h = F.relu(h, inplace=True)
+    h = F.relu(h)
 
     for i in range(n_downsampling):
         with nn.parameter_scope("enc_downsampling_{}".format(i)):
@@ -80,7 +80,7 @@ def encode(input_variable, input_nc, n_downsampling, ngf, norm_layer, use_dropou
             h = PF.convolution(h, ngf * mult * 2, kernel=(3, 3), stride=(2, 2),
                                pad=(1, 1), w_init=w_init, with_bias=use_bias)
             h = norm_layer(h)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
 
     mult = 2**n_downsampling
     for i in range(n_blocks):
@@ -102,7 +102,7 @@ def decode(input_feature, output_nc, n_downsampling, ngf, norm_layer, use_bias):
                                  stride=(2, 2), pad=(1, 1), w_init=w_init, with_bias=use_bias)
             # kernel changed 3 -> 4 to make the output fit to the desired size.
             h = norm_layer(h)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
 
     h = F.pad(h, (3, 3, 3, 3), 'reflect')
     h = PF.convolution(h, output_nc, kernel=(
@@ -159,7 +159,7 @@ def feature_extractor(input_variable, input_nc, ndf, n_layers, kw, padw, norm_la
         def apply_w(w): return PF.spectral_norm(w, dim=0)
         h = PF.convolution(x, ndf, kernel=(kw, kw), stride=(
             2, 2), pad=(padw, padw), w_init=w_init, apply_w=apply_w)
-        h = F.leaky_relu(h, alpha=0.2, inplace=True)
+        h = F.leaky_relu(h, alpha=0.2)
 
     nf_mult = 1
     nf_mult_prev = 1
@@ -172,7 +172,7 @@ def feature_extractor(input_variable, input_nc, ndf, n_layers, kw, padw, norm_la
             h = PF.convolution(h, ndf * nf_mult, kernel=(kw, kw), stride=(2, 2),
                                pad=(padw, padw), w_init=w_init, with_bias=use_bias, apply_w=apply_w)
             h = norm_layer(h)
-            h = F.leaky_relu(h, alpha=0.2, inplace=True)
+            h = F.leaky_relu(h, alpha=0.2)
 
     return h
 
@@ -188,7 +188,7 @@ def classifier(input_feature, ndf, n_layers, kw, padw, norm_layer, use_sigmoid):
         h = PF.convolution(h, ndf * nf_mult, kernel=(kw, kw), stride=(1, 1),
                            pad=(padw, padw), w_init=w_init, apply_w=apply_w)
         h = norm_layer(h)
-        h = F.leaky_relu(h, alpha=0.2, inplace=True)
+        h = F.leaky_relu(h, alpha=0.2)
 
     # Use spectral normalization
     with nn.parameter_scope("dis_classifier_2"):

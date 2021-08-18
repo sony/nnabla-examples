@@ -42,7 +42,7 @@ def Downsample(h, nmap_out, scope_name):
         h = PF.convolution(h, nmap_out, (4, 4), stride=(
             2, 2), pad=(1, 1), apply_w=sn_w, with_bias=False)
         h = PF.batch_normalization(h)
-        h = F.leaky_relu(h, 0.2, inplace=True)
+        h = F.leaky_relu(h, 0.2)
     return h
 
 
@@ -53,17 +53,17 @@ def DownsampleComp(h, nmap_out, scope_name):
         h0 = PF.convolution(h, nmap_out, (4, 4), stride=(2, 2), pad=(
             1, 1), apply_w=sn_w, with_bias=False, name="main_conv1")
         h0 = PF.batch_normalization(h0, name="bn_main1")
-        h0 = F.leaky_relu(h0, 0.2, inplace=True)
+        h0 = F.leaky_relu(h0, 0.2)
         h0 = PF.convolution(h0, nmap_out, (3, 3), pad=(
             1, 1), apply_w=sn_w, with_bias=False, name="main_conv2")
         h0 = PF.batch_normalization(h0, name="bn_main2")
-        h0 = F.leaky_relu(h0, 0.2, inplace=True)
+        h0 = F.leaky_relu(h0, 0.2)
         # Direct
         h1 = F.average_pooling(h, (2, 2), stride=(2, 2))
         h1 = PF.convolution(h1, nmap_out, (1, 1), apply_w=sn_w,
                             with_bias=False, name="direct_conv1")
         h1 = PF.batch_normalization(h1, name="direct_bn1")
-        h1 = F.leaky_relu(h1, 0.2, inplace=True)
+        h1 = F.leaky_relu(h1, 0.2)
     return (h0 + h1) / 2.0
 
 
@@ -120,19 +120,19 @@ def Discriminator(img, label="real", scope_name="Discriminator", ndf=64):
             if img.shape[2] == 1024:
                 h = PF.convolution(h, ndf//8, (4, 4), stride=(2, 2),
                                    pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv1")
-                h = F.leaky_relu(h, 0.2, inplace=True)
+                h = F.leaky_relu(h, 0.2)
                 h = PF.convolution(h, ndf//4, (4, 4), stride=(2, 2),
                                    pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv2")
                 h = PF.batch_normalization(h)
-                h = F.leaky_relu(h, 0.2, inplace=True)
+                h = F.leaky_relu(h, 0.2)
             elif img.shape[2] == 512:
                 h = PF.convolution(h, ndf//4, (4, 4), stride=(2, 2),
                                    pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv2")
-                h = F.leaky_relu(h, 0.2, inplace=True)
+                h = F.leaky_relu(h, 0.2)
             else:
                 h = PF.convolution(h, ndf//4, (3, 3), pad=(1, 1),
                                    apply_w=sn_w, with_bias=False, name="conv3")
-                h = F.leaky_relu(h, 0.2, inplace=True)
+                h = F.leaky_relu(h, 0.2)
 
         # Calc base features
         f_256 = h
@@ -152,7 +152,7 @@ def Discriminator(img, label="real", scope_name="Discriminator", ndf=64):
             h = PF.convolution(f_8, ndf*16, (1, 1),
                                apply_w=sn_w, with_bias=False, name="conv1")
             h = PF.batch_normalization(h)
-            h = F.leaky_relu(h, 0.2, inplace=True)
+            h = F.leaky_relu(h, 0.2)
             logit_large = PF.convolution(
                 h, 1, (4, 4), apply_w=sn_w, with_bias=False, name="conv2")
 
@@ -160,7 +160,7 @@ def Discriminator(img, label="real", scope_name="Discriminator", ndf=64):
         with nn.parameter_scope("down_from_small"):
             h_s = PF.convolution(img_small, ndf//2, (4, 4), stride=(2, 2),
                                  pad=(1, 1), apply_w=sn_w, with_bias=False, name="conv1")
-            h_s = F.leaky_relu(h_s, 0.2, inplace=True)
+            h_s = F.leaky_relu(h_s, 0.2)
             h_s = Downsample(h_s, ndf*1, "dfs64->32")
             h_s = Downsample(h_s, ndf*2, "dfs32->16")
             h_s = Downsample(h_s, ndf*4, "dfs16->8")

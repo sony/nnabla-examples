@@ -51,8 +51,8 @@ class BaseGenerator(object):
         self.norm_opts = dict(no_scale=True, no_bias=True)
 
     def instance_norm_relu(self, x):
-        # return F.relu(PF.layer_normalization(x, **self.norm_opts), inplace=True)
-        return F.relu(PF.instance_normalization(x, **self.norm_opts), inplace=True)
+        # return F.relu(PF.layer_normalization(x, **self.norm_opts))
+        return F.relu(PF.instance_normalization(x, **self.norm_opts))
 
     def residual_block(self, x, o_channels):
         pad_width = get_symmetric_padwidth(1, channel_last=self.channel_last)

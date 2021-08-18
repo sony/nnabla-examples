@@ -105,7 +105,7 @@ class PoseResNet(object):
                     1), 'beta': ConstantInitializer(0)},
             )
 
-            features = F.relu(features, inplace=True)
+            features = F.relu(features)
 
         with nn.parameter_scope("upsample2"):
             kernel_size = self.kernels_size[1]
@@ -124,7 +124,7 @@ class PoseResNet(object):
                 axes=[axes],
                 batch_stat=self.training,
                 param_init={'gamma': ConstantInitializer(
-                    1), 'beta': ConstantInitializer(0)}), inplace=True)
+                    1), 'beta': ConstantInitializer(0)}))
 
         with nn.parameter_scope("upsample3"):
             kernel_size = self.kernels_size[2]
@@ -141,8 +141,8 @@ class PoseResNet(object):
                 features,
                 axes=[axes],
                 batch_stat=self.training,
-                param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)}),
-                inplace=True)
+                param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)})
+                )
 
         output = []
         for head in sorted(self.heads):
@@ -164,7 +164,7 @@ class PoseResNet(object):
                                              b_init_param),
                                          channel_last=self.channel_last,
                                          )
-                    out = F.relu(out, inplace=True)
+                    out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
                     w_init_param = torch_initializer(
                         out.shape[axes], (1, 1)) if head == 'hm' else self.n_init

@@ -31,7 +31,7 @@ def vgg_prediction(image, test=False, ncls=1000, nmaps=64, act=F.relu, config="V
                 if with_bn:
                     h = PF.batch_normalization(
                         h, batch_stat=not test, fix_parameters=finetune)
-                h = F.relu(h, inplace=True)
+                h = F.relu(h)
         if not scopename == 'conv15':
             h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))
         return h
@@ -59,20 +59,20 @@ def vgg_prediction(image, test=False, ncls=1000, nmaps=64, act=F.relu, config="V
         h = (PF.convolution(h, 512, kernel=(3, 3), pad=(1, 1),
                             with_bias=with_bias, fix_parameters=finetune))
         if not finetune:
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
             h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))
     if not finetune:
         with nn.parameter_scope("classifier/0"):
             nmaps = 4096
             h = PF.affine(h, nmaps, with_bias=with_bias,
                           fix_parameters=finetune)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
 
         with nn.parameter_scope("classifier/3"):
             nmaps = 4096
             h = PF.affine(h, nmaps, with_bias=with_bias,
                           fix_parameters=finetune)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
 
         with nn.parameter_scope("classifier/6"):
             h = PF.affine(h, ncls, with_bias=with_bias,

@@ -35,7 +35,7 @@ def mapping_network(noise, outmaps=512, num_layers=8, net_scope='G_mapping/Dense
                 shape=(out.shape[1], outmaps), lrmul=lrmul)
             out = F.affine(out, W*runtime_coef, bias*lrmul)
             out = F.mul_scalar(F.leaky_relu(
-                out, alpha=0.2, inplace=True), np.sqrt(2), inplace=True)
+                out, alpha=0.2), np.sqrt(2))
     return out
 
 

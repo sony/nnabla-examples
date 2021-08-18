@@ -288,7 +288,7 @@ def align_resnet(x, channel_basic=16, test=False, fix_parameters=False):
         with nn.parameter_scope('bn1'):
             h = PF.batch_normalization(
                 h, batch_stat=not test, fix_parameters=fix_parameters)
-        h = F.relu(h, inplace=True)
+        h = F.relu(h)
 
         with nn.parameter_scope('conv2'):
             h = PF.convolution(h, channel, kernel=(3, 3), stride=(1, 1), pad=(
@@ -305,7 +305,7 @@ def align_resnet(x, channel_basic=16, test=False, fix_parameters=False):
                     residual, batch_stat=not test, fix_parameters=fix_parameters)
 
         out = h + residual
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
 
         return out
 
@@ -318,7 +318,7 @@ def align_resnet(x, channel_basic=16, test=False, fix_parameters=False):
     with nn.parameter_scope('layer2'):
         h = PF.batch_normalization(
             h, batch_stat=not test, fix_parameters=fix_parameters)
-    h = F.relu(h, inplace=True)
+    h = F.relu(h)
     h = F.max_pooling(h, kernel=(3, 3), stride=(2, 2), pad=(1, 1))
 
     use_downsample = False
@@ -337,10 +337,10 @@ def align_resnet(x, channel_basic=16, test=False, fix_parameters=False):
 
     with nn.parameter_scope('mlp1'):
         h = F.relu(PF.affine(h, 128, with_bias=True,
-                             fix_parameters=fix_parameters), inplace=True)
+                             fix_parameters=fix_parameters))
     with nn.parameter_scope('mlp3'):
         h = F.relu(PF.affine(h, 128, with_bias=True,
-                             fix_parameters=fix_parameters), inplace=True)
+                             fix_parameters=fix_parameters))
     with nn.parameter_scope('mlp5'):
         h = PF.affine(h, 212, with_bias=True, fix_parameters=fix_parameters)
 
@@ -355,19 +355,19 @@ def resblock_hg(x, in_channels, bottleneck, out_channels, batch_stat=True):
     # (bn --> relu --> conv) * 3
     with nn.parameter_scope('bn1'):
         h = PF.batch_normalization(x, batch_stat=batch_stat)
-    h = F.relu(h, True)
+    h = F.relu(h)
     with nn.parameter_scope('conv1'):
         h = PF.convolution(h, bottleneck, kernel=(1, 1))
 
     with nn.parameter_scope('bn2'):
         h = PF.batch_normalization(h, batch_stat=batch_stat)
-    h = F.relu(h, True)
+    h = F.relu(h)
     with nn.parameter_scope('conv2'):
         h = PF.convolution(h, bottleneck, kernel=(3, 3), pad=(1, 1))
 
     with nn.parameter_scope('bn3'):
         h = PF.batch_normalization(h, batch_stat=batch_stat)
-    h = F.relu(h, True)
+    h = F.relu(h)
     with nn.parameter_scope('conv3'):
         h = PF.convolution(h, out_channels, kernel=(1, 1))
 
@@ -417,7 +417,7 @@ def hourglass(x, planes, batch_stat=True):
 def fc(x, planes, batch_stat=True):
     h = PF.convolution(x, planes, kernel=(1, 1))
     h = PF.batch_normalization(h, batch_stat=batch_stat)
-    h = F.relu(h, True)
+    h = F.relu(h)
     return h
 
 
@@ -431,7 +431,7 @@ def stacked_hourglass_net(x,
         x = PF.convolution(x, planes, kernel=(7, 7), pad=(3, 3), stride=(2, 2))
     with nn.parameter_scope('bn1'):
         x = PF.batch_normalization(x, batch_stat=batch_stat)
-    x = F.relu(x, True)
+    x = F.relu(x)
 
     with nn.parameter_scope('layer1'):
         x = resblock_hg(x, planes, planes, planes*2, batch_stat=batch_stat)

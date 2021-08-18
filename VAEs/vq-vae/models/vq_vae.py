@@ -37,11 +37,11 @@ class ResidualStack(object):
 
     def res_block(self, x, scope_name='res_block', test=False):
         with nn.parameter_scope(scope_name):
-            out = F.relu(x, inplace=True)
+            out = F.relu(x)
             out = PF.convolution(out, self.num_hidden, (3, 3),
                                  stride=(1, 1), pad=(1, 1), with_bias=False, name='conv_1', rng=self.rng)
             out = PF.batch_normalization(out, name='bn_1', batch_stat=not test)
-            out = F.relu(out, inplace=True)
+            out = F.relu(out)
             out = PF.convolution(out, self.num_hidden, (1, 1),
                                  stride=(1, 1), with_bias=False, name='conv_2', rng=self.rng)
             out = PF.batch_normalization(out, name='bn_2', batch_stat=not test)

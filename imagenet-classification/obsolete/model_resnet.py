@@ -55,13 +55,13 @@ def basicblock(x, ochannels, stride, shortcut_type, test):
     ichannels = x.shape[1]
     with nn.parameter_scope("basicblock1"):
         h = F.relu(bn(PF.convolution(x, ochannels, (3, 3),
-                                     pad=(1, 1), stride=stride, with_bias=False)),
-                   inplace=True)
+                                     pad=(1, 1), stride=stride, with_bias=False))
+                   )
     with nn.parameter_scope("basicblock2"):
         h = bn(PF.convolution(h, ochannels, (3, 3), pad=(1, 1), with_bias=False))
     with nn.parameter_scope("basicblock_s"):
         s = shortcut(x, ochannels, stride, shortcut_type, test)
-    return F.relu(F.add2(h, s, inplace=True), inplace=True)
+    return F.relu(F.add2(h, s))
 
 
 def bottleneck(x, ochannels, stride, shortcut_type, test):
@@ -71,17 +71,17 @@ def bottleneck(x, ochannels, stride, shortcut_type, test):
     hchannels = ochannels / 4
     with nn.parameter_scope("bottleneck1"):
         h = F.relu(
-            bn(PF.convolution(x, hchannels, (1, 1), with_bias=False)),
-            inplace=True)
+            bn(PF.convolution(x, hchannels, (1, 1), with_bias=False))
+            )
     with nn.parameter_scope("bottleneck2"):
         h = F.relu(
             bn(PF.convolution(h, hchannels, (3, 3), pad=(1, 1),
-                              stride=stride, with_bias=False)), inplace=True)
+                              stride=stride, with_bias=False)))
     with nn.parameter_scope("bottleneck3"):
         h = bn(PF.convolution(h, ochannels, (1, 1), with_bias=False))
     with nn.parameter_scope("bottleneck_s"):
         s = shortcut(x, ochannels, stride, shortcut_type, test)
-    return F.relu(F.add2(h, s, inplace=True), inplace=True)
+    return F.relu(F.add2(h, s))
 
 
 def layer(x, block, ochannels, count, stride, shortcut_type, test):
@@ -120,7 +120,7 @@ def resnet_imagenet(x, num_classes, num_layers, shortcut_type, test, tiny=False)
         r = PF.convolution(x, 64, (7, 7),
                            pad=(3, 3), stride=stride, with_bias=False)
         r = F.relu(PF.batch_normalization(
-            r, batch_stat=not test), inplace=True)
+            r, batch_stat=not test))
         r = F.max_pooling(r, (3, 3), stride, pad=(1, 1))
     hidden = {}
     hidden['r0'] = r

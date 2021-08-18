@@ -118,7 +118,7 @@ class PatchGAN(object):
 
     def instance_norm_lrelu(self, x, alpha=0.2):
         norm = PF.instance_normalization(x, no_scale=True, no_bias=True)
-        return F.leaky_relu(norm, alpha=alpha, inplace=True)
+        return F.leaky_relu(norm, alpha=alpha)
 
     def pad_conv(self, x, fdim, stride):
         h = PF.convolution(x, fdim, (4, 4), stride=stride,
@@ -204,7 +204,7 @@ class PatchGAN(object):
                     fdim = self.base_ndf
                     with ps("layer_0"):
                         h = self.pad_conv(h, fdim, stride=(2, 2))
-                        h = F.leaky_relu(h, alpha=0.2, inplace=True)
+                        h = F.leaky_relu(h, alpha=0.2)
 
                     feats[d_name]["layer_0"] = h
 

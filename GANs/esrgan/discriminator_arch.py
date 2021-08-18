@@ -22,7 +22,7 @@ def conv_bn_3(x, nf, name, bias):
         h = PF.convolution(x, nf, kernel=(3, 3), stride=(
             1, 1), pad=(1, 1), with_bias=bias)
         h = PF.batch_normalization(h)
-        h = F.leaky_relu(h, alpha=0.2, inplace=True)
+        h = F.leaky_relu(h, alpha=0.2)
     return h
 
 
@@ -31,7 +31,7 @@ def conv_bn_4(x, nf, name, bias):
         h = PF.convolution(x, nf, kernel=(4, 4), stride=(
             2, 2), pad=(1, 1), with_bias=bias)
         h = PF.batch_normalization(h)
-        h = F.leaky_relu(h, alpha=0.2, inplace=True)
+        h = F.leaky_relu(h, alpha=0.2)
     return h
 
 
@@ -43,7 +43,7 @@ def discriminator(x, nf=64):
     '''
     # [3,128, 128]
     h = F.leaky_relu(PF.convolution(x, nf, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name='conv0_0', with_bias=True),
-                     alpha=0.2, inplace=True)
+                     alpha=0.2)
     # [64, 128, 128]
     h = conv_bn_4(h, nf, "conv0_1", False)
     h = conv_bn_3(h, 2 * nf, "conv1_0", False)
@@ -57,6 +57,6 @@ def discriminator(x, nf=64):
     # [512, 4, 4]
     B, C, H, W = h.shape[0], h.shape[1], h.shape[2], h.shape[3]
     h = F.leaky_relu((PF.affine(h, 100, name="affine1")),
-                     alpha=0.2, inplace=True)
+                     alpha=0.2)
     h = PF.affine(h, 1, name="affine2")
     return h

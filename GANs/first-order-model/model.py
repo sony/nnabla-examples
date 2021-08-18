@@ -37,7 +37,7 @@ def vgg_prediction(image, nmaps=64, config="VGG19", with_bias=True, with_bn=Fals
                 if with_bn:
                     h = PF.batch_normalization(
                         h, batch_stat=not test, fix_parameters=finetune)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
             if len(scopenames) != 1 and scopename == scopenames[-2]:
                 h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))
         return h
