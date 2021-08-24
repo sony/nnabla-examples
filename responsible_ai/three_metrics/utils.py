@@ -44,7 +44,7 @@ def display_log(log_dict):
         "* False positive rate (FPR) for the privileged group is " + str(log_dict['privileged_FPR']) + "," \
         " and the FPR for the unprivileged group is " + str(log_dict['unprivileged_FPR'])+" ." \
         "For the privileged group, TPR = FP /(FP+TN).\n\n" \
-        "Let's check model fairness. In this tutorial, we explore three different types of metrics.\n" 
+        "Let's check model fairness. In this tutorial, we explore three different types of metrics.\n"
     display(Markdown(confusion_matrix_log))
 
     # demographic parity
@@ -119,7 +119,7 @@ def display_log(log_dict):
         "* As seen in the above diagram , the average abs odd difference between privileged group" \
         " and unprivileged group is "+str(log_dict['AAOD'])+"\n" \
         "* Average abs odds difference (AAOD) must be close to zero for the classifier to be fair.\n" \
-        "* Model fairness is " +str(log_dict['AAOD'])+", which means " \
+        "* Model fairness is " + str(log_dict['AAOD'])+", which means " \
         + str(["the model is correctly identify the positive outcome, "
                "and miss-classify the positive outcome at equal rates across groups . "
                "and it satisfies the equalized odd fairness criterion."
@@ -152,7 +152,7 @@ def load_german_data():
     try:
         dataframe = pd.read_csv(
             file_path, sep=' ', header=None, names=column_names)
-    except Exception as e :
+    except Exception as e:
         print("Error : ", e)
         sys.exit(1)
     # derive the gender attribute from personal_status (you can refer the german.doc)
@@ -202,7 +202,7 @@ def load_adult_data():
         # Restrict races to White and Black
         input_data = (pd.read_csv(file_path, names=column_names,
                                   na_values="?", sep=r'\s*,\s*', engine='python').loc[lambda df: df['race'].isin(['White', 'Black'])]).dropna()
-    except Exception as e :
+    except Exception as e:
         print("Error : ", e)
         sys.exit(1)
 
@@ -287,11 +287,13 @@ def load_bank_data():
     """
 
     try:
-        http_response = urlopen(r'https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip')
+        http_response = urlopen(
+            r'https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip')
         zipfile = ZipFile(BytesIO(http_response.read()))
         zipfile.extractall(path='.')
         file_path = "./bank-additional/bank-additional-full.csv"
-        input_data = pd.read_csv(file_path, sep=';', na_values="unknown").dropna()
+        input_data = pd.read_csv(
+            file_path, sep=';', na_values="unknown").dropna()
     except Exception as e:
         print("Error : ", e)
         sys.exit(1)
@@ -345,12 +347,13 @@ def load_gender_discrimination_data():
 
     # features; note that the 'target' and sensitive attribute columns are dropped
     features = (input_data
-                .drop(columns=['Rank','Gender'])
+                .drop(columns=['Rank', 'Gender'])
                 .pipe(pd.get_dummies, drop_first=True))
     display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
     display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
     return features, target, sensitive_attributes
+
 
 def plot_confusion_matrix(y_true, y_pred, display_labels=["bad", "good"]):
     """
