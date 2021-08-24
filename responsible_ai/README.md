@@ -39,6 +39,15 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
 
 
+## Fairness of Machine Learning [code](./gender_bias_mitigation/)
+> **Data preprocessing techniques for classification without discrimination**
+> Kamiran, Faisal and Calders, Toon. 
+> [Knowledge and Information Systems, 33(1):1–33, 2012](https://link.springer.com/content/pdf/10.1007/s10115-011-0463-8.pdf)* 
+
+<p align="center">
+<img src="./gender_bias_mitigation/images/xai-bias-mitigation-workflow.png">
+</p>
+
 ## Facial evaluation for skin color [code](./face_evaluation/)
 > **Diversity in Faces**
 > Michele Merler, Nalini Ratha, Rogerio S. Feris, John R. Smith.
@@ -47,3 +56,4 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <p align="center">
 <img src="./face_evaluation/skin_color.png">
 </p>
+
