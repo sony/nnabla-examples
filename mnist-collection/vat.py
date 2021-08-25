@@ -84,10 +84,10 @@ def mlp_net(x, n_h, n_y, test=False):
     h = x
     with nn.parameter_scope("fc1"):
         h = F.relu(PF.batch_normalization(
-            PF.affine(h, n_h), batch_stat=not test), inplace=True)
+            PF.affine(h, n_h), batch_stat=not test))
     with nn.parameter_scope("fc2"):
         h = F.relu(PF.batch_normalization(
-            PF.affine(h, n_h), batch_stat=not test), inplace=True)
+            PF.affine(h, n_h), batch_stat=not test))
     with nn.parameter_scope("fc3"):
         h = PF.affine(h, n_y)
     return h

@@ -195,7 +195,7 @@ def model(img, sf):
             n1 = conv_2d(b, ch, kernel=(3, 3), name='conv/0')
             for i in range(4):
                 n1 = res_block(n1, ch, 'res_block/%d' % i)
-            n1 = F.relu(n1, inplace=True)
+            n1 = F.relu(n1)
             local_filter_2d = conv_2d(n1, (9 ** 2) * (sf ** 2), kernel=(3, 3),
                                       name='conv_k')  # [B, H, W, (9x9)*(sfxsf)]
             # dynamic 2D upsampling with 2D local filters
@@ -211,7 +211,7 @@ def model(img, sf):
                 n3 = res_block(n3, ch, 'res_block/%d' % i)
                 if i == 0:
                     d_feature = n3
-            n3 = F.relu(n3, inplace=True)
+            n3 = F.relu(n3)
             # separable 1D filters
             dr_k_h = conv_2d(n3, 41 * sf ** 2, kernel=(3, 3), name='conv_k_h')
             dr_k_v = conv_2d(n3, 41 * sf ** 2, kernel=(3, 3), name='conv_k_v')
@@ -226,16 +226,16 @@ def model(img, sf):
                     n4 = res_block_concat(n4, ch, 'res_block/%d' % i)
                 else:
                     n4 = res_block(n4, ch, 'res_block/%d' % i)
-            n4 = F.relu(n4, inplace=True)
+            n4 = F.relu(n4)
 
             n4 = F.relu(conv_2d(n4, ch * sf * sf, kernel=(3, 3),
-                                name='conv/1'), inplace=True)
+                                name='conv/1'))
             # (1,100,170,1024) -> (1,100,170,4,4,64) -> (1,100,4,170,4,64)
             # pixel shuffle
             n4 = depth_to_space(n4, sf)
             pred_I = conv_2d(n4, 3, kernel=(3, 3), name='conv/2')
 
-    pred = F.add2(pred_I, pred_D, inplace=True) * pred_C
+    pred = F.add2(pred_I, pred_D) * pred_C
     jsinet = namedtuple('jsinet', ['pred'])
     return jsinet(pred)
 
@@ -325,19 +325,19 @@ def discriminator_fm(x, sf, scope="Discriminator_FM"):
         n = F.leaky_relu(PF.batch_normalization(
             conv(n, channels=ch, kernel=4, stride=2,
                  pad=1, use_bias=False, scope='d_conv/10'),
-            axes=[3], batch_stat=True, name='d_bn/9'), alpha=0.2,
-            inplace=True)
+            axes=[3], batch_stat=True, name='d_bn/9'), alpha=0.2
+            )
 
         if sf == 1:
             n = F.leaky_relu(PF.batch_normalization(
                 conv(n, channels=ch, kernel=5, stride=1,
                      pad=1, use_bias=False, scope='d_conv/11'),
-                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2, inplace=True)
+                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2)
         else:
             n = F.leaky_relu(PF.batch_normalization(
                 conv(n, channels=ch, kernel=5, stride=1,
                      use_bias=False, scope='d_conv/11'),
-                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2, inplace=True)
+                axes=[3], batch_stat=True, name='d_bn/10'), alpha=0.2)
 
         n = PF.batch_normalization(
             conv(n, channels=1, kernel=1, stride=1,

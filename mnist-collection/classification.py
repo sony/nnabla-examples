@@ -57,10 +57,10 @@ def mnist_lenet_prediction(image, test=False, aug=None):
     image /= 255.0
     image = augmentation(image, test, aug)
     c1 = PF.convolution(image, 16, (5, 5), name='conv1')
-    c1 = F.relu(F.max_pooling(c1, (2, 2)), inplace=True)
+    c1 = F.relu(F.max_pooling(c1, (2, 2)))
     c2 = PF.convolution(c1, 16, (5, 5), name='conv2')
-    c2 = F.relu(F.max_pooling(c2, (2, 2)), inplace=True)
-    c3 = F.relu(PF.affine(c2, 50, name='fc3'), inplace=True)
+    c2 = F.relu(F.max_pooling(c2, (2, 2)))
+    c3 = F.relu(PF.affine(c2, 50, name='fc3'))
     c4 = PF.affine(c3, 10, name='fc4')
     return c4
 
@@ -85,7 +85,7 @@ def mnist_resnet_prediction(image, test=False, aug=None):
                     bn(PF.convolution(h, C / 2, (3, 3), pad=(1, 1), with_bias=False)))
             with nn.parameter_scope('conv3'):
                 h = bn(PF.convolution(h, C, (1, 1), with_bias=False))
-        return F.elu(F.add2(h, x, inplace=True))
+        return F.elu(F.add2(h, x))
     # Conv1 --> 64 x 32 x 32
     with nn.parameter_scope("conv1"):
         c1 = F.elu(

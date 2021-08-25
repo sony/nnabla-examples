@@ -140,7 +140,7 @@ class BasicBlock(object):
             h = PF.batch_normalization(h, axes=axes, batch_stat=not self.test)
             if z is None:
                 return h
-            return F.add2(z, h, inplace=True)
+            return F.add2(z, h)
         return PF.fused_batch_normalization(h, z, axes=axes, batch_stat=not self.test)
 
     def __call__(self, x, ochannels, stride):

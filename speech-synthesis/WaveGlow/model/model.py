@@ -135,7 +135,7 @@ class WaveGlow(Module):
         reals, imags = F.stft(wave, window_size=hp.win_length,
                               stride=hp.hop_length, fft_size=hp.n_fft)
         linear = F.pow_scalar(
-            F.add2(F.pow_scalar(reals, 2), F.pow_scalar(imags, 2), inplace=True), 0.5)
+            F.add2(F.pow_scalar(reals, 2), F.pow_scalar(imags, 2)), 0.5)
         mels = F.batch_matmul(self.basis, linear)
         mels = F.log(F.clip_by_value(mels, 1e-5, np.inf)
                      ).apply(need_grad=False)
@@ -190,7 +190,7 @@ class WaveGlow(Module):
                 output = getattr(self, f'WN_{k}')(audio_0, mels)
                 log_s = output[:, n_half:, :]  # (B, n_half, L/n_groups)
                 b = output[:, :n_half, :]      # (B, n_half, L/n_groups)
-                audio_1 = F.add2(F.exp(log_s) * audio_1, b, inplace=True)
+                audio_1 = F.add2(F.exp(log_s) * audio_1, b)
                 log_s_list.append(log_s)
 
             # (B, n_half*2, L/n_groups)

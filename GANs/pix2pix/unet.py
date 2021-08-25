@@ -28,8 +28,8 @@ def conv_bn_relu(inp, maps, size, stride=(1, 1), pad=(0, 0),
                 PF.convolution(inp[0], maps, size, stride=stride,
                                pad=pad, with_bias=not bn, name=name+'_conv_0'),
                 PF.convolution(inp[1], maps, size, stride=stride,
-                               pad=pad, with_bias=False, name=name+'_conv_1'),
-                inplace=True)
+                               pad=pad, with_bias=False, name=name+'_conv_1')
+                )
         else:
             h = PF.convolution(inp, maps, size, stride=stride,
                                pad=pad, with_bias=not bn, name=name+'_conv')
@@ -39,8 +39,8 @@ def conv_bn_relu(inp, maps, size, stride=(1, 1), pad=(0, 0),
                 PF.deconvolution(inp[0], maps, kernel=size, stride=stride,
                                  pad=pad, with_bias=not bn, name=name+'_deconv_0'),
                 PF.deconvolution(inp[1], maps, kernel=size, stride=stride,
-                                 pad=pad, with_bias=False, name=name+'_deconv_1'),
-                inplace=True)
+                                 pad=pad, with_bias=False, name=name+'_deconv_1')
+                )
         else:
             h = PF.deconvolution(inp, maps, kernel=size, stride=stride,
                                  pad=pad, with_bias=not bn, name=name+'_deconv')
@@ -49,10 +49,7 @@ def conv_bn_relu(inp, maps, size, stride=(1, 1), pad=(0, 0),
     if dropout and not test:
         h = F.dropout(h, 0.5)
     if relu is not None:
-        if relu is F.relu:
-            h = relu(h, inplace=True)
-        else:
-            h = relu(h)
+        h = relu(h)
     return h
 
 

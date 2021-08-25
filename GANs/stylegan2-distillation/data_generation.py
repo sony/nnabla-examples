@@ -59,7 +59,7 @@ def generate_data(args):
 
         for i in range(len(z)):
             z[i] = F.div2(z[i], F.pow_scalar(F.add_scalar(F.mean(
-                z[i] ** 2., axis=1, keepdims=True), 1e-8, inplace=True), 0.5, inplace=True))
+                z[i] ** 2., axis=1, keepdims=True), 1e-8), 0.5, inplace=True))
 
         # get latent code
         w = [mapping_network(z[0], outmaps=512, num_layers=8)]

@@ -73,7 +73,7 @@ def resnet23_prediction(image, test=False, rng=None, ncls=10, nmaps=64, act=F.re
                                    with_bias=False)
                 h = batch_normalization(h, test=test, comm=comm, group=group)
             # Residual -> Nonlinear
-            h = act(F.add2(h, x, inplace=False))
+            h = act(F.add2(h, x))
             # Maxpooling
             if dn:
                 h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))

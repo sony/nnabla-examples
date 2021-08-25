@@ -93,7 +93,7 @@ def conv1(x, batch_stat):
     with nn.parameter_scope('conv1'):
         cv1 = convbn(x, 64, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             2, 2, 2), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cv1 = F.relu(cv1, True)
+        cv1 = F.relu(cv1)
     return cv1
 
 
@@ -108,7 +108,7 @@ def conv3(x, batch_stat):
     with nn.parameter_scope('conv3'):
         cv3 = convbn(x, 64, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             2, 2, 2), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cv3 = F.relu(cv3, True)
+        cv3 = F.relu(cv3)
     return cv3
 
 
@@ -116,7 +116,7 @@ def conv4(x, batch_stat):
     with nn.parameter_scope('conv4'):
         cv4 = convbn(x, 64, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cv4 = F.relu(cv4, True)
+        cv4 = F.relu(cv4)
     return cv4
 
 
@@ -138,15 +138,15 @@ def hourglass(x, presqu, postsqu, batch_stat):
     out = conv1(x, batch_stat)  # in:1/4 out:1/8
     pre = conv2(out, batch_stat)  # in:1/8 out:1/8
     if postsqu is not None:
-        pre = F.relu(pre + postsqu, True)
+        pre = F.relu(pre + postsqu)
     else:
-        pre = F.relu(pre, True)
+        pre = F.relu(pre)
     out = conv3(pre, batch_stat)  # in:1/8 out:1/16
     out = conv4(out, batch_stat)  # in:1/16 out:1/16
     if presqu is not None:
-        post = F.relu(conv5(out, batch_stat) + presqu, True)  # in:1/16 out:1/8
+        post = F.relu(conv5(out, batch_stat) + presqu)  # in:1/16 out:1/8
     else:
-        post = F.relu(conv5(out, batch_stat) + pre, True)
+        post = F.relu(conv5(out, batch_stat) + pre)
     out = conv6(post, batch_stat)  # in:1/8 out:1/4
     return out, pre, post
 
@@ -155,11 +155,11 @@ def dres0(x, batch_stat):
     with nn.parameter_scope('dres0_conv1'):
         dr0_conv = convbn(x, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        dr0_conv = F.relu(dr0_conv, True)
+        dr0_conv = F.relu(dr0_conv)
     with nn.parameter_scope('dres0_conv2'):
         dr0 = convbn(dr0_conv, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        dr0 = F.relu(dr0, True)
+        dr0 = F.relu(dr0)
     return dr0
 
 
@@ -167,7 +167,7 @@ def dres1(x, batch_stat):
     with nn.parameter_scope('dres1_conv1'):
         dr1_conv1 = convbn(x, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        dr1_conv1 = F.relu(dr1_conv1, True)
+        dr1_conv1 = F.relu(dr1_conv1)
     with nn.parameter_scope('dres1_conv2'):
         dr1 = convbn(dr1_conv1, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
@@ -178,7 +178,7 @@ def classif1(x, batch_stat):
     with nn.parameter_scope('classif1_conv1'):
         cl1_conv1 = convbn(x, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cl1_conv1 = F.relu(cl1_conv1, True)
+        cl1_conv1 = F.relu(cl1_conv1)
     with nn.parameter_scope('classif1_conv2'):
         cl1 = conv(cl1_conv1, 1, kernel=(3, 3, 3), pad=(1, 1, 1),
                    stride=(1, 1, 1), dilation=(1, 1, 1), with_bias=True)
@@ -189,7 +189,7 @@ def classif2(x, batch_stat):
     with nn.parameter_scope('classif2_conv1'):
         cl2_conv1 = convbn(x, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cl2_conv1 = F.relu(cl2_conv1, True)
+        cl2_conv1 = F.relu(cl2_conv1)
     with nn.parameter_scope('classif2_conv2'):
         cl2 = conv(cl2_conv1, 1, kernel=(3, 3, 3), pad=(1, 1, 1),
                    stride=(1, 1, 1), dilation=(1, 1, 1), with_bias=True)
@@ -200,7 +200,7 @@ def classif3(x, batch_stat):
     with nn.parameter_scope('classif3_conv1'):
         cl3_conv1 = convbn(x, 32, kernel=(3, 3, 3), pad=(1, 1, 1), stride=(
             1, 1, 1), dilation=(1, 1, 1), batch_stat=batch_stat)
-        cl3_conv1 = F.relu(cl3_conv1, True)
+        cl3_conv1 = F.relu(cl3_conv1)
     with nn.parameter_scope('classif3_conv2'):
         cl3 = conv(cl3_conv1, 1, kernel=(3, 3, 3), pad=(1, 1, 1),
                    stride=(1, 1, 1), dilation=(1, 1, 1), with_bias=True)
@@ -309,7 +309,7 @@ def BasicBlock(x, planes, pad, stride, dilation, isDownsample, batch_stat):
     with nn.parameter_scope('bb_conv1'):
         bb_conv1 = convbn(x, planes, kernel=(3, 3), pad=pad, stride=stride,
                           dilation=dilation, batch_stat=batch_stat)
-        bb_conv1 = F.relu(bb_conv1, True)
+        bb_conv1 = F.relu(bb_conv1)
     # conv2
     with nn.parameter_scope('bb_conv2'):
         bb_conv2 = convbn(bb_conv1, planes, kernel=(3, 3), pad=pad, stride=(
@@ -327,17 +327,17 @@ def feature_extraction(x, batch_stat, training):
     with nn.parameter_scope('conv0_1'):
         fe_conv01 = convbn(x, 32, kernel=(3, 3), pad=(1, 1), stride=(
             2, 2), dilation=(1, 1), batch_stat=batch_stat)
-        fe_conv01 = F.relu(fe_conv01, True)
+        fe_conv01 = F.relu(fe_conv01)
     # conv0_2
     with nn.parameter_scope('conv0_2'):
         fe_conv02 = convbn(fe_conv01, 32, kernel=(3, 3), pad=(1, 1), stride=(
             1, 1), dilation=(1, 1), batch_stat=batch_stat)
-        fe_conv02 = F.relu(fe_conv02, True)
+        fe_conv02 = F.relu(fe_conv02)
     # conv0_3
     with nn.parameter_scope('conv0_3'):
         fe_conv03 = convbn(fe_conv02, 32, kernel=(3, 3), pad=(1, 1), stride=(
             1, 1), dilation=(1, 1), batch_stat=batch_stat)
-        fe_conv03 = F.relu(fe_conv03, True)
+        fe_conv03 = F.relu(fe_conv03)
     # conv1_x
     with nn.parameter_scope('conv1_x'):
         fe_conv1x = make_layer(fe_conv03, 32, 3, pad=(1, 1), stride=(
@@ -368,7 +368,7 @@ def branch(x, kernel, batch_stat):
     br_conv = convbn(br_avg, 32, kernel=(1, 1), pad=(0, 0), stride=(
         1, 1), dilation=(1, 1), batch_stat=batch_stat)
     # ReLU
-    br_conv = F.relu(br_conv, True)
+    br_conv = F.relu(br_conv)
     return br_conv
 
 
@@ -378,7 +378,7 @@ def lastconv(x, batch_stat):
         lc_conv1 = convbn(x, 128, kernel=(3, 3), pad=(1, 1), stride=(
             1, 1), dilation=(1, 1), batch_stat=batch_stat)
         # ReLU
-        lc_conv1 = F.relu(lc_conv1, True)
+        lc_conv1 = F.relu(lc_conv1)
     # conv
     with nn.parameter_scope('lastconv_conv2'):
         lc = conv(lc_conv1, 32, kernel=(1, 1), pad=(0, 0),

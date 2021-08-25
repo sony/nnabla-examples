@@ -79,7 +79,7 @@ def resnet_prediction(image, test=False, ncls=2, nmaps=128, act=F.relu):
                                    with_bias=False)
                 h = PF.batch_normalization(h, batch_stat=not test)
             # Residual -> Nonlinear
-            h = act(F.add2(h, x, inplace=False))
+            h = act(F.add2(h, x))
             # Maxpooling
             if dn:
                 h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))

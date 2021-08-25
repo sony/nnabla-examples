@@ -46,10 +46,10 @@ def mnist_lenet_prediction(image, scope="reference", test=False):
     with nn.parameter_scope(scope):
         image /= 255.0
         c1 = PF.convolution(image, 16, (5, 5), name='conv1')
-        c1 = F.relu(F.max_pooling(c1, (2, 2)), inplace=True)
+        c1 = F.relu(F.max_pooling(c1, (2, 2)))
         c2 = PF.convolution(c1, 16, (5, 5), name='conv2')
-        c2 = F.relu(F.max_pooling(c2, (2, 2)), inplace=True)
-        c3 = F.relu(PF.affine(c2, 50, name='fc3'), inplace=True)
+        c2 = F.relu(F.max_pooling(c2, (2, 2)))
+        c3 = F.relu(PF.affine(c2, 50, name='fc3'))
         c4 = PF.affine(c3, 10, name='fc4')
     return c4
 
@@ -61,16 +61,16 @@ def mnist_lenet_prediction_slim(image, scope="slim", rrate=0.75, test=False):
     with nn.parameter_scope(scope):
         image /= 255.0
         c1 = PF.convolution(image, 16, (5, 5), name='conv1')
-        c1 = F.relu(F.max_pooling(c1, (2, 2)), inplace=True)
+        c1 = F.relu(F.max_pooling(c1, (2, 2)))
         c2 = PF.convolution(c1, 16, (5, 5), name='conv2')
-        c2 = F.relu(F.max_pooling(c2, (2, 2)), inplace=True)
+        c2 = F.relu(F.max_pooling(c2, (2, 2)))
 
         # SVD applied
         inmaps = np.prod(c2.shape[1:])  # c * h * w
         outmaps0 = 50  # original outmaps
         outmaps1 = reduce_maps(inmaps, outmaps0, rrate)
-        d0 = F.relu(PF.affine(c2, outmaps1, name='fc-d0'), inplace=True)
-        d1 = F.relu(PF.affine(d0, outmaps0, name='fc-d1'), inplace=True)
+        d0 = F.relu(PF.affine(c2, outmaps1, name='fc-d0'))
+        d1 = F.relu(PF.affine(d0, outmaps0, name='fc-d1'))
 
         c4 = PF.affine(d1, 10, name='fc4')
     return c4
