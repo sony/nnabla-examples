@@ -45,9 +45,9 @@ Run the below command to unzip the downloaded file:
 Run the below inference command to generate colorized video from given input frames in images/input/v32 directory:
 
 ```
-python inference.py --input_path images/input/v32 --ref_path images/ref/v32 --output_path images/output/ -c cudnn 
+python inference.py --input_path images/input/frames --ref_path images/ref/images --output_path images/output/ -c cudnn 
 ```
-Colorized videos corresponding to the reference images will be generated in the output folder.    
+Colorized videos corresponding to the number of reference images will be generated in the output folder.    
 #### Arguments:  
 |Arguments  | Description | 
 | --- | --- |  
