@@ -11,7 +11,7 @@ dependencies:
   - pip:
     - numpy
     - pillow
-    - opencv-contrib-python==3.3
+    - opencv-contrib-python
     - nnabla
     - nnabla-ext-cuda100
     - scikit-image
