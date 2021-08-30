@@ -17,13 +17,12 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
 > *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
 
-
 <p align="center">
 <img src="./gradcam/images/sample.png" width="500px">  
 </p>
 
 
-## SHAP [code](./shap/)
+## SHAP (image data) [code](./shap/)
 > **A Unified Approach to Interpreting Model Predictions**
 > Scott Lundberg, Su-In Lee.
 > *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
@@ -31,6 +30,17 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <p align="center">
 <img src="./shap/images/sample.png" width="500px">  
 </p>
+
+## Kernel SHAP (tabular data) [code](./kernel_shap/)
+> **A Unified Approach to Interpreting Model Predictions**
+> Scott Lundberg, Su-In Lee.
+> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
+
+<p align="center">
+<img src="./kernel_shap/images/sample.png" width="500px">  
+</p>
+
+</br>
 
 # 2. Influence
 ## Data cleansing with with Storage-efficient Approximation of Influence Functions [code](./data_cleansing/)
@@ -48,12 +58,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > Pang Wei Koh, Percy Liang.
 > *arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))*            
 
-![](./data_cleansing/imgs/datacleansing_influence_funcsions.png)
 
 ## TracIn [code](./tracin/)
 > **Estimating Training Data Influence by Tracing Gradient Descent**
 > Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.
 > *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
+
+<br>
 
 # 3. Fairness
 ## Fairness of Machine Learning [code](./gender_bias_mitigation/)
