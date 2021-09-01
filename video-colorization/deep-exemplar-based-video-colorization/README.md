@@ -17,7 +17,7 @@ __Result Examples__
 
 From the Colab link below, you can try using DEVC to generate colorized video from input frames. Please give it a try!
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/nnabla/nnabla-examples)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/deep-exemplar-based-video-colorization.ipynb)
 
 ## Getting started
 
