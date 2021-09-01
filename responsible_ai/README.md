@@ -11,6 +11,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 ---
 
+# 1. Visualization
 ## Grad-CAM [code](./gradcam/)
 > **Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization**
 > Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
@@ -31,14 +32,30 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./shap/images/sample.png" width="500px">  
 </p>
 
+# 2. Influence
+## Data cleansing with with Storage-efficient Approximation of Influence Functions [code](./data_cleansing/)
 
+> **Data Cleansing for Deep Neural Networks with Storage-efficient Approximation of Influence Functions**
+> Kenji Suzuki, Yoshiyuki Kobayashi, Takuya Narihira.
+> *arXiv technical report ([arXiv 2103.11807]( https://arxiv.org/abs/2103.11807))*            
+
+![](./data_cleansing/imgs/datacleansing.png)
+
+
+## Understanding Black-box Predictions via Influence Functions [code](./data_cleansing/)
+
+> **Understanding Black-box Predictions via Influence Functions**
+> Pang Wei Koh, Percy Liang.
+> *arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))*            
+
+![](./data_cleansing/imgs/datacleansing_influence_funcsions.png)
 
 ## TracIn [code](./tracin/)
 > **Estimating Training Data Influence by Tracing Gradient Descent**
 > Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.
 > *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
 
-
+# 3. Fairness
 ## Fairness of Machine Learning [code](./gender_bias_mitigation/)
 > **Data preprocessing techniques for classification without discrimination**
 > Kamiran, Faisal and Calders, Toon. 
