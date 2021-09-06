@@ -230,7 +230,7 @@ def get_args():
                         help='Type of computation. e.g. "float", "half".')
 
     # Log settings
-    parser.add_argument("--work-dir", "-w", type=str, default="tmp.result/",
+    parser.add_argument("--work-dir", "-w", type=str, default="tmp.result",
                         help='Directory for monitor results')
 
     # Program mode train or test
