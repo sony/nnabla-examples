@@ -1,0 +1,14 @@
+name: devc-cpu
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.6
+  - pip
+  - pip:
+    - opencv-contrib-python
+    - pillow
+    - numpy
+    - nnabla
+    - scikit-image

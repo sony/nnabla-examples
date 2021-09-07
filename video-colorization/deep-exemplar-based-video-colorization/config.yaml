@@ -1,0 +1,22 @@
+nnabla_context:
+  context: cudnn
+  device_id: 0
+  type_config: float
+
+data:
+  image_size:  [216 * 2,384 * 2]
+  input_path:  "./images/input/v32"
+  ref_path: "./images/ref/v32"
+  output_path: "./images/output"
+  output_video: "video.avi"
+  frame_propagation: False
+
+
+wls_filter_on: True
+lambda_value: 500
+sigma_color: 4
+l_norm: 1.0
+ab_norm: 1.0
+l_mean: 50.0
+ab_mean: 0
+
