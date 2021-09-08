@@ -1,0 +1,17 @@
+name: devc-gpu
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.6
+  - cudatoolkit=10.0
+  - cudnn
+  - pip
+  - pip:
+    - numpy
+    - pillow
+    - opencv-contrib-python
+    - nnabla
+    - nnabla-ext-cuda100
+    - scikit-image

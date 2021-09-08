@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,48 +74,48 @@ def pcd_align(fea1, fea2):
         l3_offset = F.concatenate(fea1[2], fea2[2], axis=1)
         l3_offset = F.leaky_relu(
             conv2d(l3_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l3_offset_conv1_1'), inplace=True)
+                   name='l3_offset_conv1_1'))
         l3_offset = F.leaky_relu(
             conv2d(l3_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l3_offset_conv2_1'), inplace=True)
+                   name='l3_offset_conv2_1'))
         l3_fea = F.leaky_relu(deform_conv(
-            fea1[2], l3_offset, name='l3_dcnpack_1'), inplace=True)
+            fea1[2], l3_offset, name='l3_dcnpack_1'))
 
         # L2: level 2, 1/2 spatial size
         l2_offset = F.concatenate(fea1[1], fea2[1], axis=1)
         l2_offset = F.leaky_relu(
             conv2d(l2_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv1_1'), inplace=True)
+                   name='l2_offset_conv1_1'))
         l3_offset = F.interpolate(l3_offset, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l2_offset = F.leaky_relu(
             conv2d(F.concatenate(l2_offset, l3_offset * 2, axis=1), num_filters, kernel_sz,
                    stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv2_1'), inplace=True)
+                   name='l2_offset_conv2_1'))
         l2_offset = F.leaky_relu(
             conv2d(l2_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv3_1'), inplace=True)
+                   name='l2_offset_conv3_1'))
         l2_fea = deform_conv(fea1[1], l2_offset, name='l2_dcnpack_1')
         l3_fea = F.interpolate(l3_fea, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l2_fea = F.leaky_relu(
             conv2d(F.concatenate(l2_fea, l3_fea, axis=1), num_filters, kernel_sz, stride_ln, pad_ln,
-                   bias=True, name='l2_fea_conv_1'), inplace=True)
+                   bias=True, name='l2_fea_conv_1'))
 
         # L1: level 1, original spatial size
         l1_offset = F.concatenate(fea1[0], fea2[0], axis=1)
         l1_offset = F.leaky_relu(
             conv2d(l1_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv1_1'), inplace=True)
+                   name='l1_offset_conv1_1'))
         l2_offset = F.interpolate(l2_offset, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l1_offset = F.leaky_relu(
             conv2d(F.concatenate(l1_offset, l2_offset * 2, axis=1), num_filters, kernel_sz,
                    stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv2_1'), inplace=True)
+                   name='l1_offset_conv2_1'))
         l1_offset = F.leaky_relu(
             conv2d(l1_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv3_1'), inplace=True)
+                   name='l1_offset_conv3_1'))
         l1_fea = deform_conv(fea1[0], l1_offset, name='l1_dcnpack_1')
         l2_fea = F.interpolate(l2_fea, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
@@ -128,48 +129,48 @@ def pcd_align(fea1, fea2):
         l3_offset = F.concatenate(fea2[2], fea1[2], axis=1)
         l3_offset = F.leaky_relu(
             conv2d(l3_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l3_offset_conv1_2'), inplace=True)
+                   name='l3_offset_conv1_2'))
         l3_offset = F.leaky_relu(
             conv2d(l3_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l3_offset_conv2_2'), inplace=True)
+                   name='l3_offset_conv2_2'))
         l3_fea = F.leaky_relu(deform_conv(
-            fea2[2], l3_offset, name='l3_dcnpack_2'), inplace=True)
+            fea2[2], l3_offset, name='l3_dcnpack_2'))
 
         # L2: level 2, 1/2 spatial size
         l2_offset = F.concatenate(fea2[1], fea1[1], axis=1)
         l2_offset = F.leaky_relu(
             conv2d(l2_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv1_2'), inplace=True)
+                   name='l2_offset_conv1_2'))
         l3_offset = F.interpolate(l3_offset, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l2_offset = F.leaky_relu(
             conv2d(F.concatenate(l2_offset, l3_offset * 2, axis=1), num_filters, kernel_sz,
                    stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv2_2'), inplace=True)
+                   name='l2_offset_conv2_2'))
         l2_offset = F.leaky_relu(
             conv2d(l2_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l2_offset_conv3_2'), inplace=True)
+                   name='l2_offset_conv3_2'))
         l2_fea = deform_conv(fea2[1], l2_offset, name='l2_dcnpack_2')
         l3_fea = F.interpolate(l3_fea, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l2_fea = F.leaky_relu(
             conv2d(F.concatenate(l2_fea, l3_fea, axis=1), num_filters, kernel_sz, stride_ln, pad_ln,
-                   bias=True, name='l2_fea_conv_2'), inplace=True)
+                   bias=True, name='l2_fea_conv_2'))
 
         # L1: level 1, original spatial size
         l1_offset = F.concatenate(fea2[0], fea1[0], axis=1)
         l1_offset = F.leaky_relu(
             conv2d(l1_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv1_2'), inplace=True)
+                   name='l1_offset_conv1_2'))
         l2_offset = F.interpolate(l2_offset, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
         l1_offset = F.leaky_relu(
             conv2d(F.concatenate(l1_offset, l2_offset * 2, axis=1), num_filters, kernel_sz,
                    stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv2_2'), inplace=True)
+                   name='l1_offset_conv2_2'))
         l1_offset = F.leaky_relu(
             conv2d(l1_offset, num_filters, kernel_sz, stride_ln, pad_ln, bias=True,
-                   name='l1_offset_conv3_2'), inplace=True)
+                   name='l1_offset_conv3_2'))
         l1_fea = deform_conv(fea2[0], l1_offset, name='l1_dcnpack_2')
         l2_fea = F.interpolate(l2_fea, scale=(
             2, 2), mode='linear', align_corners=False, half_pixel=True)
@@ -196,16 +197,16 @@ def easy_pcd(feature_p1, feature_p2, n_filt, name):
         l1_fea = l1_fea.reshape((-1, channels, height, width))
 
         # L2: level 2, 1/2 spatial size
-        l2_fea = F.leaky_relu(conv2d(l1_fea, n_filt, 3, 2, 1, bias=True, name='fea_l2_conv1'),
-                              inplace=True)
-        l2_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 1, 1, bias=True, name='fea_l2_conv2'),
-                              inplace=True)
+        l2_fea = F.leaky_relu(conv2d(l1_fea, n_filt, 3, 2, 1, bias=True, name='fea_l2_conv1')
+                              )
+        l2_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 1, 1, bias=True, name='fea_l2_conv2')
+                              )
 
         # L3: level 3, 1/4 spatial size
-        l3_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 2, 1, bias=True, name='fea_l3_conv1'),
-                              inplace=True)
-        l3_fea = F.leaky_relu(conv2d(l3_fea, n_filt, 3, 1, 1, bias=True, name='fea_l3_conv2'),
-                              inplace=True)
+        l3_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 2, 1, bias=True, name='fea_l3_conv1')
+                              )
+        l3_fea = F.leaky_relu(conv2d(l3_fea, n_filt, 3, 1, 1, bias=True, name='fea_l3_conv2')
+                              )
 
         l1_fea = F.reshape(l1_fea, (batch, num_frames, -1,
                                     height, width), inplace=False)
@@ -248,7 +249,7 @@ def conv_lstm_cell(input_tensor, cur_state, n_filt, kernel_size):
     act_f = F.sigmoid(cc_f)
     act_o = F.sigmoid(cc_o)
     act_g = F.tanh(cc_g)
-    c_next = F.add2(act_f * c_cur, act_i * act_g, inplace=True)
+    c_next = F.add2(act_f * c_cur, act_i * act_g)
     h_next = act_o * F.tanh(c_next)
     return h_next, c_next
 
@@ -315,10 +316,10 @@ def zooming_slo_mo_network(input_imgs, only_slomo, n_filt=64,
         with nn.parameter_scope(scope):
             feats = conv2d(res_blk_input, output_channels, 3, 1, 1,
                            name='conv1', init_method='kaiming_normal', scale=0.1)
-            feats = F.relu(feats, inplace=True)
+            feats = F.relu(feats)
             feats = conv2d(feats, output_channels, 3, 1, 1,
                            name='conv2', init_method='kaiming_normal', scale=0.1)
-            feats = F.add2(feats, res_blk_input, inplace=True)
+            feats = F.add2(feats, res_blk_input)
         return feats
 
     batch, n_frames, channels, height, width = input_imgs.shape  # n_frames: input frames
@@ -327,7 +328,7 @@ def zooming_slo_mo_network(input_imgs, only_slomo, n_filt=64,
     # L1: level 1, original spatial size
     l1_fea = F.leaky_relu(
         conv2d(F.reshape(input_imgs, (-1, channels, height, width)), n_filt, 3, 1, 1,
-               name='conv_first'), inplace=True)
+               name='conv_first'))
 
     # 5 res-blocks for feature extraction
     for i in range(0, front_res_blocks, 1):
@@ -336,15 +337,15 @@ def zooming_slo_mo_network(input_imgs, only_slomo, n_filt=64,
 
     # L2: level 2, 1/2 spatial size
     l2_fea = F.leaky_relu(conv2d(l1_fea, n_filt, 3, 2, 1,
-                                 name='fea_l2_conv1'), inplace=True)
+                                 name='fea_l2_conv1'))
     l2_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 1, 1,
-                                 name='fea_l2_conv2'), inplace=True)
+                                 name='fea_l2_conv2'))
 
     # L3: level 3, 1/4 spatial size
     l3_fea = F.leaky_relu(conv2d(l2_fea, n_filt, 3, 2, 1,
-                                 name='fea_l3_conv1'), inplace=True)
+                                 name='fea_l3_conv1'))
     l3_fea = F.leaky_relu(conv2d(l3_fea, n_filt, 3, 1, 1,
-                                 name='fea_l3_conv2'), inplace=True)
+                                 name='fea_l3_conv2'))
 
     l1_fea = F.reshape(l1_fea, (batch, n_frames, -1,
                                 height, width), inplace=False)
@@ -385,13 +386,13 @@ def zooming_slo_mo_network(input_imgs, only_slomo, n_filt=64,
         out = feats
     else:
         # pixel_shuffle is only for resolution enhancement (Zooming)
-        out = F.leaky_relu(pixel_shuffle(conv2d(feats, n_filt * 4, 3, 1, 1, name='upconv1')),
-                           inplace=True)
-        out = F.leaky_relu(pixel_shuffle(conv2d(out, n_filt * 4, 3, 1, 1, name='upconv2')),
-                           inplace=True)
+        out = F.leaky_relu(pixel_shuffle(conv2d(feats, n_filt * 4, 3, 1, 1, name='upconv1'))
+                           )
+        out = F.leaky_relu(pixel_shuffle(conv2d(out, n_filt * 4, 3, 1, 1, name='upconv2'))
+                           )
 
     out = F.leaky_relu(conv2d(out, n_filt, 3, 1, 1,
-                              name='hrconv'), inplace=True)
+                              name='hrconv'))
 
     out = conv2d(out, 3, 3, 1, 1, name='conv_last')
     _, _, hight, width = out.shape

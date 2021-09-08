@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@ def mapping_network(noise, outmaps=512, num_layers=8, net_scope='G_mapping/Dense
                 shape=(out.shape[1], outmaps), lrmul=lrmul)
             out = F.affine(out, W*runtime_coef, bias*lrmul)
             out = F.mul_scalar(F.leaky_relu(
-                out, alpha=0.2, inplace=True), np.sqrt(2), inplace=True)
+                out, alpha=0.2), np.sqrt(2))
     return out
 
 

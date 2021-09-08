@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -124,7 +125,7 @@ def discriminator_block(input, out_channels, scope, kernel=(4, 4), stride=(2, 2)
     with nn.parameter_scope(scope):
         net = conv2d(input, out_channels, kernel, stride, bias=False)
         net = PF.batch_normalization(net, eps=0.001, axes=[3], no_scale=True)
-        net = F.leaky_relu(net, alpha=0.2, inplace=True)
+        net = F.leaky_relu(net, alpha=0.2)
     return net
 
 
@@ -135,7 +136,7 @@ def discriminator(dis_input):
     """
     layer_list = []
     net = conv2d(dis_input, 64, (3, 3), (1, 1), name='conv')
-    net = F.leaky_relu(net, alpha=0.2, inplace=True)        # (b,h,w,64)
+    net = F.leaky_relu(net, alpha=0.2)        # (b,h,w,64)
     net = discriminator_block(net, 64, 'disblock_1')        # (b,h/2,w/2,64)
     layer_list += [net]
     net = discriminator_block(net, 64, 'disblock_3')        # (b,h/4,w/4,64)

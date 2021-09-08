@@ -1,4 +1,5 @@
-# Copyright (c) 2019 Sony Corporation. All Rights Reserved.
+# Copyright 2019,2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@ def resblock(x, dim_out, w_init=None, epsilon=1e-05):
     h = PF.convolution(x, dim_out, kernel=(3, 3), pad=(
         1, 1), with_bias=False, w_init=w_init, name="1st")
     h = PF.instance_normalization(h, eps=epsilon, name="1st")
-    h = F.relu(h, inplace=True)
+    h = F.relu(h)
     h = PF.convolution(h, dim_out, kernel=(3, 3), pad=(
         1, 1), with_bias=False, w_init=w_init, name="2nd")
     h = PF.instance_normalization(h, eps=epsilon, name="2nd")
@@ -39,7 +40,7 @@ def generator(x, c, conv_dim=64, c_dim=5, num_downsample=2, num_upsample=2, repe
     h = PF.convolution(concat_input, conv_dim, kernel=(7, 7), pad=(
         3, 3), stride=(1, 1), with_bias=False, w_init=w_init, name="init_conv")
     h = PF.instance_normalization(h, eps=epsilon, name="init_inst_norm")
-    h = F.relu(h, inplace=True)
+    h = F.relu(h)
 
     # Down-sampling layers.
     curr_dim = conv_dim
@@ -48,7 +49,7 @@ def generator(x, c, conv_dim=64, c_dim=5, num_downsample=2, num_upsample=2, repe
                            with_bias=False, w_init=w_init, name="downsample_{}".format(i))
         h = PF.instance_normalization(
             h, eps=epsilon, name="downsample_{}".format(i))
-        h = F.relu(h, inplace=True)
+        h = F.relu(h)
         curr_dim = curr_dim * 2
 
     # Bottleneck layers.
@@ -62,7 +63,7 @@ def generator(x, c, conv_dim=64, c_dim=5, num_downsample=2, num_upsample=2, repe
             2, 2), w_init=w_init, with_bias=False, name="upsample_{}".format(i))
         h = PF.instance_normalization(
             h, eps=epsilon, name="upsample_{}".format(i))
-        h = F.relu(h, inplace=True)
+        h = F.relu(h)
         curr_dim = curr_dim // 2
 
     h = PF.convolution(h, 3, kernel=(7, 7), pad=(3, 3), stride=(

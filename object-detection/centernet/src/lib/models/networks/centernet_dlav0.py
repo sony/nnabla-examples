@@ -1,4 +1,5 @@
-# Copyright (c) 2019 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,7 +96,7 @@ class PoseDLA(object):
                         with_bias=True,
                         channel_last=self.channel_last
                     )
-                    out = F.relu(out, inplace=True)
+                    out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
                     w_init_param = torch_initializer(
                         features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init

@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2018,2019,2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -206,7 +207,7 @@ def resblock_g(h, y, scopename,
         # BN -> Relu -> Upsample -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, coefs=coefs)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride,
@@ -215,7 +216,7 @@ def resblock_g(h, y, scopename,
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, coefs=coefs)
-            h = F.relu(h, inplace=True)
+            h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
 
@@ -226,7 +227,7 @@ def resblock_g(h, y, scopename,
             with nn.parameter_scope("shortcut"):
                 s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1),
                                 with_bias=True, sn=sn, test=test)
-    return F.add2(h, s, True)
+    return F.add2(h, s)
 
 
 def resblock_d(h, y, scopename,
@@ -241,15 +242,15 @@ def resblock_d(h, y, scopename,
     with nn.parameter_scope(scopename):
         # LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
-            #h = F.leaky_relu(h, 0.2, False)
-            h = F.relu(h, False)
+            #h = F.leaky_relu(h, 0.2)
+            h = F.relu(h)
             h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
 
         # LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            #h = F.leaky_relu(h, 0.2, True)
-            h = F.relu(h, True)
+            #h = F.leaky_relu(h, 0.2)
+            h = F.relu(h)
             h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
@@ -262,8 +263,7 @@ def resblock_d(h, y, scopename,
                                 with_bias=True, sn=sn, test=test)
         if downsample:
             s = F.average_pooling(s, kernel=(2, 2))
-    return F.add2(h, s, True)
-    # return F.add2(h, s)
+    return F.add2(h, s)
 
 
 def optblock_d(h, y, scopename,
@@ -280,8 +280,8 @@ def optblock_d(h, y, scopename,
 
         # ReLU -> Conv
         with nn.parameter_scope("conv2"):
-            #h = F.leaky_relu(h, 0.2, True)
-            h = F.relu(h, True)
+            #h = F.leaky_relu(h, 0.2)
+            h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
@@ -293,7 +293,7 @@ def optblock_d(h, y, scopename,
                 s = F.average_pooling(s, kernel=(2, 2))
             s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1),
                             with_bias=True, sn=sn, test=test)
-    return F.add2(h, s, True)
+    return F.add2(h, s)
 
 
 def generator(z, y, scopename="generator",
@@ -336,8 +336,8 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16,
                        downsample=False, test=test, sn=sn)
         # Last affine
-        #h = F.leaky_relu(h, 0.2, True)
-        h = F.relu(h, True)
+        #h = F.leaky_relu(h, 0.2)
+        h = F.relu(h)
         h = F.sum(h, axis=(2, 3))
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator

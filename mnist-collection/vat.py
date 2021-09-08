@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2017,2018,2019,2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,10 +84,10 @@ def mlp_net(x, n_h, n_y, test=False):
     h = x
     with nn.parameter_scope("fc1"):
         h = F.relu(PF.batch_normalization(
-            PF.affine(h, n_h), batch_stat=not test), inplace=True)
+            PF.affine(h, n_h), batch_stat=not test))
     with nn.parameter_scope("fc2"):
         h = F.relu(PF.batch_normalization(
-            PF.affine(h, n_h), batch_stat=not test), inplace=True)
+            PF.affine(h, n_h), batch_stat=not test))
     with nn.parameter_scope("fc3"):
         h = PF.affine(h, n_y)
     return h

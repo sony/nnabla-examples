@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,7 +84,7 @@ def resblock(x, in_features: int, kernel_size: int, padding: int, test: bool = F
 
     with nn.parameter_scope("convblock_0"):
         out = batchnorm(x)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = PF.convolution(out, outmaps=in_features,
                              kernel=(kernel_size, kernel_size),
                              pad=(padding, padding),
@@ -91,12 +92,12 @@ def resblock(x, in_features: int, kernel_size: int, padding: int, test: bool = F
 
     with nn.parameter_scope("convblock_2"):
         out = batchnorm(out)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = PF.convolution(out, outmaps=in_features,
                              kernel=(kernel_size, kernel_size),
                              pad=(padding, padding),
                              w_init=w_init, b_init=b_init)
-    out = F.add2(out, x, inplace=True)
+    out = F.add2(out, x)
     return out
 
 
@@ -127,7 +128,7 @@ def upblock(x, out_features, kernel_size=3, padding=1, groups=1, test=False, com
                              group=groups,
                              w_init=w_init, b_init=b_init)
         out = batchnorm(out)
-    out = F.relu(out, inplace=True)
+    out = F.relu(out)
     return out
 
 
@@ -157,7 +158,7 @@ def downblock(x, out_features, kernel_size=3, padding=1, groups=1, test=False, c
                              group=groups,
                              w_init=w_init, b_init=b_init)
         out = batchnorm(out)
-    out = F.relu(out, inplace=True)
+    out = F.relu(out)
     out = F.average_pooling(out, kernel=(2, 2))
     return out
 
@@ -188,7 +189,7 @@ def sameblock(x, out_features, kernel_size=3, padding=1, groups=1, test=False, c
                              group=groups,
                              w_init=w_init, b_init=b_init)
         out = batchnorm(out)
-    out = F.relu(out, inplace=True)
+    out = F.relu(out)
     return out
 
 

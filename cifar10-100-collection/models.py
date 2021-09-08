@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2017,2018,2019,2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,7 +64,7 @@ def resnet23_prediction(image, test=False, ncls=10, nmaps=64, act=F.relu):
                                    with_bias=False)
                 h = PF.batch_normalization(h, batch_stat=not test)
             # Residual -> Nonlinear
-            h = act(F.add2(h, x, inplace=True))
+            h = act(F.add2(h, x))
             # Maxpooling
             if dn:
                 h = F.max_pooling(h, kernel=(2, 2), stride=(2, 2))

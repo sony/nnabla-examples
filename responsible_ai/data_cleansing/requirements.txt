@@ -1,4 +1,4 @@
-imageio==2.9.0
-matplotlib==3.2.2
-pandas==1.1.3
-tqdm==4.47.0
+imageio
+matplotlib
+pandas
+tqdm

@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +45,7 @@ def invertible_conv(x, reverse, rng, scope):
 
 
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
-    in_act = F.add2(input_a, input_b, inplace=True)
+    in_act = F.add2(input_a, input_b)
     t_act = F.tanh(in_act[:, :n_channels, :])
     s_act = F.sigmoid(in_act[:, n_channels:, :])
     return t_act * s_act

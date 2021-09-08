@@ -11,6 +11,28 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 ---
 
+# 1. Visualization
+## Grad-CAM [code](./gradcam/)
+> **Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization**
+> Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
+> *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
+
+
+<p align="center">
+<img src="./gradcam/images/sample.png" width="500px">  
+</p>
+
+
+## SHAP [code](./shap/)
+> **A Unified Approach to Interpreting Model Predictions**
+> Scott Lundberg, Su-In Lee.
+> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
+
+<p align="center">
+<img src="./shap/images/sample.png" width="500px">  
+</p>
+
+# 2. Influence
 ## Data cleansing with with Storage-efficient Approximation of Influence Functions [code](./data_cleansing/)
 
 > **Data Cleansing for Deep Neural Networks with Storage-efficient Approximation of Influence Functions**
@@ -19,25 +41,31 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 ![](./data_cleansing/imgs/datacleansing.png)
 
-## Grad-CAM [code](./gradcam/)
-> **Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization**
-> Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
-> *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
 
-![](./gradcam/images/sample.png)
+## Understanding Black-box Predictions via Influence Functions [code](./data_cleansing/)
 
+> **Understanding Black-box Predictions via Influence Functions**
+> Pang Wei Koh, Percy Liang.
+> *arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))*            
+
+![](./data_cleansing/imgs/datacleansing_influence_funcsions.png)
 
 ## TracIn [code](./tracin/)
 > **Estimating Training Data Influence by Tracing Gradient Descent**
 > Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.
 > *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
 
+# 3. Fairness
+## Fairness of Machine Learning [code](./gender_bias_mitigation/)
+> **Data preprocessing techniques for classification without discrimination**
+> Kamiran, Faisal and Calders, Toon. 
+> [Knowledge and Information Systems, 33(1):1–33, 2012](https://link.springer.com/content/pdf/10.1007/s10115-011-0463-8.pdf)* 
+
 <p align="center">
-<img src="./tracin/figure/self_influence_distribution.png" width="440px"><img src="./tracin/figure/score_curve.png" width="440px">
+<img src="./gender_bias_mitigation/images/xai-bias-mitigation-workflow.png">
 </p>
 
 ## Facial evaluation for skin color [code](./face_evaluation/)
-This is a colab interactive demo of facial evaluation for skin colors by using Individual Typology Angle (ITA), which represents skin color.
 > **Diversity in Faces**
 > Michele Merler, Nalini Ratha, Rogerio S. Feris, John R. Smith.
 > *arXiv technical report ([arxiv 1901.10436](https://arxiv.org/abs/1901.10436))* 
@@ -45,3 +73,4 @@ This is a colab interactive demo of facial evaluation for skin colors by using I
 <p align="center">
 <img src="./face_evaluation/skin_color.png">
 </p>
+

@@ -1,4 +1,5 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2019,2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,13 +23,13 @@ import numpy as np
 
 def residual_block_5C(x, num_output_channel=64, growth_channel=32):
     conv1 = F.leaky_relu(PF.convolution(x, growth_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='conv1'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='conv1'), alpha=0.2)
     conv2 = F.leaky_relu(PF.convolution(F.concatenate(x, conv1, axis=1), growth_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='conv2'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='conv2'), alpha=0.2)
     conv3 = F.leaky_relu(PF.convolution(F.concatenate(x, conv1, conv2, axis=1), growth_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='conv3'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='conv3'), alpha=0.2)
     conv4 = F.leaky_relu(PF.convolution(F.concatenate(x, conv1, conv2, conv3, axis=1), growth_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='conv4'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='conv4'), alpha=0.2)
     conv5 = PF.convolution(F.concatenate(x, conv1, conv2, conv3, conv4, axis=1),
                            num_output_channel, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name='conv5')
     return (conv5 * 0.2) + x
@@ -65,11 +66,11 @@ def rrdb_net(x, num_output_channel, num_rrdb_blocks, growth_channel=32):
         3, 3), stride=(1, 1), pad=(1, 1), name='trunk_conv')
     fea = fea + trunk_conv
     up_conv1 = F.leaky_relu(PF.convolution(F.interpolate(fea, scale=(2, 2), mode='nearest'), num_output_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='upconv1'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='upconv1'), alpha=0.2)
     up_conv2 = F.leaky_relu(PF.convolution(F.interpolate(up_conv1, scale=(2, 2), mode='nearest'), num_output_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='upconv2'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='upconv2'), alpha=0.2)
     hr_conv = F.leaky_relu(PF.convolution(up_conv2, num_output_channel, kernel=(
-        3, 3), stride=(1, 1), pad=(1, 1), name='HRconv'), alpha=0.2, inplace=True)
+        3, 3), stride=(1, 1), pad=(1, 1), name='HRconv'), alpha=0.2)
     conv_last = PF.convolution(hr_conv, 3, kernel=(
         3, 3), stride=(1, 1), pad=(1, 1), name='conv_last')
     return conv_last

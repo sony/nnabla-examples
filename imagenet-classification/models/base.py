@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -139,7 +140,7 @@ class BasicBlock(object):
             h = PF.batch_normalization(h, axes=axes, batch_stat=not self.test)
             if z is None:
                 return h
-            return F.add2(z, h, inplace=True)
+            return F.add2(z, h)
         return PF.fused_batch_normalization(h, z, axes=axes, batch_stat=not self.test)
 
     def __call__(self, x, ochannels, stride):

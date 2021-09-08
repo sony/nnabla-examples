@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2020,2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,7 +106,7 @@ class SEBottleneckBlock(BottleneckBlock):
         with nn.parameter_scope("bottleneck_s"):
             s = shortcut(x, ochannels, stride, self.shortcut_type,
                          self.test, channel_last=self.channel_last)
-        return F.relu(F.add2(h, s, inplace=True), inplace=True)
+        return F.relu(F.add2(h, s))
 
 
 class SENet(ResNetBase):

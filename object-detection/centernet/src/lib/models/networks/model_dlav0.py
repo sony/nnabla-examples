@@ -1,4 +1,5 @@
-# Copyright (c) 2019 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,13 +104,13 @@ def basicblock(x, residual, ochannels, stride, test, channel_last=False):
         residual = x
     with nn.parameter_scope("basicblock1"):
         h = F.relu(bn(PF.convolution(x, ochannels, (3, 3), stride=(
-            stride, stride), pad=(1, 1), with_bias=False, channel_last=channel_last)), inplace=True)
+            stride, stride), pad=(1, 1), with_bias=False, channel_last=channel_last)))
     with nn.parameter_scope("basicblock2"):
         h = bn(
             PF.convolution(
                 h, ochannels, (3, 3), pad=(
                     1, 1), with_bias=False, channel_last=channel_last))
-    return F.relu(F.add2(h, residual, inplace=True), inplace=True)
+    return F.relu(F.add2(h, residual))
 
 
 def bottleneck(x, ochannels, shortcut_type, stride, test, channel_last=False):
@@ -121,18 +122,18 @@ def bottleneck(x, ochannels, shortcut_type, stride, test, channel_last=False):
     with nn.parameter_scope("bottleneck1"):
         h = F.relu(
             bn(PF.convolution(x, hchannels, (1, 1),
-                              with_bias=False, channel_last=channel_last)),
-            inplace=True)
+                              with_bias=False, channel_last=channel_last))
+            )
     with nn.parameter_scope("bottleneck2"):
         h = F.relu(
             bn(PF.convolution(h, hchannels, (3, 3), pad=(1, 1),
-                              stride=stride, with_bias=False, channel_last=channel_last)), inplace=True)
+                              stride=stride, with_bias=False, channel_last=channel_last)))
     with nn.parameter_scope("bottleneck3"):
         h = bn(PF.convolution(h, ochannels, (1, 1),
                               with_bias=False, channel_last=channel_last))
     with nn.parameter_scope("bottleneck_s"):
         s = shortcut(x, ochannels, stride, shortcut_type, test, channel_last)
-    return F.relu(F.add2(h, s, inplace=True), inplace=True)
+    return F.relu(F.add2(h, s))
 
 
 def layer(x, block, ochannels, count, stride, shortcut_type, test, channel_last=False):
@@ -172,7 +173,7 @@ def root(x, children, ochannels, test, concat_axis=1, kernel_size=1, channel_las
             channel_last=channel_last
         )
         x = PF.batch_normalization(x, axes=[axes], batch_stat=not test)
-        x = F.relu(x, inplace=True)
+        x = F.relu(x)
     return x
 
 
@@ -191,8 +192,8 @@ def upsample(x, ochannels, test, kernel_size=4, channel_last=False):
             PF.batch_normalization(
                 x,
                 axes=[axes],
-                batch_stat=not test),
-            inplace=True)
+                batch_stat=not test)
+            )
         ichannels = x.shape[axes]
         x = pf_depthwise_deconvolution(
             x,
@@ -300,7 +301,7 @@ def dla_imagenet(
         r = pf_convolution(x, 16, (7, 7),
                            pad=(3, 3), stride=stride, with_bias=False, channel_last=channel_last)
         r = F.relu(PF.batch_normalization(
-            r, axes=[axes], batch_stat=not test), inplace=True)
+            r, axes=[axes], batch_stat=not test))
     hidden = {}
     hidden['conv0'] = r
     logger.debug(r.shape)

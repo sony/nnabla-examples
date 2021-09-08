@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Corporation.
+# Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +47,7 @@ def downblock(x, out_features, norm=False, kernel_size=4, pool=False, sn=False, 
     if norm:
         out = PF.instance_normalization(out)
 
-    out = F.leaky_relu(out, 0.2, inplace=True)
+    out = F.leaky_relu(out, 0.2)
 
     if pool:
         out = F.average_pooling(out, kernel=(2, 2))
