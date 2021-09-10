@@ -37,7 +37,7 @@ For installation we recommend to use the [Anaconda](https://anaconda.org/) pytho
 ## Inference
 
 ### Pre-trained Weights
-Pre-trained weights can be downloaded from the following link:  
+Pre-trained weights can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/deep-exemplar-based-video-colorization/devc_weights.zip).
 
 Run the below command to unzip the downloaded file:  
 `unzip devc_weights.zip`
