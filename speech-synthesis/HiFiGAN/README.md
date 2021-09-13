@@ -20,6 +20,12 @@ Note that this requirements.txt dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.
 See [NNabla CUDA extension package installation guide](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
+We recommend to use the Dockerfile in the docker directory.
+```bash
+cd docker
+docker build -t you_image_name -f Dockerfile .
+```
+
 ## Dataset
 Download the [LJ dataset](https://keithito.com/LJ-Speech-Dataset/), extract it. Change the `corpus_path` in [hparams.py](hparams.py) accordingly. Run the following command to prepare the dataset.
 ```bash
