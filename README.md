@@ -71,3 +71,7 @@ We have prepared interactive demos, where you can play around without having to 
 |:---------------------------------:|:-------------:|:-----:|:------------:|
 Introduction of Fairness Workflow Tutorial | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gender_bias_mitigation_german_cc.ipynb) | Dataset/Model Bias Check and Mitigation by Reweighing |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gender_bias_mitigation/images/fairness.png" align="center" height="90" ></a>|
 
+### Model Quantization
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+|Post-training quantization | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/quantization_tutorial.ipynb) | Post-training quantization ||
