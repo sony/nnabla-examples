@@ -50,7 +50,7 @@ python macro_retrain.py --device-id 0 --context 'cudnn' \
                             --model-save-path 'result.monitor' 
 ```
 
-This time the weights parameters are stored in `--monitor-save-path` along with other training records in `--monitor-path`.
+This time the weights parameters are stored in `--model-save-path` along with other training records in `--monitor-path`.
 
 
 ### Architecture Derivation

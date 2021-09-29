@@ -51,7 +51,7 @@ def get_args(monitor_path='tmp.monitor', max_epoch=600):
                         help='Type of computation. e.g. "float", "half".')
     parser.add_argument('--batch-size', type=int,
                         default=8, help='mini-batch size')
-    parser.add_argument('--max-epoch', type=int, default=20,
+    parser.add_argument('--max-epoch', type=int, default=max_epoch,
                         help='number of max epoch for training D')
     parser.add_argument('--g-lr', type=float, default=0.0001,
                         help='learning rate for G')
