@@ -29,7 +29,7 @@ from .common import SimpleDatasource
 DEFAULT_RESOURCE_DIR = os.path.join(os.path.dirname(__file__),  # nnabla-examples/diffusion-models/dataset
                                     "..",  # nnabla-examples/diffusion-models
                                     "..",  # nnabla-examples
-                                    "imagenet-classification"  # nnabla-examples/imagenet-classification
+                                    "image-classification/imagenet"  # nnabla-examples/image-classification/imagenet
                                     )
 
 
@@ -41,7 +41,7 @@ def _info(msg):
 def ImagenetDataIterator(batch_size, root_dir, image_size=(256, 256), fix_aspect_ratio=True,
                          comm=None, shuffle=True, rng=None, train=True,
                          resource_dir=DEFAULT_RESOURCE_DIR):
-    # todo: use imagenet-classification utils
+    # todo: use image-classification/imagenet utils
 
     if not os.path.exists(root_dir):
         raise ValueError(f"[ImagenetDataIterator] '{root_dir}' is not found. "
