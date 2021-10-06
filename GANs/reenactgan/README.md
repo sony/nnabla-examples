@@ -23,7 +23,7 @@ Figure: Overview of ReenactGAN (image from the original repository).
 
 ## Prerequisites
 
-* nnabla == 1.9.0
+* nnabla >= 1.9.0
 * python >= 3.6
 * opencv
 
@@ -125,7 +125,7 @@ After training finishes, pretrained weights can be found at `tmp.monitor/encoder
 
 In `train_encoder.py` both training and test are conducted together. That's why you don't have `test_encoder.py`.
 
-Note that, not only preprocessing, they don't mention the training details of `encoder` in the paper. We tried to replicate the training detail, but there might be a difference. So it is recommended to get the [pretrained weights provided by the author](https://github.com/wywu/ReenactGAN/blob/master/pretrained_models/v8_net_boundary_detection.pth). We prepared the converted weights, so you can download it from [here](https://nnabla.org/pretrained-models/nnabla-examples/GANs/reenactgan/converted_v8_net_boundary_detection.h5), or use a script described in the next section to download all the pretrained weights. You can optionally finetune the encoder with this weights.
+Note that, not only preprocessing, they don't mention the training details of `encoder` in the paper. We tried to replicate the training detail, but there might be a difference. So it is recommended to get the [pretrained weights provided by the author](https://github.com/wywu/ReenactGAN/blob/master/pretrained_models/v8_net_boundary_detection.pth). We prepared the converted weights, so you can download it from [here](https://nnabla.org/pretrained-models/nnabla-examples/GANs/reenactgan/ReenactGAN_encoder_pretrained_weights.h5), or use a script described in the next section to download all the pretrained weights. You can optionally finetune the encoder with this weights.
 
 ## Transformer
 
