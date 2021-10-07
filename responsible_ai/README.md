@@ -64,6 +64,11 @@ In order to utilize AI technology to enrich human's life style and contribute to
 > Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.
 > *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
 
+## Representer Point [code](./representer_point/)
+> **Representer Point Selection for Explaining Deep Neural Networks**
+> Chih-Kuan Yeh, Joon Sik Kim, Ian E.H. Yen, Pradeep Ravikumar.
+> *arXiv technical report ([arXiv 1811.09720](https://arxiv.org/abs/1811.09720))* 
+
 <br>
 
 # 3. Fairness
