@@ -82,5 +82,4 @@ evaluate_correlation.py
 
 
 ## Reference
-- Chih-Kuan Yeh, Joon Sik Kim, Ian E.H. Yen, Pradeep Ravikumar.  
-[Representer Point Selection for Explaining Deep Neural Networks](https://arxiv.org/abs/1811.09720), arXiv:1811.09720,2018.
+[Chih-Kuan Yeh, Joon Sik Kim, Ian E.H. Yen, Pradeep Ravikumar. "Representer Point Selection for Explaining Deep Neural Networks". In Advances in Neural Information Processing Systems. pp.9291-9301. 2018](https://proceedings.neurips.cc/paper/2018/file/8a7129b8f3edd95b7d969dfc2c8e9d9d-Paper.pdf)

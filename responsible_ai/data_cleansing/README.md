@@ -83,9 +83,9 @@ This is used to visualize result, which is saved in nnabla-examples/responsible_
 
 This is the code for data cleansing by  Understanding Black-box Predictions via Influence Functions
 
-> [**Understanding Black-box Predictions via Influence Functions**]((https://arxiv.org/abs/1703.04730).),
+> [**Understanding Black-box Predictions via Influence Functions**]((http://proceedings.mlr.press/v70/koh17a).),
 > Pang Wei Koh, Percy Liang.
->*arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))* 
+>*[Proceedings of the 34th International Conference on Machine Learning, 2017]( http://proceedings.mlr.press/v70/koh17a)* 
 
 ## How to Run
 The installation of Neural Network Libraries and related packages are written above in the SGD-nfluence. All processes are executed with the following example command:

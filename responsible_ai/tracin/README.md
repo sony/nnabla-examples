@@ -74,4 +74,4 @@ python mislabel_analysis.py --input  dataset_path \
 <br>
 
 ## Reference
-- Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.[Estimating Training Data Influence by Tracing Gradient Descent](https://arxiv.org/pdf/2002.08484.pdf),arXiv:2002.08484,2020.
+[Garima Pruthi, Frederick Liu, Satyen Kale, Mukund Sundararajan. "Estimating Training Data Influence by Tracing Gradient Descent". In Advances in Neural Information Processing Systems, 2020.](https://papers.nips.cc/paper/2020/file/e6385d39ec9394f2f3a354d9d2b88eec-Paper.pdf)

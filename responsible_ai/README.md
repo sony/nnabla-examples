@@ -13,9 +13,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 # 1. Visualization
 ## Grad-CAM [code](./gradcam/)
-> **Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization**
-> Ramprasaath R. Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra.
-> *arXiv technical report ([arXiv 1610.02391](https://arxiv.org/abs/1610.02391))* 
+[Ramprasaath R Selvaraju, Michael Cogswell, Abhishek Das, Ramakrishna Vedantam, Devi Parikh, Dhruv Batra. "Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization". Proceedings of the IEEE International Conference on Computer Vision, 2017.](https://openaccess.thecvf.com/content_iccv_2017/html/Selvaraju_Grad-CAM_Visual_Explanations_ICCV_2017_paper.html)
 
 <p align="center">
 <img src="./gradcam/images/sample.png" width="500px">  
@@ -23,18 +21,14 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 
 ## SHAP (image data) [code](./shap/)
-> **A Unified Approach to Interpreting Model Predictions**
-> Scott Lundberg, Su-In Lee.
-> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
+[Scott M Lundberg and Su-In Lee. 2017. **A Unified Approach to Interpreting Model Predictions.** In Advances in Neural Information Processing Systems 30. Curran Associates, Inc., 4768–4777.](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html)
 
 <p align="center">
 <img src="./shap/images/sample.png" width="500px">  
 </p>
 
 ## Kernel SHAP (tabular data) [code](./kernel_shap/)
-> **A Unified Approach to Interpreting Model Predictions**
-> Scott Lundberg, Su-In Lee.
-> *arXiv technical report ([arXiv 1705.07874](https://arxiv.org/abs/1705.07874))* 
+[Scott M Lundberg, Su-In Lee. "A unified approach to interpreting model predictions". Proceedings of the 31st International Conference on Neural Information Processing Systems, 2017.](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html)
 
 <p align="center">
 <img src="./kernel_shap/images/sample.png" width="500px">  
@@ -53,21 +47,14 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 
 ## Understanding Black-box Predictions via Influence Functions [code](./data_cleansing/)
-
-> **Understanding Black-box Predictions via Influence Functions**
-> Pang Wei Koh, Percy Liang.
-> *arXiv technical report ([arXiv 1703.04730]( https://arxiv.org/abs/1703.04730))*            
+[Pang Wei Koh, Percy Liang. "Understanding black-box predictions via influence functions". Proceedings of the 34th International Conference on Machine Learning, 2017](http://proceedings.mlr.press/v70/koh17a)
 
 
 ## TracIn [code](./tracin/)
-> **Estimating Training Data Influence by Tracing Gradient Descent**
-> Garima Pruthi, Frederick Liu, Mukund Sundararajan, Satyen Kale.
-> *arXiv technical report ([arXiv 2002.08484](https://arxiv.org/abs/2002.08484))* 
+> [Garima Pruthi, Frederick Liu, Satyen Kale, Mukund Sundararajan. **Estimating Training Data Influence by Tracing Gradient Descent**. In Advances in Neural Information Processing Systems, 2020.](https://papers.nips.cc/paper/2020/file/e6385d39ec9394f2f3a354d9d2b88eec-Paper.pdf)
 
 ## Representer Point [code](./representer_point/)
-> **Representer Point Selection for Explaining Deep Neural Networks**
-> Chih-Kuan Yeh, Joon Sik Kim, Ian E.H. Yen, Pradeep Ravikumar.
-> *arXiv technical report ([arXiv 1811.09720](https://arxiv.org/abs/1811.09720))* 
+> [Chih-Kuan Yeh, Joon Sik Kim, Ian E.H. Yen, Pradeep Ravikumar. **Representer Point Selection for Explaining Deep Neural Networks.** In Advances in Neural Information Processing Systems. pp.9291-9301. 2018](https://proceedings.neurips.cc/paper/2018/file/8a7129b8f3edd95b7d969dfc2c8e9d9d-Paper.pdf)
 
 <br>
 
