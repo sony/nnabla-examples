@@ -75,7 +75,7 @@ def train(args):
     """
     # Create Communicator and Context
     comm = create_communicator(
-        ignore_error=True, extension_module=args.context, type_config=args.type_config)
+        ignore_error=True)
     if comm:
         n_devices = comm.size
         mpi_rank = comm.rank

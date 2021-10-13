@@ -15,7 +15,7 @@
 
 import numpy as np
 import os
-from scipy.misc import imread
+from imageio import imread
 from args import get_args
 import matplotlib.pyplot as plt
 

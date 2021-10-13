@@ -89,7 +89,7 @@ def main():
         args.weights, args.type_config)
     args.channel_last = channel_last
 
-    # Build a validation entwork
+    # Build a validation network
     from models import build_network
     num_classes = args.num_classes
     # Network for validation

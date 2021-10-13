@@ -71,7 +71,7 @@ Note that currently generate.py supports only cityscapes and ade20k dataset.
 ### Training on cityscapes
 ```
 # make sure you are on the root dir of spade example.
-cd /path/to/nnabla-examples/GANs/spade
+cd /path/to/nnabla-examples/image-translation/spade
 
 # by a single GPU
 ./scripts/train_cityscapes.sh 
@@ -84,7 +84,7 @@ Trained model will be saved on log directory (default value is `./results/spade/
 ### Trainig on ade20k
 ```
 # make sure you are on the root dir of spade example.
-cd /path/to/nnabla-examples/GANs/spade
+cd /path/to/nnabla-examples/image-translation/spade
 
 # by a single GPU
 ./scripts/train_ade20k.sh 

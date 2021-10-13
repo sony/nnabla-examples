@@ -249,7 +249,7 @@ and the current working directory should contain the following 4 files generated
 ```
 
 ## Execute Fine Tuning
-* For fine-tuning with any dataset, prepare the dataset in the same way as above(writing a data preparation script is required; refer [prepare_lfw_data.py](https://github.com/LambdaScrum/sdeep-nnabla-examples/blob/feature/20190329-deeplabv3plus-finetuning/semantic-segmentation/deeplabv3plus/prepare_lfw_data.py)) and add ```--fine-tune``` argument to the training command.
+* For fine-tuning with any dataset, prepare the dataset in the same way as above(writing a data preparation script is required; refer prepare_lfw_data.py) and add ```--fine-tune``` argument to the training command.
 * Hyper parameters such as learning rate, number of epochs, batch_size, and input image size should be adjusted depending on your purpose.
 * Specify the VOC trained Deeplabv3+ model as pretrained model in ```--pretrained-model-path``` argument.
 

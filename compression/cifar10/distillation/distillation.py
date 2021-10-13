@@ -104,7 +104,7 @@ def distil():
             # Validation
             ve = 0.0
             for j in range(int(n_valid / args.batch_size)):
-                vimage.d, vlabel.d = vdata.next()
+                vimage.d, vlabel.d = vdata[1].next()
                 vpred.forward(clear_buffer=True)
                 ve += categorical_error(vpred.d, vlabel.d)
             ve /= int(n_valid / args.batch_size)
@@ -114,7 +114,7 @@ def distil():
                 args.model_save_path, 'params_%06d.h5' % i))
             best_ve = ve
         # Training forward
-        image.d, label.d = data.next()
+        image.d, label.d = data[1].next()
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
@@ -127,7 +127,7 @@ def distil():
 
     ve = 0.0
     for j in range(int(n_valid / args.batch_size)):
-        vimage.d, vlabel.d = vdata.next()
+        vimage.d, vlabel.d = vdata[1].next()
         vpred.forward(clear_buffer=True)
         ve += categorical_error(vpred.d, vlabel.d)
     ve /= int(n_valid / args.batch_size)

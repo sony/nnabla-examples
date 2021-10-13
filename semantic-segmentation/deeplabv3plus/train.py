@@ -61,7 +61,7 @@ def get_model(args, test=False):
 def one_hot_encode(label, num_class):
     # label is 2-d of shape (batch, pixels(513x513))
     one_hot_vector = np.zeros(
-        (label.shape[0], label.shape[1], num_class), dtype=np.int32)
+        (label.shape[0], label.shape[1], num_class+1), dtype=np.int32)
 
     batch_id = np.arange(label.shape[0]).reshape(label.shape[0], 1)
     pixel_id = np.tile(np.arange(label.shape[1]), (label.shape[0], 1))

@@ -10,7 +10,7 @@ This tutorial will cover the following four topics:
    - `train.py` will be mainly used for this purpose.
 3. Run image object detection **using the trained parameters**.
    - `yolov2_detection.py` will be mainly used for this purpose.
-   - This is mostly the same as [Quick Start: Image Object Detection with YOLO-v2-NNabla](./quickstart.md), until the final step, where the trained network weights are used instead of the pretrained network weights.
+   - This is mostly the same as [Quick Start: Image Object Detection with YOLO-v2-NNabla](../quickstart.md), until the final step, where the trained network weights are used instead of the pretrained network weights.
 4. **Evaluate the network's mAP** (Mean Average Precision).
    - Mean Average Precision is the score used for evaluating the image object detection performance in [the original YOLO v2 paper][1].
    - `valid.py` and `scripts/voc_eval.py` will be mainly used for this purpose.

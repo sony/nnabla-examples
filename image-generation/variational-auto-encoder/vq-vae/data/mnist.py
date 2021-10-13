@@ -18,7 +18,7 @@ import sys
 import numpy as np
 
 mnist_data_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'mnist-collection'))
+    os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'image-classification/mnist-collection'))
 sys.path.append(mnist_data_path)
 from mnist_data import data_iterator_mnist
 

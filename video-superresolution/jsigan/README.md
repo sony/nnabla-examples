@@ -20,7 +20,7 @@ The pre-trained weights can be downloaded from the links provided in the below t
 |---|---|---|
 |Scaling Factor 1|[JSINet_X1](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsinet_x2.h5)|[JSIGAN_x1](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsigan_x1.h5)|
 |Scaling Factor 2|[JSINet_X2](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsinet_x2.h5)|[JSIGAN_x2](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsigan_x2.h5)|
-|Scaling Factor 4|[JSINet_X4](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsinet_x4.h5)|[JSIGAN_x4](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsinet_x4.h5)|
+|Scaling Factor 4|[JSINet_X4](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsinet_x4.h5)|[JSIGAN_x4](https://nnabla.org/pretrained-models/nnabla-examples/GANs/jsigan/jsigan_x4.h5)|
 
 ### Inference using the downloaded pre-trained weights.
 Clone the nnabla-examples [repository](https://github.com/sony/nnabla-examples.git) and download the [test dataset](https://drive.google.com/file/d/1dZTwvRhf189L7NLkAcpij4980fyEXq3Q/view?usp=sharing)

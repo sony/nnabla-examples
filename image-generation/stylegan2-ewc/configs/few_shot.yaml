@@ -1,0 +1,7 @@
+
+common:
+  type: ewc   # False,ewc
+ewc:
+  lambda: 1.0e+2
+  weights: ../result/FisherInformation.npz
+
