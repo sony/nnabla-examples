@@ -37,7 +37,7 @@ def gcn_layer(A_hat, X, out_features, name, dropout=0.5, activation=F.relu):
     Parameters
     ----------
     A_hat: nnabla.Variable
-      Normalized graph Llaplacian
+      Normalized graph Laplacian
     X: nnabla.Variable
       Feature matrix
     out_features: int

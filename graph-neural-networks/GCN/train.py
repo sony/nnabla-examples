@@ -54,6 +54,7 @@ if __name__ == '__main__':
     H = gcn(A_hat, X, num_classes, 0.5)
     H_valid = gcn(A_hat, X, num_classes, 0)
 
+    # Solver / Optimizer
     solver = S.Adam(alpha=0.01)
     solver.set_parameters(nn.get_parameters())
 
@@ -69,7 +70,6 @@ if __name__ == '__main__':
 
     print('Begin training loop...')
     best_score = 0.
-    patience = 10
     for i in range(200):
 
         solver.zero_grad()
