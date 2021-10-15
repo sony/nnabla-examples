@@ -3,7 +3,7 @@
 This is a re-implementation of the Graph Convolutional Network(GCN) with nnabla.
 
 Reference
-> Thomas N. Kipf, Max Welling, [Semi-Supervised Classification with Graph Convolutional Networks](https://arxiv.org/abs/1609.02907) (ICLR 2017)
+> Thomas N. Kipf, Max Welling, [Semi-Supervised Classification with Graph Convolutional Networks](https://openreview.net/pdf?id=SJU4ayYgl) (ICLR 2017)
 
 ## Dataset and Task
 
