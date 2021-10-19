@@ -203,7 +203,7 @@ def create_data_csv(seed):
     validation_di = data_iterator_stl10(
         8000, False, None, False, output_dir=output_dir)
     logger.log(99, 'Creating "stl10_test.csv"... ')
-    test_csv = data_iterator_to_csv(
+    _ = data_iterator_to_csv(
         base_dir, 'stl10_test.csv', 'validation', validation_di)
     logger.log(99, 'Dataset creation completed successfully.')
 
