@@ -19,18 +19,16 @@ from nnabla.utils.data_source import SlicedDataSource
 
 
 def get_slice_start_end(size, n_slices, rank):
-    _size = size // n_slices
-    amount = size % n_slices
-    slice_start = _size * rank
-    if rank < amount:
-        slice_start += rank
-    else:
-        slice_start += amount
+    size_rank = size // n_slices
+    remain = size % n_slices
+    slice_start = size_rank * rank
+     
+    slice_start += min(rank, remain)
+    if rank < remain:
+        size_rank += 1
 
-    slice_end = slice_start + _size
-    if slice_end > size:
-        slice_start -= (slice_end - size)
-        slice_end = size
+    slice_end = slice_start + size_rank
+    assert slice_end <= size
 
     return slice_start, slice_end
 
