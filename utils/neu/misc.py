@@ -25,9 +25,9 @@ def set_random_pseed(comm):
     x = nn.Variable.from_numpy_array(np.random.randint(low=0, high=1 << 30))
     comm.broadcast(x)
 
-    from nnabla.random import set_parameter_seed 
+    from nnabla.random import set_parameter_seed
     set_parameter_seed(int(x.d))
-    
+
     from nnabla.random import pseed
     logger.info(f"[rank {comm.rank}] seed: {pseed}")
 
@@ -91,15 +91,19 @@ class AttrDict(dict):
 
     def dump_to_stdout(self):
         self.dump()
-    
-    def dump(self, file=sys.stdout):
+
+    def dump(self, file=sys.stdout, sort_keys=True):
         if not hasattr(file, "write"):
             assert isinstance(file, str)
             file = open(file, 'w')
 
         out = "\n================================configs================================\n"
 
-        for k, v in self.items():
+        iterator = self.items()
+        if sort_keys:
+            iterator = sorted(iterator, key=lambda x: x[0])
+
+        for k, v in iterator:
             out += "{}: {}\n".format(k, v)
 
         out += "======================================================================="

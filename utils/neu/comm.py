@@ -51,13 +51,13 @@ class CommunicatorWrapper(object):
 
         logger.info("[Communicator] Using gpu_id = {} as rank = {}".format(
             self.ctx.device_id, self.rank))
-    
+
     def barrier(self):
         if self.n_procs == 1:
             # skip all reduce since no processes have to be all-reduced
             return
         self.comm.barrier()
-    
+
     def broadcast(self, x):
         assert isinstance(x, nn.Variable)
 
@@ -86,12 +86,11 @@ class CommunicatorWrapper(object):
             self.all_reduced_solver_update(
                 solver, division=division, inplace=inplace)
 
-    def get_all_reduce_callback(self, params=None, packing_size=2 << 20):        
+    def get_all_reduce_callback(self, params=None, packing_size=2 << 20):
         if self.n_procs == 1:
             return None
-        
+
         if params is None:
             params = nn.get_parameters().values()
 
         return self.comm.all_reduce_callback([x.grad for x in params], packing_size)
-        

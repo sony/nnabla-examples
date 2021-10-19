@@ -22,7 +22,7 @@ def get_slice_start_end(size, n_slices, rank):
     size_rank = size // n_slices
     remain = size % n_slices
     slice_start = size_rank * rank
-     
+
     slice_start += min(rank, remain)
     if rank < remain:
         size_rank += 1

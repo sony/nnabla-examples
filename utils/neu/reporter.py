@@ -46,7 +46,7 @@ def get_value(val, dtype=float, reduction=True):
         if reduction and val.size > 1:
             with nn.auto_forward(), nn.no_grad():
                 val = F.mean(val)
-        
+
         v = val.get_data("r")
     elif isinstance(val, np.ndarray):
         if reduction and val.size > 1:
@@ -56,27 +56,14 @@ def get_value(val, dtype=float, reduction=True):
     else:
         assert isinstance(val, (int, float, np.generic))
         v = val
-    
+
     return dtype(v)
 
 
-def save_tiled_image(img, path, channel_last=False):
-    """
-    Save given batched images as tiled image.
-    The first axis will be handled as batch.
-
-    Args:
-        img (np.ndarray): 
-            Images to save. The shape should be (B, C, H, W) or (B, H, W, C) depending on `channel_last`. dtype must be np.uint8.
-        path (str):
-            Path to save.
-        channel_last (bool):
-            If True, the last axis (=3) will be handled as channel.
-    """
+def get_tiled_image(img, channel_last=False):
     assert len(img.shape) == 4
     assert isinstance(img, np.ndarray)
-    assert img.dtype == np.uint8
-    
+
     if channel_last:
         # nnabla.monitor.tile_images requests (B, C, H, W)
         # (B, H, W, C) -> (B, C, H, W)
@@ -88,6 +75,26 @@ def save_tiled_image(img, path, channel_last=False):
     tiled_image = tile_images(img)
     _, _, Ct = tiled_image.shape
     assert C == Ct
+
+    return tiled_image
+
+
+def save_tiled_image(img, path, channel_last=False):
+    """
+    Save given batched images as tiled image.
+    The first axis will be handled as batch.
+
+    Args:
+        img (np.ndarray):
+            Images to save. The shape should be (B, C, H, W) or (B, H, W, C) depending on `channel_last`. dtype must be np.uint8.
+        path (str):
+            Path to save.
+        channel_last (bool):
+            If True, the last axis (=3) will be handled as channel.
+    """
+    tiled_image = get_tiled_image(img, channel_last=channel_last)
+
+    assert tiled_image.dtype == np.uint8
 
     # create directory if needed
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -110,6 +117,7 @@ class MonitorWrapper(object):
         for epoch in range(max_epoch):
             monitor(vars, epoch)
     """
+
     def __init__(self, save_path, interval=1, save_time=True, silent=False):
         self.monitor = M.Monitor(save_path)
         self.interval = interval
@@ -135,7 +143,7 @@ class MonitorWrapper(object):
 
         if name not in self.series_monitors:
             self.set_series(name)
-        
+
         self.series_monitors[name].add(epoch, get_value(series_val))
 
         if self.monitor_time is not None:
@@ -161,7 +169,8 @@ class Reporter(object):
             losses.keys()) if show_keys is None else show_keys
 
         is_master = comm.rank == 0
-        self.monitor = MonitorWrapper(save_path) if (save_path is not None and is_master) else None
+        self.monitor = MonitorWrapper(save_path) if (
+            save_path is not None and is_master) else None
 
         self._reset_buffer()
 
@@ -299,11 +308,11 @@ class AverageLogger(object):
     def __init__(self):
         self.avg_val = 0.
         self.cnt = 0
-    
+
     def reset(self):
         self.avg_val = 0.
         self.cnt = 0.
-    
+
     def update(self, val):
         val = get_value(val)
         oldcnt = self.cnt
@@ -314,7 +323,7 @@ class AverageLogger(object):
 
         # take moving average
         self.avg_val = self.avg_val * oldcnt / self.cnt + val / self.cnt
-    
+
     @property
     def val(self):
         return self.avg_val
@@ -343,7 +352,7 @@ class KVReporter(object):
             loss.backward()
             solver.zero_grad()
             solver.update()
-            
+
             # KVReporter can handle nn.Variable and nn.NdArray as well as np.ndarry.
             # Using kv_mean(name, val), you can calculate moving average.
             reporter.kv_mean("loss", loss)
@@ -360,6 +369,7 @@ class KVReporter(object):
             reporter.flush_monitor(i)
 
     """
+
     def __init__(self, comm=None, save_path=None,
                  monitor_silent=True, skip_kv_to_monitor=True):
         """
@@ -381,16 +391,16 @@ class KVReporter(object):
             self._monitor = MonitorWrapper(save_path,
                                            interval=1,
                                            silent=monitor_silent) if save_path else None
-        
+
         self.monitor_cnt = 0
         self.skip_kv_to_monitor = skip_kv_to_monitor
-    
+
     def get_val(self, name):
         return self.name2logger[name].val
 
     def reset(self, names=None):
         # Do not reset monitor_cnt
-        
+
         if isinstance(names, str):
             names = [names]
 
@@ -399,39 +409,44 @@ class KVReporter(object):
                 continue
 
             logger.reset()
-        
-        self.is_synced = True # No need to sync initial values
-    
+
+        self.is_synced = True  # No need to sync initial values
+
     def sync_all(self, reset=True):
         if self.is_synced:
             return
 
         for name, logger in sorted(self.name2logger.items(), key=lambda x: x):
             # sync across all devices
-            synced_val = nn.NdArray.from_numpy_array(np.asarray(get_value(logger.val)))
-            synced_cnt = nn.NdArray.from_numpy_array(np.asarray(get_value(logger.cnt)))
+            synced_val = nn.NdArray.from_numpy_array(
+                np.asarray(get_value(logger.val)))
+            synced_cnt = nn.NdArray.from_numpy_array(
+                np.asarray(get_value(logger.cnt)))
             if self.comm is not None:
                 try:
                     synced_val *= synced_cnt
-                    self.comm.all_reduce([synced_val], division=False, inplace=True)
-                    self.comm.all_reduce([synced_cnt], division=False, inplace=True)
+                    self.comm.all_reduce(
+                        [synced_val], division=False, inplace=True)
+                    self.comm.all_reduce(
+                        [synced_cnt], division=False, inplace=True)
                     synced_val /= synced_cnt
                 except:
-                    raise ValueError(f"Sync error. rank: {self.comm.rank}, key: {name}")
-            
+                    raise ValueError(
+                        f"Sync error. rank: {self.comm.rank}, key: {name}")
+
             # update
             self.name2val[name] = get_value(synced_val.get_data("r"))
-        
+
         self.is_synced = True
-        
+
         if reset:
             self.reset()
-    
+
     def set_key(self, key):
         """
         set key before to prevent synchronization error.
         """
-   
+
         self.name2logger[key] = self.name2logger[key]
 
     def desc(self, reset=True, sync=True):
@@ -443,8 +458,8 @@ class KVReporter(object):
         for name, val in sorted(self.name2val.items(), key=lambda x: x):
             desc += " {}: {:-8.3g}".format(name, val)
 
-        return desc 
-    
+        return desc
+
     def dump(self, file=sys.stdout, reset=True, sync=True):
         if sync:
             self.sync_all(reset=reset)
@@ -456,22 +471,22 @@ class KVReporter(object):
             key2str[name] = "{:-8.3g}".format(val)
             max_key_width = max(max_key_width, len(name))
             max_val_width = max(max_val_width, len(key2str[name]))
-        
+
         if len(key2str) == 0:
             return
 
         line = "=" * (max_key_width + max_val_width + 5)
-        
+
         out = [line]
         for name, val in key2str.items():
             key_pad = " " * (max_key_width - len(name))
             out.append("{:<}{} : {:<}".format(name, key_pad, val))
         out.append(line)
-        
+
         if file is not None and hasattr(file, "write"):
             file.write("\n".join(out) + "\n")
             file.flush()
-    
+
     def kv(self, name, val):
         """
         For additional information. This is not dumped to monitor. 
@@ -485,7 +500,7 @@ class KVReporter(object):
         # take average
         logger = self.name2logger[name]
         logger.update(get_value(val))
-        
+
         self.is_synced = False
 
     def flush_monitor(self, iter, names=None):
@@ -501,8 +516,8 @@ class KVReporter(object):
             #  skip values set by kv()
             if self.skip_kv_to_monitor and name not in self.name2logger:
                 continue
-            
+
             if (names is not None) and (name not in names):
                 continue
-            
+
             self._monitor(name, val, iter)

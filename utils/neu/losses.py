@@ -83,14 +83,83 @@ def mse(x, y, mask=None, eps=1e-5):
 
 
 ###############################################
-# variational
+# likelihood-based losses
 ###############################################
 
 def kl_snd(mu, logvar):
-    # kl divergence with standard normal distribution
+    # kl divergence from standard normal gaussian to the gaussian of given parameter, mu and logvar.
+    # Namely, it computes D_kl(N(mu, exp(logvar)) || N(0, 1)).
 
     return F.sum(F.pow_scalar(mu, 2) + F.exp(logvar) - logvar - 1) / 2
 
+
+"""
+Functions below are ported from https://github.com/openai/guided-diffusion/blob/main/guided_diffusion/losses.py, 
+and are re-implemented with nnabla.
+"""
+
+
+def kl_normal(mean1, logvar1, mean2, logvar2):
+    # kl divergence between two gaussians.
+
+    return 0.5 * (((mean1 - mean2) ** 2) * F.exp(-logvar2) + F.exp(logvar1 - logvar2) + logvar2 - logvar1 - 1.0)
+
+
+def approx_standard_normal_cdf(x):
+    """
+    A fast approximation of the cumulative distibution function of the standard normal.
+    """
+
+    return 0.5 * (1.0 + F.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * F.pow_scalar(x, 3))))
+
+
+def gaussian_log_likelihood(x, mean, logstd, orig_max_val=255):
+    """
+    Compute the log-likelihood of a Gaussian distribution for given data `x`.
+
+    Args:
+        x (nn.Variable): Target data. It is assumed that the values are ranged [-1, 1],
+                         which are originally [0, orig_max_val].
+        means (nn.Variable): Gaussian mean. Must be the same shape as x.
+        logstd (nn.Variable): Gaussian log standard deviation. Must be the same shape as x.
+        orig_max_val (int): The maximum value that x originally has before being rescaled.
+
+    Return:
+        A log probabilies of x in nats.
+    """
+    assert x.shape == mean.shape == logstd.shape
+    centered_x = x - mean
+    inv_std = F.exp(-logstd)
+    half_bin = 1.0 / orig_max_val
+
+    def clamp(val):
+        # Here we don't need to clip max
+        return F.clip_by_value(val, min=1e-12, max=1e8)
+
+    # x + 0.5 (in original scale)
+    plus_in = inv_std * (centered_x + half_bin)
+    cdf_plus = approx_standard_normal_cdf(plus_in)
+    log_cdf_plus = F.log(clamp(cdf_plus))
+
+    # x - 0.5 (in original scale)
+    minus_in = inv_std * (centered_x - half_bin)
+    cdf_minus = approx_standard_normal_cdf(minus_in)
+    log_one_minus_cdf_minus = F.log(clamp(1.0 - cdf_minus))
+
+    log_cdf_delta = F.log(clamp(cdf_plus - cdf_minus))
+
+    log_probs = F.where(
+        F.less_scalar(x, -0.999),
+        log_cdf_plus,  # Edge case for 0. It uses cdf for -inf as cdf_minus.
+        F.where(F.greater_scalar(x, 0.999),
+                # Edge case for orig_max_val. It uses cdf for +inf as cdf_plus.
+                log_one_minus_cdf_minus,
+                log_cdf_delta  # otherwise
+                )
+    )
+
+    assert log_probs.shape == x.shape
+    return log_probs
 
 ##############################################
 # GAN loss

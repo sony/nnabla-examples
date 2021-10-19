@@ -49,8 +49,9 @@ def get_parser():
                         help='Backend name.')
     parser.add_argument('--batch-size', '-b', default=16, type=int,
                         help='batch-size. automatically adjusted. see the code.')
-    
+
     return parser
+
 
 def get_args():
     parser = get_parser()

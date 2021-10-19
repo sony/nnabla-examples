@@ -26,6 +26,7 @@ from .im2ndarray import im2ndarray
 from .inceptionv3 import construct_inceptionv3
 from nnabla.ext_utils import get_extension_context
 
+
 def get_parser():
     import argparse
     parser = argparse.ArgumentParser()
@@ -46,12 +47,12 @@ def get_parser():
                         help='Backend name.')
     parser.add_argument('--device-id', '-d', default=0, type=int,
                         help='Device ID.')
-    
+
     return parser
 
 
 def get_args():
-    parser = get_parser()    
+    parser = get_parser()
     return parser.parse_args()
 
 

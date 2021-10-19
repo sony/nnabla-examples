@@ -22,7 +22,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     entry_points={
-        'console_scripts':[
+        'console_scripts': [
             'neu_cli = neu.cli:main',
         ],
     },
