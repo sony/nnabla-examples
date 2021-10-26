@@ -1,0 +1,43 @@
+# Network
+depth: 512
+feature_size: 256
+layers: 9
+# Sphere tracer
+t_near: 1
+t_far: 4
+sphere_trace_itr: 10
+ray_march_points: 100
+n_chunks: 2
+max_post_itr: 8
+post_method: secant
+eps: 5e-5
+# Training
+batch_size: 1
+n_rays: 2048
+height: 1200
+width: 1600
+train_epoch: 2000
+valid_epoch_interval: 100
+learning_rate: 1e-4
+lr_decay: 
+  - 1000
+  - 1500
+mask_weight: 100
+eikonal_weight: 0.1
+alpha: 50
+alpha_decay:
+  - 250
+  - 500
+  - 750
+  - 1000
+  - 1250
+# Training / Generation
+initial_sphere_radius: 0.75
+bounding_sphere_radius: 1.0
+bounding_box_size: 1.0
+batch_height: 10
+sub_batch_size: 8196
+grid_size: 512
+gradient_direction: descent
+data_path: DTU/scan118
+valid_index: 60
