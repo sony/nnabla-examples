@@ -378,8 +378,10 @@ class WFLWDataEncoderRefSource(DataSource):
         super(WFLWDataEncoderRefSource, self).__init__()
         self.ref_dir = data_dir  # './datasets/WFLW_heatmaps'
         self.mode = mode
-        ref_img_path = os.path.join(self.ref_dir, f'WFLW_cropped_image_{self.mode}.npz')
-        ref_bod_path = os.path.join(self.ref_dir, f'WFLW_heatmap_{self.mode}.npz')
+        ref_img_path = os.path.join(
+            self.ref_dir, f'WFLW_cropped_image_{self.mode}.npz')
+        ref_bod_path = os.path.join(
+            self.ref_dir, f'WFLW_heatmap_{self.mode}.npz')
         self.ref_img = np.load(ref_img_path)
         self.ref_bod = np.load(ref_bod_path)
 

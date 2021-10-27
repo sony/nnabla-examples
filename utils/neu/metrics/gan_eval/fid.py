@@ -147,7 +147,8 @@ def get_all_features_on_imagepaths(image_paths: list, batch_size: int):
     print("loading images...")
     num_images = len(image_paths)
     if num_images < 9999:
-        logger.warning(f"only {num_images} images found. It may produce inaccurate FID score.")
+        logger.warning(
+            f"only {num_images} images found. It may produce inaccurate FID score.")
     num_loop, num_remainder = divmod(num_images, batch_size)
     batched_images = image_paths[:-num_remainder]
     rest_image_paths = image_paths[-num_remainder:]

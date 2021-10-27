@@ -57,9 +57,11 @@ def load_adult_data():
                 .drop(columns=['target', 'race', 'sex', 'fnlwgt'])
                 .pipe(pd.get_dummies, drop_first=True))
 
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
     return features, target, sensitive_attributes
 
 
@@ -162,6 +164,8 @@ def plot_fairness_multi(DPD, EOD, AAOD, p_rule, accuracy, bar_x_axis="original")
                   title="Equal Opportunity", bar_x_axis=bar_x_axis)
     plot_fairness([AAOD], ax=axes[2], metric="AAOD",
                   title="Equalized Odds", bar_x_axis=bar_x_axis)
-    fig.text(0.92, 0.8, '\n'.join(["Satisfied p%-rules:", f"- p% : {p_rule:.3f}"]), fontsize='15')
-    fig.text(0.92, 0.65, '\n'.join(["Accuracy of the model:", f"- accuracy : {accuracy:.3f}"]), fontsize='15')
+    fig.text(0.92, 0.8, '\n'.join(
+        ["Satisfied p%-rules:", f"- p% : {p_rule:.3f}"]), fontsize='15')
+    fig.text(0.92, 0.65, '\n'.join(
+        ["Accuracy of the model:", f"- accuracy : {accuracy:.3f}"]), fontsize='15')
     plt.show()

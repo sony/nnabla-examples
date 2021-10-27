@@ -50,13 +50,15 @@ def train_transformer(config, netG, netD, solver_netG, solver_netD, train_iterat
     train_iterator_src, train_iterator_trg = train_iterators
 
     if config["train"]["cycle_loss"] and config["train"]["cycle_loss"]["lambda"] > 0:
-        print(f'Applying Cycle Loss, weight: {config["train"]["cycle_loss"]["lambda"]}.')
+        print(
+            f'Applying Cycle Loss, weight: {config["train"]["cycle_loss"]["lambda"]}.')
         with_cycle_loss = True
     else:
         with_cycle_loss = False
 
     if config["train"]["shape_loss"] and config["train"]["shape_loss"]["lambda"] > 0:
-        print(f'Applying Shape Loss using PCA, weight: {config["train"]["shape_loss"]["lambda"]}.')
+        print(
+            f'Applying Shape Loss using PCA, weight: {config["train"]["shape_loss"]["lambda"]}.')
         with_shape_loss = True
     else:
         with_shape_loss = False

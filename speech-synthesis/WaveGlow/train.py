@@ -98,11 +98,13 @@ class WaveGlowTrainer(Trainer):
             self.monitor.info(f'valid/loss={self.loss.data[0]:.5f}\n')
 
             if self.cur_epoch % hp.epochs_per_checkpoint == 0:
-                path = Path(hp.output_path) / 'output' / f'epoch_{self.cur_epoch}'
+                path = Path(hp.output_path) / 'output' / \
+                            f'epoch_{self.cur_epoch}'
                 path.mkdir(parents=True, exist_ok=True)
                 p['s_aud'].forward(clear_buffer=True)
                 wavfile.write(path / 'sample.wav', rate=hp.sr,
                               data=p['s_aud'].d[0].copy())
-                self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
+                self.model.save_parameters(
+                    str(path / f'model_{self.cur_epoch}.h5'))
 
         self.loss.zero()

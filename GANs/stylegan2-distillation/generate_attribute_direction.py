@@ -106,7 +106,8 @@ def generate_attribute_direction(args, attribute_prediction_model):
     attribute_variation_direction = (
         w_plus/w_plus_count) - (w_minus/w_minus_count)
     print(w_plus_count, w_minus_count)
-    np.save(f'{args.classifier_weight_path.split("/")[0]}/direction.npy', attribute_variation_direction)
+    np.save(
+        f'{args.classifier_weight_path.split("/")[0]}/direction.npy', attribute_variation_direction)
 
 
 def main():

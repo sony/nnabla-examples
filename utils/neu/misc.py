@@ -129,7 +129,8 @@ class DictInterfaceFactory(object):
             for p in sig.parameters.values():
                 # Positional argument
                 if p.default is p.empty and p.name not in cfg:
-                    raise ValueError(f'`{cls.__name__}`` requires an argument `{p.name}`. Not found in cfg={cfg}.')
+                    raise ValueError(
+                        f'`{cls.__name__}`` requires an argument `{p.name}`. Not found in cfg={cfg}.')
                 args[p.name] = cfg.get(p.name, p.default)
             return cls(**args)
 
@@ -140,7 +141,8 @@ class DictInterfaceFactory(object):
     def call(self, name, cfg):
         if name in self._factory:
             return self._factory[name](cfg)
-        raise ValueError(f'`{name}`` not found in `{list(self._factory.keys())}`.')
+        raise ValueError(
+            f'`{name}`` not found in `{list(self._factory.keys())}`.')
 
 
 def makedirs(dirpath):

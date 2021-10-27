@@ -104,7 +104,8 @@ def rank_ckpt_influence(raw, shuffle, extract_percentage=0.10):
         plt.xlabel('Number')
         plt.ylabel('Label')
         plt.tight_layout()
-        plt.savefig(os.path.join(args.output, f'{epoch}_top_influence_sample.png'))
+        plt.savefig(os.path.join(
+            args.output, f'{epoch}_top_influence_sample.png'))
         plt.close()
 
 
@@ -127,9 +128,11 @@ def save_extracted_images(images, score, raw, shuffle):
         indices = np.argsort(-score)[num:num+iteration]
         for ind in indices:
             if raw[ind] != shuffle[ind]:
-                cv2.imwrite(os.path.join(incorrect_dir, f'{labels_name[int(raw[ind])]}_({labels_name[int(shuffle[ind])]}).jpg'), np.transpose(images[ind], (1, 2, 0)))
+                cv2.imwrite(os.path.join(incorrect_dir, f'{labels_name[int(raw[ind])]}_({labels_name[int(shuffle[ind])]}).jpg'), np.transpose(
+                    images[ind], (1, 2, 0)))
             else:
-                cv2.imwrite(os.path.join(correct_dir, f'{labels_name[int(raw[ind])]}_({labels_name[int(shuffle[ind])]}) .jpg'), np.transpose(images[ind], (1, 2, 0)))
+                cv2.imwrite(os.path.join(correct_dir, f'{labels_name[int(raw[ind])]}_({labels_name[int(shuffle[ind])]}) .jpg'), np.transpose(
+                    images[ind], (1, 2, 0)))
 
 
 def main():

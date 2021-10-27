@@ -152,7 +152,8 @@ def main():
     batch_size = args.batch_size
     num_layers = int(np.log2(resolution)-1)*2
 
-    assert 0 < args.mix_after < num_layers-1, f"specify --mix-after from 1 to {num_layers-2}."
+    assert 0 < args.mix_after < num_layers - \
+        1, f"specify --mix-after from 1 to {num_layers-2}."
 
     file_path = f'{args.dataset_type}.h5' if args.dataset_type != 'human_faces' else 'styleGAN2_G_params.h5'
 
@@ -177,8 +178,10 @@ def main():
     if args.mixing:
         # apply style mixing
         assert args.seed_mix
-        print(f"using style noise seed {args.seed} for layers 0-{args.mix_after - 1}")
-        print(f"using style noise seed {args.seed_mix} for layers {args.mix_after}-{num_layers}.")
+        print(
+            f"using style noise seed {args.seed} for layers 0-{args.mix_after - 1}")
+        print(
+            f"using style noise seed {args.seed_mix} for layers {args.mix_after}-{num_layers}.")
         rnd = np.random.RandomState(args.seed_mix)
         z2 = rnd.randn(batch_size, 512)
         style_noises = [nn.NdArray.from_numpy_array(z)]

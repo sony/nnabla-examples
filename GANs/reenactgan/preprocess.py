@@ -231,7 +231,8 @@ def preprocess_WFLW(args):
     gaussian_sigma = args.gaussian_sigma
 
     imgs_root_path = src_dir
-    assert os.path.exists(imgs_root_path), f"specified path {imgs_root_path} not found."
+    assert os.path.exists(
+        imgs_root_path), f"specified path {imgs_root_path} not found."
 
     out_csv = [["saved_name", "real_name"]]
 
@@ -279,8 +280,10 @@ def preprocess_WFLW(args):
             imsave(save_path_cropped, img_resized, channel_first=True)
         idx += 1
 
-    np.savez_compressed(os.path.join(out_dir, f'WFLW_cropped_image_{mode}'), **tmp_img_dict)
-    np.savez_compressed(os.path.join(out_dir, f'WFLW_heatmap_{mode}'), **tmp_hm_dict)
+    np.savez_compressed(os.path.join(
+        out_dir, f'WFLW_cropped_image_{mode}'), **tmp_img_dict)
+    np.savez_compressed(os.path.join(
+        out_dir, f'WFLW_heatmap_{mode}'), **tmp_hm_dict)
     with open(os.path.join(out_dir, f"{mode}_data.csv"), 'w') as f:
         writer = csv.writer(f)
         writer.writerows(out_csv)

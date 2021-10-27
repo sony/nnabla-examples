@@ -140,8 +140,10 @@ def main():
         handle_directories(paths[0], paths[1], outfile, params_dir, model)
 
     elif ext0 in [".png", "jpg"]:
-        assert os.path.isfile(paths[0]), f"specified file {paths[0]} is not found."
-        assert os.path.isfile(paths[1]), f"specified file {paths[1]} is not found."
+        assert os.path.isfile(
+            paths[0]), f"specified file {paths[0]} is not found."
+        assert os.path.isfile(
+            paths[1]), f"specified file {paths[1]} is not found."
         lpips = LPIPS(model=model, params_dir=params_dir)
         lpips_val = compute_lpips_of_paired_images(
             lpips, paths[0], paths[1], params_dir, model)

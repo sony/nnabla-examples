@@ -124,7 +124,8 @@ class TacotronTrainer(Trainer):
             p, hp = self.placeholder['valid'], self.hparams
             self.monitor.info(f'valid/loss={self.loss.data[0]:.5f}\n')
             if self.cur_epoch % hp.epochs_per_checkpoint == 0:
-                path = Path(hp.output_path) / 'output' / f'epoch_{self.cur_epoch}'
+                path = Path(hp.output_path) / 'output' / \
+                            f'epoch_{self.cur_epoch}'
                 path.mkdir(parents=True, exist_ok=True)
                 # write attention and spectrogram outputs
                 for k in ('o_att', 'o_mel', 'o_mag'):
@@ -142,5 +143,6 @@ class TacotronTrainer(Trainer):
                     )
                 wave = synthesize_from_spec(p['o_mag'].d[0].copy(), hp)
                 wavfile.write(path / 'sample.wav', rate=hp.sr, data=wave)
-                self.model.save_parameters(str(path / f'model_{self.cur_epoch}.h5'))
+                self.model.save_parameters(
+                    str(path / f'model_{self.cur_epoch}.h5'))
         self.loss.zero()

@@ -78,7 +78,8 @@ def vgg16_perceptual_loss(fake, real):
 def train(config, netG, netD, solver_netG, solver_netD, train_iterator, monitor):
 
     if config["train"]["feature_loss"] and config["train"]["feature_loss"]["lambda"] > 0:
-        print(f'Applying VGG feature Loss, weight: {config["train"]["feature_loss"]["lambda"]}.')
+        print(
+            f'Applying VGG feature Loss, weight: {config["train"]["feature_loss"]["lambda"]}.')
         with_feature_loss = True
     else:
         with_feature_loss = False
@@ -215,10 +216,12 @@ def train(config, netG, netD, solver_netG, solver_netD, train_iterator, monitor)
 
         if e % config["monitor"]["save_interval"] == 0 or e == epoch - 1:
             # Save parameters of networks
-            netG_save_path = os.path.join(monitor._save_path, f'netG_decoder_{e}.h5')
+            netG_save_path = os.path.join(
+                monitor._save_path, f'netG_decoder_{e}.h5')
             with nn.parameter_scope('netG_decoder'):
                 nn.save_parameters(netG_save_path)
-            netD_save_path = os.path.join(monitor._save_path, f'netD_decoder_{e}.h5')
+            netD_save_path = os.path.join(
+                monitor._save_path, f'netD_decoder_{e}.h5')
             with nn.parameter_scope('netD_decoder'):
                 nn.save_parameters(netD_save_path)
 

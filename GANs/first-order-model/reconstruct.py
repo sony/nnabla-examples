@@ -127,7 +127,8 @@ def reconstruct(args):
 
     mode = "reconstruction"
     if "log_dir" in config:
-        result_dir = os.path.join(args.out_dir, os.path.basename(config.log_dir), f"{mode}")
+        result_dir = os.path.join(
+            args.out_dir, os.path.basename(config.log_dir), f"{mode}")
     else:
         result_dir = os.path.join(args.out_dir, "test_result", f"{mode}")
 

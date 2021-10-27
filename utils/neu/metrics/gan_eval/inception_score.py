@@ -156,7 +156,8 @@ def main():
     if ext == "":
         # path points to a directory
         assert os.path.isdir(path), "specified directory is not found."
-        fake_image_paths = glob.glob(f"{path}/*.png") + glob.glob(f"{path}/*.jpg")
+        fake_image_paths = glob.glob(
+            f"{path}/*.png") + glob.glob(f"{path}/*.jpg")
         # or simply glob.glob(f"{path}/*"). but may retrieve some other files.
     elif ext == ".txt":
         # path points to a text file
@@ -180,7 +181,8 @@ def main():
         kl = kl_divergence(part, marginal_dist(part), eps)
         scores.append(np.exp(np.mean(kl, axis=0)))
 
-    print(f"Image Sets: {path}\nbatch size: {batch_size}\nsplit size: {splits}")
+    print(
+        f"Image Sets: {path}\nbatch size: {batch_size}\nsplit size: {splits}")
     print(f"Inception Score: {np.mean(scores):.3f}\nstd: {np.std(scores):.3f}")
 
 
