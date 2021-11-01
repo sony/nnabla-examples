@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
 from typing import Dict, Tuple
 import numpy as np
 
@@ -47,6 +46,8 @@ def classification_loss_with_orthogonal_loss(
     mat_diff = F.reshape(mat_diff, (batch_size, -1))
     mat_loss = F.mean(F.norm(mat_diff, axis=1))
 
-    return classify_loss + mat_loss * reg_weight, OrderedDict(
-        [("classify_loss", classify_loss), ("mat_loss", mat_loss), ("mat_diff", mat_diff)]
-    )
+    return classify_loss + mat_loss * reg_weight, {
+        "classify_loss": classify_loss,
+        "mat_loss": mat_loss,
+        "mat_diff": mat_diff,
+    }
