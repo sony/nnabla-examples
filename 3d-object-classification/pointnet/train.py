@@ -40,9 +40,8 @@ def train_one_epoch(
     global_steps: int,
 ) -> int:
     total_steps = global_steps
-    num_iterations = train_data_iter.size // train_data_iter.batch_size
-    for _ in range(num_iterations):
-        point_cloud, label = train_data_iter.next()
+    for batch_data in train_data_iter:
+        point_cloud, label = batch_data
 
         train_vars["point_cloud"].d = point_cloud
         train_vars["label"].d = label
@@ -74,9 +73,8 @@ def eval_one_epoch(
     total_steps = 0
     total_accuracy = 0.0
     total_loss = 0.0
-    num_iterations = valid_data_iter.size // valid_data_iter.batch_size
-    for _ in range(num_iterations):
-        point_cloud, label = valid_data_iter.next()
+    for batch_data in valid_data_iter:
+        point_cloud, label = batch_data
 
         valid_vars["point_cloud"].d = point_cloud
         valid_vars["label"].d = label
@@ -160,20 +158,10 @@ def train(args):
 
     # Data Iterator
     train_data_iter = data_iterator_modelnet40_normal_resampled(
-        args.data_dir,
-        args.batch_size,
-        True,
-        True,
-        args.num_points,
-        normalize=True,
+        args.data_dir, args.batch_size, True, True, args.num_points, normalize=True, stop_exhausted=True
     )
     valid_data_iter = data_iterator_modelnet40_normal_resampled(
-        args.data_dir,
-        valid_batch_size,
-        False,
-        False,
-        args.num_points,
-        normalize=True,
+        args.data_dir, valid_batch_size, False, False, args.num_points, normalize=True, stop_exhausted=True
     )
 
     # Training-loop

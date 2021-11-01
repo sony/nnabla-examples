@@ -83,12 +83,7 @@ def evaluate(args):
 
     # Data Iterator
     valid_data_iter = data_iterator_modelnet40_normal_resampled(
-        args.data_dir,
-        valid_batch_size,
-        False,
-        False,
-        args.num_points,
-        normalize=True,
+        args.data_dir, valid_batch_size, False, False, args.num_points, normalize=True, stop_exhausted=True
     )
 
     # Training-loop

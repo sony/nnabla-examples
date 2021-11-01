@@ -126,6 +126,7 @@ def data_iterator_modelnet40_normal_resampled(
     shuffle: bool,
     num_points: int,
     normalize: bool,
+    stop_exhausted: bool = True,
     with_memory_cache: bool = True,
     with_file_cache: bool = False,
     rng: Optional[int] = None,
@@ -139,5 +140,10 @@ def data_iterator_modelnet40_normal_resampled(
         normalize,
     )
     return data_iterator(
-        dataset, batch_size, rng=rng, with_memory_cache=with_memory_cache, with_file_cache=with_file_cache
+        dataset,
+        batch_size,
+        rng=rng,
+        with_memory_cache=with_memory_cache,
+        with_file_cache=with_file_cache,
+        stop_exhausted=stop_exhausted,
     )
