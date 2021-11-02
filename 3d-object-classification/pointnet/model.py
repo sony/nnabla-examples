@@ -108,7 +108,7 @@ def pointnet_classification(
         affine_h2 = PF.batch_normalization(affine_h2, batch_stat=train)
         affine_h2 = F.relu(affine_h2)
         if train:
-            affine_h2 = F.dropout(affine_h2, p=0.4)
+            affine_h2 = F.dropout(affine_h2, p=0.2)
 
     with nn.parameter_scope("affine3"):
         pred_logit = PF.affine(affine_h2, num_classes)

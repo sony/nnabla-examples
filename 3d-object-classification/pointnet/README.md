@@ -47,7 +47,7 @@ The evaluation results will be shown in your console.
 
 | Ours | Reported Score |
 |:---|:---|
-| 90.1% | 89.2% |
+| 89.6% | 89.2% |
 
 # References
 
