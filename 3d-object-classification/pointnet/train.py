@@ -40,6 +40,8 @@ def train_one_epoch(
     global_steps: int,
 ) -> int:
     total_steps = global_steps
+    train_data_iter._reset()
+
     for batch_data in train_data_iter:
         point_cloud, label = batch_data
 
@@ -73,6 +75,8 @@ def eval_one_epoch(
     total_steps = 0
     total_accuracy = 0.0
     total_loss = 0.0
+    valid_data_iter._reset()
+
     for batch_data in valid_data_iter:
         point_cloud, label = batch_data
 
