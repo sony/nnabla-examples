@@ -47,7 +47,8 @@ def load_txt_as_np_array(
     for data_path in tqdm(data_paths, total=len(data_paths)):
         class_name, point_cloud_data_path = data_path
         # point cloud
-        point_cloud = np.loadtxt(point_cloud_data_path, delimiter=",").astype(np.float32)
+        point_cloud = np.loadtxt(
+            point_cloud_data_path, delimiter=",").astype(np.float32)
         point_cloud = point_cloud[:num_points, :]
         point_cloud_data.append(point_cloud)
         # label
@@ -75,20 +76,26 @@ class ModelNet40NormalResampledDataset(DataSource):
         self._normalize = normalize
 
         if self._train:
-            processed_data_path = os.path.join(data_dir, "train_modelnet40_normal_resampled.pkl")
+            processed_data_path = os.path.join(
+                data_dir, "train_modelnet40_normal_resampled.pkl")
         else:
-            processed_data_path = os.path.join(data_dir, "test_modelnet40_normal_resampled.pkl")
+            processed_data_path = os.path.join(
+                data_dir, "test_modelnet40_normal_resampled.pkl")
 
-        self._shape_names = load_txt_file(os.path.join(data_dir, "modelnet40_shape_names.txt"))
-        self._classes_dict = dict(zip(self._shape_names, range(len(self._shape_names))))
+        self._shape_names = load_txt_file(
+            os.path.join(data_dir, "modelnet40_shape_names.txt"))
+        self._classes_dict = dict(
+            zip(self._shape_names, range(len(self._shape_names))))
 
         if not os.path.exists(processed_data_path):
             logger.info("Load from original datasets ...")
             txt_file_name = "modelnet40_train.txt" if train else "modelnet40_test.txt"
             data_paths = load_dataset_path_file(data_dir, txt_file_name)
-            self._point_clouds, self._labels = load_txt_as_np_array(data_paths, num_points, self._classes_dict)
+            self._point_clouds, self._labels = load_txt_as_np_array(
+                data_paths, num_points, self._classes_dict)
             logger.info(f"Saving data as pkl ... to {processed_data_path}")
-            save_as_pickle((self._point_clouds, self._labels), processed_data_path)
+            save_as_pickle((self._point_clouds, self._labels),
+                           processed_data_path)
         else:
             logger.info("Load from processed datasets ...")
             processed_data = load_from_pickle(processed_data_path)
@@ -103,7 +110,8 @@ class ModelNet40NormalResampledDataset(DataSource):
 
     def _get_data(self, position):
         index = self._indexes[position]
-        point_cloud = np.array(self._point_clouds[index], dtype=np.float32)[np.newaxis, :, :3]  # not use normal vector
+        point_cloud = np.array(self._point_clouds[index], dtype=np.float32)[
+                               np.newaxis, :, :3]  # not use normal vector
         label = np.array([self._labels[index]], dtype=np.int32)
 
         if self._normalize:
