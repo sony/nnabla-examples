@@ -35,17 +35,20 @@ def point_cloud_transform_net(point_cloud: nn.Variable, train: bool) -> Tuple[nn
     point_cloud = F.reshape(point_cloud, shape=(batch_size, 1, num_points, 3))
 
     with nn.parameter_scope("conv1"):
-        conv_h1 = PF.convolution(point_cloud, 64, (1, 3), stride=(1, 1), with_bias=False)
+        conv_h1 = PF.convolution(
+            point_cloud, 64, (1, 3), stride=(1, 1), with_bias=False)
         conv_h1 = PF.batch_normalization(conv_h1, batch_stat=train)
         conv_h1 = F.relu(conv_h1)
 
     with nn.parameter_scope("conv2"):
-        conv_h2 = PF.convolution(conv_h1, 128, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h2 = PF.convolution(conv_h1, 128, (1, 1),
+                                 stride=(1, 1), with_bias=False)
         conv_h2 = PF.batch_normalization(conv_h2, batch_stat=train)
         conv_h2 = F.relu(conv_h2)
 
     with nn.parameter_scope("conv3"):
-        conv_h3 = PF.convolution(conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h3 = PF.convolution(
+            conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
         conv_h3 = PF.batch_normalization(conv_h3, batch_stat=train)
         conv_h3 = F.relu(conv_h3)
 
@@ -65,7 +68,8 @@ def point_cloud_transform_net(point_cloud: nn.Variable, train: bool) -> Tuple[nn
     with nn.parameter_scope("affine3"):
         # transform points (3 dim) so the matrix size is (3*3)
         transform_h = PF.affine(affine_h2, 3 * 3)
-        eye_mat = nn.Variable.from_numpy_array(np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=np.float32))
+        eye_mat = nn.Variable.from_numpy_array(
+            np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=np.float32))
         eye_mat = F.reshape(eye_mat, (1, 9))
         transform_h = transform_h + eye_mat
 
@@ -93,19 +97,23 @@ def feature_transform_net(feature: nn.Variable, train: bool, K: int = 64) -> Tup
         Tuple[nn.Variable, Dict[str, nn.Variable]]: transformation matrix and internal variables
     """
     batch_size, num_points, *_ = feature.shape
-    feature = F.transpose(feature, (0, 3, 1, 2))  # B*H(=num_points)*W(=dim)*C(=K) to B*C(=K)*H(=num_points)*W(=dim)
+    # B*H(=num_points)*W(=dim)*C(=K) to B*C(=K)*H(=num_points)*W(=dim)
+    feature = F.transpose(feature, (0, 3, 1, 2))
     with nn.parameter_scope("conv1"):
-        conv_h1 = PF.convolution(feature, 64, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h1 = PF.convolution(
+            feature, 64, (1, 1), stride=(1, 1), with_bias=False)
         conv_h1 = PF.batch_normalization(conv_h1, batch_stat=train)
         conv_h1 = F.relu(conv_h1)
 
     with nn.parameter_scope("conv2"):
-        conv_h2 = PF.convolution(conv_h1, 128, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h2 = PF.convolution(conv_h1, 128, (1, 1),
+                                 stride=(1, 1), with_bias=False)
         conv_h2 = PF.batch_normalization(conv_h2, batch_stat=train)
         conv_h2 = F.relu(conv_h2)
 
     with nn.parameter_scope("conv3"):
-        conv_h3 = PF.convolution(conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h3 = PF.convolution(
+            conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
         conv_h3 = PF.batch_normalization(conv_h3, batch_stat=train)
         conv_h3 = F.relu(conv_h3)
 
@@ -124,7 +132,8 @@ def feature_transform_net(feature: nn.Variable, train: bool, K: int = 64) -> Tup
 
     with nn.parameter_scope("affine3"):
         transform_h = PF.affine(affine_h2, K * K)
-        eye_mat = nn.Variable.from_numpy_array(np.eye(K, dtype=np.float32).flatten())
+        eye_mat = nn.Variable.from_numpy_array(
+            np.eye(K, dtype=np.float32).flatten())
         eye_mat = F.reshape(eye_mat, (1, K * K))
         transform_h = transform_h + eye_mat
 

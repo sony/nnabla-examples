@@ -55,10 +55,14 @@ def train_one_epoch(
         solver.weight_decay(weight_decay)
         solver.update()
 
-        accuracy = categorical_accuracy(train_loss_vars["pred"].d, train_vars["label"].d)
-        train_monitors["loss"].add(total_steps, train_loss_vars["loss"].d.copy())
-        train_monitors["loss/mat_loss"].add(total_steps, train_loss_vars["mat_loss"].d.copy())
-        train_monitors["loss/classify_loss"].add(total_steps, train_loss_vars["classify_loss"].d.copy())
+        accuracy = categorical_accuracy(
+            train_loss_vars["pred"].d, train_vars["label"].d)
+        train_monitors["loss"].add(
+            total_steps, train_loss_vars["loss"].d.copy())
+        train_monitors["loss/mat_loss"].add(total_steps,
+                                            train_loss_vars["mat_loss"].d.copy())
+        train_monitors["loss/classify_loss"].add(
+            total_steps, train_loss_vars["classify_loss"].d.copy())
         train_monitors["accuracy"].add(total_steps, accuracy)
         total_steps += 1
 
@@ -91,7 +95,8 @@ def eval_one_epoch(
         total_accuracy += accuracy
         total_loss += float(valid_loss_vars["loss"].d)
 
-    valid_monitors["accuracy"].add(global_steps, total_accuracy / float(total_steps))
+    valid_monitors["accuracy"].add(
+        global_steps, total_accuracy / float(total_steps))
     valid_monitors["loss"].add(global_steps, total_loss / float(total_steps))
 
     return total_accuracy / float(total_steps)
@@ -125,7 +130,8 @@ def train(args):
     internal_losses_train["mat_loss"].persistent = True
     internal_losses_train["classify_loss"].persistent = True
     train_vars = {"point_cloud": point_cloud_train, "label": label_train}
-    train_loss_vars = {"loss": loss_train, "pred": pred_train, **internal_losses_train}
+    train_loss_vars = {"loss": loss_train,
+                       "pred": pred_train, **internal_losses_train}
 
     # Create validation graph
     valid_batch_size = 4  # Setting 4 is for using all data of valid dataset
@@ -141,7 +147,8 @@ def train(args):
         internal_valid_variables["pointnet_feature_internal_variables"]["feature_transformation_mat"],
     )
     valid_vars = {"point_cloud": point_cloud_valid, "label": label_valid}
-    valid_loss_vars = {"loss": loss_valid, "pred": pred_valid, **internal_losses_valid}
+    valid_loss_vars = {"loss": loss_valid,
+                       "pred": pred_valid, **internal_losses_valid}
 
     # Solvers
     solver = S.Adam(args.learning_rate)
@@ -151,14 +158,19 @@ def train(args):
     monitor_path = os.path.join(outdir, "monitors")
     monitor = Monitor(monitor_path)
     train_monitors = {}
-    train_monitors["loss"] = MonitorSeries("training loss", monitor, interval=10)
-    train_monitors["loss/mat_loss"] = MonitorSeries("training matrix loss", monitor, interval=10)
-    train_monitors["loss/classify_loss"] = MonitorSeries("training classification loss", monitor, interval=10)
-    train_monitors["accuracy"] = MonitorSeries("training accuracy", monitor, interval=10)
+    train_monitors["loss"] = MonitorSeries(
+        "training loss", monitor, interval=10)
+    train_monitors["loss/mat_loss"] = MonitorSeries(
+        "training matrix loss", monitor, interval=10)
+    train_monitors["loss/classify_loss"] = MonitorSeries(
+        "training classification loss", monitor, interval=10)
+    train_monitors["accuracy"] = MonitorSeries(
+        "training accuracy", monitor, interval=10)
 
     valid_monitors = {}
     valid_monitors["loss"] = MonitorSeries("valid loss", monitor, interval=1)
-    valid_monitors["accuracy"] = MonitorSeries("valid accuracy", monitor, interval=1)
+    valid_monitors["accuracy"] = MonitorSeries(
+        "valid accuracy", monitor, interval=1)
 
     # Data Iterator
     train_data_iter = data_iterator_modelnet40_normal_resampled(
@@ -175,7 +187,8 @@ def train(args):
 
     for i in range(1, args.max_epoch + 1):
         logger.info(f"Training {i} th epoch...")
-        decayed_learning_rate = get_decayed_learning_rate(i, decayed_learning_rate)
+        decayed_learning_rate = get_decayed_learning_rate(
+            i, decayed_learning_rate)
 
         global_steps = train_one_epoch(
             train_data_iter,
@@ -190,7 +203,8 @@ def train(args):
 
         if i % args.eval_interval == 0:
             logger.info(f"Evaluation at {i} th epoch ...")
-            accuracy = eval_one_epoch(valid_data_iter, valid_vars, valid_loss_vars, valid_monitors, global_steps)
+            accuracy = eval_one_epoch(
+                valid_data_iter, valid_vars, valid_loss_vars, valid_monitors, global_steps)
             save_dir = os.path.join(outdir, "epoch_{}".format(i))
             save_snapshot(save_dir)
 
@@ -216,7 +230,8 @@ def main():
 
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--context", type=str, default="cudnn")
-    parser.add_argument("--result_dir", type=str, default="pointnet_classification_result")
+    parser.add_argument("--result_dir", type=str,
+                        default="pointnet_classification_result")
     parser.add_argument("--seed", type=int, default=100)
 
     parser.add_argument("--eval_interval", type=int, default=2)

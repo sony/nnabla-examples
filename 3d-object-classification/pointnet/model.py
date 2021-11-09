@@ -35,34 +35,43 @@ def pointnet_feature_extraction(point_cloud: nn.Variable, train: bool) -> Tuple[
     batch_size, num_points, _ = point_cloud.shape
 
     with nn.parameter_scope("tnet1"):
-        point_cloud_transformation_mat, _ = point_cloud_transform_net(point_cloud, train)
+        point_cloud_transformation_mat, _ = point_cloud_transform_net(
+            point_cloud, train)
 
-    transformed_point_cloud = F.batch_matmul(point_cloud, point_cloud_transformation_mat)
+    transformed_point_cloud = F.batch_matmul(
+        point_cloud, point_cloud_transformation_mat)
     # expand dim to B*C(=K)*H(=num_points)*W(=dim)
-    input_point_cloud = F.reshape(transformed_point_cloud, (batch_size, 1, num_points, 3))
+    input_point_cloud = F.reshape(
+        transformed_point_cloud, (batch_size, 1, num_points, 3))
 
     with nn.parameter_scope("conv1"):
-        conv_h1 = PF.convolution(input_point_cloud, 64, (1, 3), stride=(1, 1), with_bias=False)
+        conv_h1 = PF.convolution(
+            input_point_cloud, 64, (1, 3), stride=(1, 1), with_bias=False)
         conv_h1 = PF.batch_normalization(conv_h1, batch_stat=train)
         conv_h1 = F.relu(conv_h1)
         conv_h1 = F.transpose(conv_h1, (0, 2, 3, 1))
 
     with nn.parameter_scope("tnet2"):
-        feature_transformation_mat, _ = feature_transform_net(conv_h1, train, K=64)
+        feature_transformation_mat, _ = feature_transform_net(
+            conv_h1, train, K=64)
 
-    transformed_feature = F.batch_matmul(conv_h1[:, :, 0, :], feature_transformation_mat)
+    transformed_feature = F.batch_matmul(
+        conv_h1[:, :, 0, :], feature_transformation_mat)
     # expand dim to B*H(=num_points)*W(=dim)*C(=K)
-    input_feature = F.reshape(transformed_feature, (batch_size, num_points, 1, 64))
+    input_feature = F.reshape(
+        transformed_feature, (batch_size, num_points, 1, 64))
     # B*H(=num_points)*W(=dim)*C(=K) to B*C(=K)*H(=num_points)*W(=dim)
     input_feature = F.transpose(input_feature, (0, 3, 1, 2))
 
     with nn.parameter_scope("conv2"):
-        conv_h2 = PF.convolution(input_feature, 128, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h2 = PF.convolution(
+            input_feature, 128, (1, 1), stride=(1, 1), with_bias=False)
         conv_h2 = PF.batch_normalization(conv_h2, batch_stat=train)
         conv_h2 = F.relu(conv_h2)
 
     with nn.parameter_scope("conv3"):
-        conv_h3 = PF.convolution(conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
+        conv_h3 = PF.convolution(
+            conv_h2, 1024, (1, 1), stride=(1, 1), with_bias=False)
         conv_h3 = PF.batch_normalization(conv_h3, batch_stat=train)
         conv_h3 = F.relu(conv_h3)
 
@@ -96,7 +105,8 @@ def pointnet_classification(
         Tuple[nn.Variable, Dict[str, nn.Variable]]: pred logits and internal variables
     """
     with nn.parameter_scope("pointnet_feature"):
-        point_feature, internal_variables = pointnet_feature_extraction(point_cloud, train=train)
+        point_feature, internal_variables = pointnet_feature_extraction(
+            point_cloud, train=train)
 
     with nn.parameter_scope("affine1"):
         affine_h1 = PF.affine(point_feature, 512, with_bias=False)

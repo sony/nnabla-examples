@@ -76,7 +76,8 @@ def evaluate(args):
         internal_valid_variables["pointnet_feature_internal_variables"]["feature_transformation_mat"],
     )
     valid_vars = {"point_cloud": point_cloud_valid, "label": label_valid}
-    valid_loss_vars = {"loss": loss_valid, "pred": pred_valid, **internal_losses_valid}
+    valid_loss_vars = {"loss": loss_valid,
+                       "pred": pred_valid, **internal_losses_valid}
 
     # Load snapshot
     load_snapshot(args.snapshot_dir)
@@ -88,7 +89,8 @@ def evaluate(args):
 
     # Training-loop
     logger.info(f"Evaluation starting ...")
-    accuracy, loss = eval_one_epoch(valid_data_iter, valid_vars, valid_loss_vars)
+    accuracy, loss = eval_one_epoch(
+        valid_data_iter, valid_vars, valid_loss_vars)
     logger.info("accuracy: {}".format(accuracy))
     logger.info("loss: {}".format(loss))
 
@@ -103,7 +105,8 @@ def main():
 
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--context", type=str, default="cudnn")
-    parser.add_argument("--snapshot_dir", type=str, default="./pointnet_classification_result/seed_100/best")
+    parser.add_argument("--snapshot_dir", type=str,
+                        default="./pointnet_classification_result/seed_100/best")
 
     args = parser.parse_args()
     evaluate(args)

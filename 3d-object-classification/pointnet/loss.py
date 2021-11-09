@@ -36,7 +36,8 @@ def classification_loss_with_orthogonal_loss(
     classify_loss = F.mean(cross_entropy_loss)
 
     # Enforce the transformation as orthogonal matrix
-    mat_squared = F.batch_matmul(transformation_mat, F.transpose(transformation_mat, (0, 2, 1)))
+    mat_squared = F.batch_matmul(
+        transformation_mat, F.transpose(transformation_mat, (0, 2, 1)))
     batch_size, k, _ = transformation_mat.shape
     target_array = np.tile(np.eye(k, dtype=np.float32), (batch_size, 1, 1))
     target = nn.Variable.from_numpy_array(target_array)
