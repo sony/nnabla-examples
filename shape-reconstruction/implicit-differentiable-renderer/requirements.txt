@@ -1,0 +1,11 @@
+ruamel.yaml
+pybind11
+python-config
+tqdm
+matplotlib
+opencv-python
+imageio
+scikit-image
+open3d
+trimesh
+
