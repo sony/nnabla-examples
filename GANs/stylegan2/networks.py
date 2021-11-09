@@ -58,9 +58,11 @@ def conv_block(input, w, noise=None, res=4, outmaps=512, inmaps=512,
         np.sqrt(np.prod([inmaps, kernel_size, kernel_size]))
 
     if up:
-        conv_weight = nn.parameter.get_parameter_or_create(name=f"G_synthesis/{res}x{res}/{namescope}/conv/W", shape=(inmaps, outmaps, kernel_size, kernel_size))
+        conv_weight = nn.parameter.get_parameter_or_create(
+            name=f"G_synthesis/{res}x{res}/{namescope}/conv/W", shape=(inmaps, outmaps, kernel_size, kernel_size))
     else:
-        conv_weight = nn.parameter.get_parameter_or_create(name=f"G_synthesis/{res}x{res}/{namescope}/conv/W", shape=(outmaps, inmaps, kernel_size, kernel_size))
+        conv_weight = nn.parameter.get_parameter_or_create(
+            name=f"G_synthesis/{res}x{res}/{namescope}/conv/W", shape=(outmaps, inmaps, kernel_size, kernel_size))
     conv_weight = conv_weight * runtime_coef_for_conv
 
     if up:
@@ -99,13 +101,15 @@ def conv_block(input, w, noise=None, res=4, outmaps=512, inmaps=512,
             conv_out, (batch_size, -1, conv_out.shape[2], conv_out.shape[3]), inplace=True)
 
     if noise is not None:
-        noise_coeff = nn.parameter.get_parameter_or_create(name=f"G_synthesis/{res}x{res}/{namescope}/noise_strength", shape=())
+        noise_coeff = nn.parameter.get_parameter_or_create(
+            name=f"G_synthesis/{res}x{res}/{namescope}/noise_strength", shape=())
         output = conv_out + noise * \
             F.reshape(noise_coeff, (1, 1, 1, 1), inplace=False)
     else:
         output = conv_out
 
-    bias = nn.parameter.get_parameter_or_create(name=f"G_synthesis/{res}x{res}/{namescope}/conv/b", shape=(outmaps,))
+    bias = nn.parameter.get_parameter_or_create(
+        name=f"G_synthesis/{res}x{res}/{namescope}/conv/b", shape=(outmaps,))
     output = output + F.reshape(bias, (1, outmaps, 1, 1), inplace=False)
 
     if act == F.leaky_relu:

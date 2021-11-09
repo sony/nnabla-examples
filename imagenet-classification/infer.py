@@ -153,7 +153,8 @@ def main():
     labels = read_labels(args.labels)
     logger.info(f'Top-5 prediction:')
     for i in top5_index.data[0]:
-        logger.info(f'* {int(i)} {labels[int(i)]}: {prob.data[0, int(i)] * 100:.2f}')
+        logger.info(
+            f'* {int(i)} {labels[int(i)]}: {prob.data[0, int(i)] * 100:.2f}')
 
 
 if __name__ == '__main__':

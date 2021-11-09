@@ -91,7 +91,8 @@ def cbhg(inputs, K, projections, depth, is_training, scope):
         with nn.parameter_scope('conv_bank'):
             conv = partial(conv1d, inputs, channels=128,
                            activation=F.relu, is_training=is_training)
-            conv_outputs = [conv(kernel_size=k, scope=f'conv1d_{k}') for k in range(1, K+1)]
+            conv_outputs = [
+                conv(kernel_size=k, scope=f'conv1d_{k}') for k in range(1, K+1)]
             conv_outputs = F.concatenate(*conv_outputs, axis=1)
 
         # make sure a valid input to max_pooling

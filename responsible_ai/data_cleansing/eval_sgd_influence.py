@@ -56,7 +56,8 @@ method_dict = {
 def has_enough_data(data_csv_dir, num_of_data):
     _df = pd.read_csv(data_csv_dir)
     if num_of_data >= len(_df):
-        print(f'n_to_remove ({num_of_data}) >= total dataset size ({len(_df)})')
+        print(
+            f'n_to_remove ({num_of_data}) >= total dataset size ({len(_df)})')
         return False
     return True
 
@@ -127,8 +128,10 @@ def generate_dataset(dataset_name, seed):
     fd = {}
     base_dir = os.path.join(os.path.abspath(
         os.path.dirname(__file__)), 'datasets', dataset_name)
-    fd['training'] = os.path.join(base_dir, f'{dataset_name}_training_{str(seed)}.csv')
-    fd['validation'] = os.path.join(base_dir, f'{dataset_name}_validation_{str(seed)}.csv')
+    fd['training'] = os.path.join(
+        base_dir, f'{dataset_name}_training_{str(seed)}.csv')
+    fd['validation'] = os.path.join(
+        base_dir, f'{dataset_name}_validation_{str(seed)}.csv')
     fd['test'] = os.path.join(base_dir, f'{dataset_name}_test.csv')
     if os.path.exists(fd['training']) & os.path.exists(fd['validation']):
         pass

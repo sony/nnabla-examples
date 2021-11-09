@@ -175,9 +175,11 @@ def load_german_data():
                 .fillna('Unknown')
                 .pipe(pd.get_dummies, drop_first=True))
 
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
 
     return features, target, sensitive_attributes
 
@@ -221,9 +223,11 @@ def load_adult_data():
                 .drop(columns=['target', 'race', 'sex'])
                 .pipe(pd.get_dummies, drop_first=True))
 
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
     return features, target, sensitive_attributes
 
 
@@ -266,9 +270,11 @@ def load_compas_data():
     features = (input_data
                 .drop(columns=['two_year_recid', 'race', 'sex'])
                 .pipe(pd.get_dummies, drop_first=True))
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
 
     return features, target, sensitive_attributes
 
@@ -310,9 +316,11 @@ def load_bank_data():
     features = (input_data
                 .drop(columns=['y', 'age'])
                 .pipe(pd.get_dummies, drop_first=True))
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
 
     return features, target, sensitive_attributes
 
@@ -349,9 +357,11 @@ def load_gender_discrimination_data():
     features = (input_data
                 .drop(columns=['Rank', 'Gender'])
                 .pipe(pd.get_dummies, drop_first=True))
-    display(Markdown(f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
+    display(Markdown(
+        f"features : {features.shape[0]} samples, {features.shape[1]} attributes"))
     display(Markdown(f"targets : {target.shape[0]} samples"))
-    display(Markdown(f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
+    display(Markdown(
+        f"sensitives attributes : {sensitive_attributes.shape[0]} samples, {sensitive_attributes.shape[1]} attributes"))
     return features, target, sensitive_attributes
 
 

@@ -179,7 +179,8 @@ class WaveGlow(Module):
                 wave = wave[:, hp.n_early_size:, :]
 
             # apply invertible convolution
-            wave, log_det_W = invertible_conv(wave, reverse=False, rng=self.rng, scope=f'inv_{k}')
+            wave, log_det_W = invertible_conv(
+                wave, reverse=False, rng=self.rng, scope=f'inv_{k}')
             log_det_W_list.append(log_det_W)
 
             n_half = wave.shape[1] // 2
@@ -246,7 +247,8 @@ class WaveGlow(Module):
                     audio_1 = (audio_1 - b) / F.exp(s)
                     wave = F.concatenate(audio_0, audio_1, axis=1)
 
-                wave = invertible_conv(wave, reverse=True, rng=self.rng, scope=f'inv_{k}')
+                wave = invertible_conv(
+                    wave, reverse=True, rng=self.rng, scope=f'inv_{k}')
 
                 if k % hp.n_early_every == 0 and k > 0:
                     z = F.randn(

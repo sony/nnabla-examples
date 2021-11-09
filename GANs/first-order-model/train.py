@@ -111,12 +111,14 @@ def save_parameters(current_epoch, log_dir, solvers):
     training_info_yaml = os.path.join(log_dir, "training_info.yaml")
 
     # save weights
-    saved_parameter = os.path.join(log_dir, f"params_at_epoch_{current_epoch}.h5")
+    saved_parameter = os.path.join(
+        log_dir, f"params_at_epoch_{current_epoch}.h5")
     nn.save_parameters(saved_parameter)
 
     # save solver's state
     for name, solver in solvers.items():
-        saved_states = os.path.join(log_dir, f"state_{name}_at_epoch_{current_epoch}.h5")
+        saved_states = os.path.join(
+            log_dir, f"state_{name}_at_epoch_{current_epoch}.h5")
         solver.save_states(saved_states)
 
     with open(training_info_yaml, "r", encoding="utf-8") as f:
@@ -392,13 +394,15 @@ def train(args):
 
         # set solver's state
         for name, solver in solvers.items():
-            saved_states = os.path.join(os.path.dirname(args.ft_params), f"state_{name}_at_epoch_{start_epoch}.h5")
+            saved_states = os.path.join(os.path.dirname(
+                args.ft_params), f"state_{name}_at_epoch_{start_epoch}.h5")
             solver.load_states(saved_states)
 
         start_epoch += 1
         logger.info(f"Resuming from epoch {start_epoch}.")
 
-    logger.info(f"Start training. Total epoch: {num_epochs - start_epoch}, {num_iter_per_epoch * n_devices} iter/epoch.")
+    logger.info(
+        f"Start training. Total epoch: {num_epochs - start_epoch}, {num_iter_per_epoch * n_devices} iter/epoch.")
 
     for e in range(start_epoch, num_epochs):
         logger.info(f"Epoch: {e} / {num_epochs}.")

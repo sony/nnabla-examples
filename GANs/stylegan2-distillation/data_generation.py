@@ -97,7 +97,8 @@ def generate_data(args):
         image = convert_images_to_uint8(gen, drange=[-1, 1])
 
         for j in range(batch_size):
-            filepath = os.path.join(args.save_image_path, f'image_{idx*batch_size+j}')
+            filepath = os.path.join(
+                args.save_image_path, f'image_{idx*batch_size+j}')
             imsave(f'{filepath}_o.png', image_plus[j], channel_first=True)
             imsave(f'{filepath}_y.png', image_minus[j], channel_first=True)
             imsave(f'{filepath}.png', image[j], channel_first=True)

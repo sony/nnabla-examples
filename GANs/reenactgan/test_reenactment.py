@@ -131,7 +131,8 @@ def main():
     src_celeb_name = args.src_celeb_name
     trg_celeb_name = args.trg_celeb_name
 
-    assert trg_celeb_name == transformer_config["trg_celeb_name"], f"not trained on {trg_celeb_name}."
+    assert trg_celeb_name == transformer_config[
+        "trg_celeb_name"], f"not trained on {trg_celeb_name}."
 
     if args.info:
         decoder_config["experiment_name"] += args.info

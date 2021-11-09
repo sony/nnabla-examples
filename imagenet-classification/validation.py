@@ -81,7 +81,8 @@ def main():
     if args.raise_dataset_size:
         imagenet_val_size = 50000
         if imagenet_val_size % (comm.n_procs * args.batch_size) != 0:
-            raise ValueError(f'The batchsize and number of workers must be set so that {imagenet_val_size} can be divisible by (batch_size * num_workers).')
+            raise ValueError(
+                f'The batchsize and number of workers must be set so that {imagenet_val_size} can be divisible by (batch_size * num_workers).')
 
     # Load parameters
     channel_last, channels = load_parameters_and_config(

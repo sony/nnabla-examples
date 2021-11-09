@@ -124,8 +124,10 @@ def generate_dataset(dataset_name, seed):
     fd = {}
     base_dir = os.path.join(os.path.abspath(
         os.path.dirname(__file__)), 'datasets', dataset_name)
-    fd['training'] = os.path.join(base_dir, f'{dataset_name}_training_{str(seed)}.csv')
-    fd['validation'] = os.path.join(base_dir, f'{dataset_name}_validation_{str(seed)}.csv')
+    fd['training'] = os.path.join(
+        base_dir, f'{dataset_name}_training_{str(seed)}.csv')
+    fd['validation'] = os.path.join(
+        base_dir, f'{dataset_name}_validation_{str(seed)}.csv')
     fd['test'] = os.path.join(base_dir, f'{dataset_name}_test.csv')
     if os.path.exists(fd['training']) & os.path.exists(fd['validation']):
         pass

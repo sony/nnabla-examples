@@ -6858,14 +6858,16 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],
       else {
         PyObject ***argname = argnames;
         while (argname != first_kw_arg) {
-          int cmp = (**argname == key) ? 0 :
+          int cmp =
+              (**argname == key)
+                  ? 0
+                  :
 #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                                       (PyUnicode_GET_SIZE(**argname) !=
-                                        PyUnicode_GET_SIZE(key))
-                                           ? 1
-                                           :
+                  (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key))
+                      ? 1
+                      :
 #endif
-                                           PyUnicode_Compare(**argname, key);
+                      PyUnicode_Compare(**argname, key);
           if (cmp < 0 && unlikely(PyErr_Occurred()))
             goto bad;
           if (cmp == 0)

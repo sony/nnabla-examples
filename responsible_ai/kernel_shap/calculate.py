@@ -27,7 +27,8 @@ class Ridge:
     def fit(self, X: np.ndarray, y: np.ndarray, weights=None):
         y = y.reshape(-1, 1)
         if X.shape[0] != y.shape[0]:
-            raise Exception(f"Number of X and y rows don't match ({X.shape[0]} != {y.shape[0]})")
+            raise Exception(
+                f"Number of X and y rows don't match ({X.shape[0]} != {y.shape[0]})")
 
         if self.fit_intercept:
             X = np.concatenate([np.ones((X.shape[0], 1)), X], 1)
