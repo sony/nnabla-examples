@@ -1,0 +1,9 @@
+
+common:
+  type: cdc   # False,cdc
+cdc:
+  lambda: 1.0e+1
+  subspace_freq: 6
+  feature_num: 4
+  layer_fix: False
+
