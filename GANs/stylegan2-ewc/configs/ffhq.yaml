@@ -1,0 +1,67 @@
+generator:
+  mapping_network_dim: 512
+  mapping_network_num_layers: 8
+  feature_map_dim: 512
+  rnd_seed: 313
+
+discriminator:
+  stddev_group: 4
+  stddev_feat: 1
+
+checkpoint: tf_converted_weights
+
+train:
+  batch_size: 1
+  learning_rate: 2.0e-3
+  gen_weight_decay: Null
+  disc_weight_decay: Null
+  num_epochs: 200
+  save_param_step_interval: 5
+  logger_step_interval: 1
+  solver: Adam
+
+  mix_after: 7
+  latent_dim: 512
+  mixing_prob: 0.9
+  mix_seed: [100, 200]
+
+  r1_coeff: 10
+  disc_reg_step: 16
+  gen_reg_step: 4
+  path_regularize: 2
+  path_batch_shrink: 2
+
+  checkpoint: blank
+  saved_weights_dir: saved_weights
+
+  regularize_gen: True
+  regularize_disc: True
+
+
+test:
+  mix_seed: [1223, 456]
+  stochastic_seed: 1 
+  mixing: True 
+  truncation_psi: 0.5
+  mix_after: 7 
+  latent_dim: 512
+  output_name: test_gen 
+  dir: test
+
+monitor:
+  train_loss: Training-loss-ffhq 
+  train_gen: Training-gen-ffhq
+  val_loss: Validation-loss-ffhq 
+  val_gen: Validation-gen-ffhq
+
+data:
+  name: ffhq
+  train_size: 50000
+  val_size: 10000
+  dali: True
+  limit_size: Null
+  batch_size: 1
+  shuffle: False 
+  dali_threads: 4
+  rng: 313
+
