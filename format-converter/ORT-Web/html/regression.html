@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <title>nnabla demo with ONNX Runtime Web</title>
+    </header>
+    <body>
+        <div style="float:left;width:250px">
+            <canvas id="sample" width="28" height="28" style="border:1px solid"></canvas>
+            <input type="file" id="file-picker" disabled="disabled"/>
+        </div>
+        <textarea id="log" rows="15" cols="120" style="clear:both;display:block"></textarea>
+
+        <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.8.0/dist/ort.min.js"></script>
+        <script>
+            let session;
+            const picker = document.getElementById("file-picker");
+            const ctx = document.getElementById("sample").getContext("2d");
+            const logarea = document.getElementById("log");
+
+            window.onload = async function() {
+                logarea.value = "Loading model...";
+                try {
+                    performance.mark("startSessionCreate");
+                    session = await ort.InferenceSession.create('./regression.onnx');
+//                    session = await ort.InferenceSession.create('./regression.onnx', {executionProviders:['webgl', 'wasm']});
+                    performance.mark("finishSessionCreate");
+                    logarea.value += "done.\n\n";
+                    picker.disabled = false;
+
+                    performance.measure("SessionCreate", "startSessionCreate", "finishSessionCreate");
+                    p = performance.getEntriesByName("SessionCreate")[0];
+                    logarea.value += `${p.name} took ${(p.duration / 1000).toFixed(3)}sec\n`;
+
+                    logarea.value += `> inputLayer:  ${session.inputNames}\n`;
+                    logarea.value += `> outputLayer: ${session.outputNames}\n\n`;
+                } catch (e) {
+                   logarea.value += `\n[ERROR] failed to inference ONNX model: ${e}.\n`;
+                }
+            };
+
+            picker.onchange = function(event) {
+                if (event.target.files.length > 0) {
+                    let reader = new FileReader();
+                    reader.onload = function() {
+                        ctx.clearRect(0, 0, 28, 28);
+                        const img = new Image();
+                        img.onload = function() {
+                            ctx.drawImage(img, 0, 0);
+                            setTimeout(inference, 1);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(event.target.files[0]);
+                }
+            };
+
+            async function inference() {
+                try {
+                    const image = ctx.getImageData(0, 0, 28, 28);
+                    imagearray = new Float32Array(28*28);
+                    for (let i=0; i<image.data.length/4; i++) {
+                        imagearray[i] = image.data[i*4];
+                    }
+
+                    const feeds = {
+                        [session.inputNames]: new ort.Tensor('float32', imagearray, [1, 1, 28, 28])
+                    };
+                    performance.mark("startSessionRun");
+                    const results = await session.run(feeds);
+                    performance.mark("finishSessionRun");
+
+                    performance.measure("Inference", "startSessionRun", "finishSessionRun");
+                    p = performance.getEntriesByName("Inference")[0];
+                    logarea.value += `${p.name} took ${(p.duration / 1000).toFixed(3)}sec\n`;
+
+                    output = results[[session.outputNames]].data;
+                    prob9 = output[0] * 100;
+                    if (prob9 < 0.5) {
+                        logarea.value += `Answer is 4. The Probability of 4 is ${(100 - prob9).toFixed(3)}%\n`
+                    }
+                    else {
+                        logarea.value += `Answer is 9. The Probability of 9 is ${prob9.toFixed(3)}%\n`
+                    }
+                    logarea.scrollTop = logarea.scrollHeight;
+                } catch (e) {
+                    logarea.value += `[ERROR] failed to inference: ${e}.\n`;
+                }
+            }
+        </script>
+    </body>
+</html>
