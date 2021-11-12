@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <title>nnabla pretrained-model demo with ONNX Runtime Web</title>
+    </header>
+    <body>
+        <div style="float:left;width:250px">
+            <canvas id="sample" width="224" height="224" style="border:1px solid"></canvas>
+            <input type="file" id="file-picker" disabled="disabled"/>
+        </div>
+        <div id="graph" style="float:left;height:300px"></div>
+        <textarea id="log" rows="10" cols="120" style="clear:both;display:block"></textarea>
+
+        <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.8.0/dist/ort.min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="./imagenet_labels.js"></script>
+        <script>
+            let session;
+            const picker = document.getElementById("file-picker");
+            const ctx = document.getElementById("sample").getContext("2d");
+            const logarea = document.getElementById("log");
+
+            window.onload = async function() {
+                logarea.value = "Loading model...";
+                try {
+                    performance.mark("startSessionCreate");
+                    session = await ort.InferenceSession.create('./resnet_4_178.onnx');
+                    performance.mark("finishSessionCreate");
+                    logarea.value += "done.\n\n";
+                    picker.disabled = false;
+
+                    performance.measure("SessionCreate", "startSessionCreate", "finishSessionCreate");
+                    p = performance.getEntriesByName("SessionCreate")[0];
+                    logarea.value += `${p.name} took ${(p.duration / 1000).toFixed(3)}sec\n`;
+
+                    logarea.value += `> inputLayer:  ${session.inputNames}\n`;
+                    logarea.value += `> outputLayer: ${session.outputNames}\n\n`;
+                } catch (e) {
+                   logarea.value += `\n[ERROR] failed to inference ONNX model: ${e}.\n`;
+                }
+            };
+
+            function drawImage(ctx, img, img_width, img_height) {
+                const l_canvas = document.createElement("canvas");
+                const l_ctx = l_canvas.getContext("2d");
+                l_canvas.width = 320;
+                l_canvas.height = 320;
+
+                l_ctx.drawImage(img, 0, 0, img_width, img_height, 0, 0, 320, 320);
+                const img280 = l_ctx.getImageData(20, 20, 280, 280);
+
+                l_canvas.width = 280;
+                l_canvas.height = 280;
+                l_ctx.putImageData(img280, 0, 0);
+
+                ctx.scale(0.8, 0.8);
+                ctx.drawImage(l_canvas, 0, 0);
+            }
+
+            picker.onchange = function(event) {
+                if (event.target.files.length > 0) {
+
+                    let reader = new FileReader();
+                    reader.onload = function() {
+                        ctx.clearRect(0, 0, 224, 224);
+                        const img = new Image();
+                        img.onload = function() {
+                            drawImage(ctx, img, this.width, this.height);
+                            setTimeout(inference, 1);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(event.target.files[0]);
+                }
+            };
+
+            async function inference() {
+                try {
+                    const image = ctx.getImageData(0, 0, 224, 224);
+                    imagearray = new Float32Array(3*224*224);
+                    for (let i=0; i<image.data.length/4; i++) {
+                        imagearray[i] = image.data[i*4] * 0.01735 - 1.99;
+                        imagearray[i+224*224*1] = image.data[i*4+1] * 0.01735 - 1.99;
+                        imagearray[i+224*224*2] = image.data[i*4+2] * 0.01735 - 1.99;
+                    }
+
+                    const feeds = {
+                        [session.inputNames]: new ort.Tensor('float32', imagearray, [1, 3, 224, 224])
+                    };
+                    performance.mark("startSessionRun");
+                    const results = await session.run(feeds);
+                    performance.mark("finishSessionRun");
+
+                    performance.measure("Inference", "startSessionRun", "finishSessionRun");
+                    p = performance.getEntriesByName("Inference")[0];
+                    logarea.value += `${p.name} took ${(p.duration / 1000).toFixed(3)}sec\n`;
+
+                    output = results[[session.outputNames]].data;
+                } catch (e) {
+                    logarea.value += `[ERROR] failed to inference: ${e}.\n`;
+                }
+
+                indexes = sort_index(output);
+                indexes.length = 5;
+                const data = [{
+                    type: 'bar',
+                    x: Array.from(indexes, x => output[x] * 100),
+                    y: label_words(indexes),
+                    orientation: 'h'
+                }];
+                const layout = {
+                    height: 300,
+                    width: 500,
+                    yaxis: {autorange: "reversed"},
+                    xaxis: {range: [0, 100]},
+                    margin: {l:150, r: 10, t: 20, b:30 }
+                };
+                Plotly.newPlot("graph", data, layout);
+            }
+        </script>
+    </body>
+</html>
