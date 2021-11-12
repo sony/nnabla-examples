@@ -73,7 +73,8 @@ def main(args):
     # Monitor
     monitor_path = "/".join(args.model_load_path.split("/")[0:-1])
     monitor = Monitor(monitor_path)
-    monitor_image = MonitorImage(f"Rendered image synthesis", monitor, interval=1)
+    monitor_image = MonitorImage(
+        f"Rendered image synthesis", monitor, interval=1)
 
     # Load model
     nn.load_parameters(args.model_load_path)

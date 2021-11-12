@@ -265,7 +265,8 @@ class Train(BaseExecution):
                           str(epoch), disable=self.comm.rank > 0)
 
             epoch_gen_loss, epoch_disc_loss = 0.0, 0.0
-            print(f'Iterations per epoch: {iterations_per_epoch}, Number of processes: {self.comm.n_procs}, Data Loader size: {self.train_loader.size}')
+            print(
+                f'Iterations per epoch: {iterations_per_epoch}, Number of processes: {self.comm.n_procs}, Data Loader size: {self.train_loader.size}')
 
             for i in pbar:
 
@@ -289,7 +290,8 @@ class Train(BaseExecution):
                 epoch_gen_loss += gen_loss.d
                 epoch_disc_loss += disc_loss.d
 
-                pbar.set_description(f'Gen Loss: {gen_loss.d}, Disc Loss: {disc_loss.d}')
+                pbar.set_description(
+                    f'Gen Loss: {gen_loss.d}, Disc Loss: {disc_loss.d}')
 
                 if np.isnan(gen_loss.d) or np.isnan(disc_loss.d):
                     for k, v in nn.get_parameters().items():
@@ -301,9 +303,12 @@ class Train(BaseExecution):
                             self.save_weights_dir, epoch)
                     self.parameters.fake_img_test.forward(clear_buffer=True)
                     fake_img.forward(clear_buffer=True)
-                    save_generations(self.parameters.fake_img_test, os.path.join(self.results_dir, f'fake_ema_{epoch}'))
-                    save_generations(real_img, os.path.join(self.results_dir, f'real_{epoch}'))
-                    save_generations(fake_img, os.path.join(self.results_dir, f'fake_{epoch}'))
+                    save_generations(self.parameters.fake_img_test, os.path.join(
+                        self.results_dir, f'fake_ema_{epoch}'))
+                    save_generations(real_img, os.path.join(
+                        self.results_dir, f'real_{epoch}'))
+                    save_generations(fake_img, os.path.join(
+                        self.results_dir, f'fake_{epoch}'))
 
             epoch_gen_loss /= iterations_per_epoch
             epoch_disc_loss /= iterations_per_epoch

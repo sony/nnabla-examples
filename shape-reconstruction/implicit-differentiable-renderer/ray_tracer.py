@@ -450,7 +450,8 @@ def main(args):
 
     cv2.imwrite(f"sphere_{W}x{H}_sti{sphere_trace_itr:03d}_mpi{max_post_itr:03d}_{args.post_method}.png",
                 image.d.transpose(1, 2, 0))
-    print(f"Bidirectional sphere trace/ray march (W={W}, H={H}): {time.time() - st} [s]")
+    print(
+        f"Bidirectional sphere trace/ray march (W={W}, H={H}): {time.time() - st} [s]")
 
 
 if __name__ == '__main__':

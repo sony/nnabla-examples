@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import nnabla as nn 
-import nnabla.functions as F 
+import nnabla as nn
+import nnabla.functions as F
 import nnabla.initializer as I
 
 import numpy as np
@@ -53,26 +53,26 @@ def upfirdn_2d(x, k, upx=1, upy=1, downx=1, downy=1, padx0=0, padx1=0, pady0=0, 
     assert isinstance(pady0, int) and isinstance(pady1, int)
 
     x = F.reshape(x, [-1, inH, 1, inW, 1, minorDim], inplace=False)
-    x = F.pad(x, [0, 0, 0, 0, 0, upy - 1, 0, 0, 0, upx - 1, 0, 0]) 
-    x = F.reshape(x, [-1, inH * upy, inW * upx, minorDim], inplace=False)    
-    
+    x = F.pad(x, [0, 0, 0, 0, 0, upy - 1, 0, 0, 0, upx - 1, 0, 0])
+    x = F.reshape(x, [-1, inH * upy, inW * upx, minorDim], inplace=False)
+
     x = F.pad(x, [0, 0, max(pady0, 0), max(pady1, 0),
                   max(padx0, 0), max(padx1, 0), 0, 0])
     x = x[:, max(-pady0, 0): x.shape[1] - max(-pady1, 0),
-          max(-padx0, 0): x.shape[2] - max(-padx1, 0), :]   
-        
+          max(-padx0, 0): x.shape[2] - max(-padx1, 0), :]
+
     # Convolve with filter.
     x = F.transpose(x, [0, 3, 1, 2])
     x = F.reshape(x, [-1, 1, inH * upy + pady0 + pady1,
                       inW * upx + padx0 + padx1], inplace=False)
     w = nn.Variable.from_numpy_array(k[np.newaxis, np.newaxis, ::-1, ::-1])
-             
+
     x = F.convolution(x, w)
-    
+
     x = F.reshape(x, [-1, minorDim, inH * upy + pady0 + pady1 - kernelH +
                       1, inW * upx + padx0 + padx1 - kernelW + 1], inplace=False)
     x = F.transpose(x, [0, 2, 3, 1])
-    
+
     if downx == 1 and downy == 1:
         return x
     return x[:, ::downy, ::downx, :]
