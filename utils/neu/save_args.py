@@ -30,5 +30,8 @@ def save_args(args, config=None):
             fp.write("{}={}\n".format(k, v))
 
             if config is not None and isinstance(v, str) and v.endswith(".yaml"):
-                path = os.path.join(args.monitor_path, v)
+                if os.path.isabs(v):
+                    path = os.path.join(args.monitor_path, os.path.basename(v))
+                else:
+                    path = os.path.join(args.monitor_path, v)
                 write_yaml(path, config)
