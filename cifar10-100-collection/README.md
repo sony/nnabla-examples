@@ -44,3 +44,74 @@ The classification example provides two choices of neural network architectures
 to train, CIFAR10 dataset with 23-layers ResNet and CIFAR100 with 23-layers ResNet.
 You can select it with the `-n` option. For more details see the source code and
 the help produced by running with the `-h` option.
+
+## Multi-Device Multi-Process Training
+
+This example shows the naive `Data Parallel Distributed Training` for
+the object recognition task using CIFAR-10 dataset and 23-layers ResNet with
+[NCCL](https://github.com/NVIDIA/nccl) using `multi-process` in a single node.
+
+NOTE that if you would like to run this example, please follow the build
+instruction to enable the multi-device training and make sure to prepare
+environment where you can use multiple GPUs.
+
+When you run the script like the following,
+
+```
+mpirun -n 4 python classification.py --context "cudnn" -b 64
+
+```
+
+you can execute the training of 23-layers ResNet in the
+`Data Parallel Distributed Training` manner with the batch size being 64
+and 4 GPUs.
+
+## Multi-Node Training
+
+This example shows the naive `Data Parallel Distributed Training` for
+the object recognition task using CIFAR-10 dataset and 23-layers ResNet with
+[NCCL](https://github.com/NVIDIA/nccl) using `multi-process` over multiple nodes.
+
+NOTE that if you would like to run this example, please follow the build
+instruction to enable the multi-device training and make sure to prepare
+environment where you can use multiple GPUs over multiple nodes.
+
+When you run the script like the following,
+
+```
+mpirun --hostfile hostfile python classification.py --context "cudnn" -b 64
+
+```
+
+you can execute the training of 23-layers ResNet in the
+`Data Parallel Distributed Training` manner with the batch size being 64
+and N-GPUs and M-Nodes specified by the hostfile.
+
+## Overlapping All-Reduce with Backward
+
+This example shows the naive `Data Parallel Distributed Training` for
+the object recognition task using CIFAR-10 dataset and 23-layers ResNet with
+[NCCL](https://github.com/NVIDIA/nccl) using `all_reduce_callback` API.
+All-reduce introduces communication overhead
+because it requires inter-process and inter-node communications.
+The `all_reduce_callback` API overlaps these all-reduce communications
+with backward computation in order to decrease the execution time.
+
+Warning: This API does not support shared parameters currently.
+Thus, you cannot use this API when you train RNN.
+
+NOTE that if you would like to run this example,
+please follow the build instruction to enable the multi-device training
+and make sure to prepare environment where you can use multiple GPUs
+over multiple nodes.
+
+When you run the script like the following,
+
+```
+mpirun --hostfile hostfile python classification.py --context "cudnn" -b 64 --with-all-reduce-callback
+
+```
+
+you can execute the training of 23-layers ResNet in the
+`Data Parallel Distributed Training` manner with the batch size being 64.
+And the all-reduce is pipelined with backward computation.

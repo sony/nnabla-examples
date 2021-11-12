@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 '''
 Provide data iterator for Cifar100 examples.
 '''
@@ -43,7 +42,7 @@ class Cifar100DataSource(DataSource):
         return (image, label)
 
     def __init__(self, train=True, shuffle=False, rng=None):
-        super(Cifar100DataSource, self).__init__(shuffle=shuffle)
+        super(Cifar100DataSource, self).__init__(shuffle=shuffle, rng=rng)
 
         self._train = train
         data_uri = "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
@@ -95,13 +94,13 @@ class Cifar100DataSource(DataSource):
 
     @property
     def images(self):
-        """Get copy of whole data with a shape of (N, 1, H, W)."""
-        return self._images.copy()
+        """Get whole data with a shape of (N, 3, H, W)."""
+        return self._images
 
     @property
     def labels(self):
-        """Get copy of whole label with a shape of (N, 1)."""
-        return self._labels.copy()
+        """Get whole label with a shape of (N, 1)."""
+        return self._labels
 
 
 def data_iterator_cifar100(batch_size,
@@ -115,8 +114,9 @@ def data_iterator_cifar100(batch_size,
     with_memory_cache and with_file_cache option's default value is all False,
     because :py:class:`Cifar100DataSource` is able to store all data into memory.
     '''
-    return data_iterator(Cifar100DataSource(train=train, shuffle=shuffle, rng=rng),
-                         batch_size,
-                         rng,
-                         with_memory_cache,
-                         with_file_cache)
+    data_source = Cifar100DataSource(train=train, shuffle=shuffle, rng=rng)
+    return data_source, data_iterator(data_source,
+                                      batch_size,
+                                      rng,
+                                      with_memory_cache,
+                                      with_file_cache)
