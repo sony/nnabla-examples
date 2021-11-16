@@ -19,4 +19,5 @@ from .discriminators import Discriminator
 from .patch_discriminators import PatchDiscriminator
 from .ops import lerp
 
-__all__ = ['mapping_network', 'Generator', 'Discriminator', 'PatchDiscriminator', 'lerp']
+__all__ = ['mapping_network', 'Generator',
+           'Discriminator', 'PatchDiscriminator', 'lerp']

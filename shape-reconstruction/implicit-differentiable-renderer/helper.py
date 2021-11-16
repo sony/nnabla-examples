@@ -79,7 +79,8 @@ class Camera:
             else:
                 x_scale *= image_aspect_ratio / film_aspect_ratio
         else:
-            raise ValueError(f"k_fit_resolution_gate(={k_fit_resolution_gate}) must be in {list(FitResolutionGate)}.")
+            raise ValueError(
+                f"k_fit_resolution_gate(={k_fit_resolution_gate}) must be in {list(FitResolutionGate)}.")
         top *= y_scale
         right *= x_scale
         bottom = -top
