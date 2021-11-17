@@ -1,4 +1,4 @@
-# Copyright 2021 Sony Corporation.
+# Copyright 2020,2021 Sony Corporation.
 # Copyright 2021 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,10 +16,18 @@
 
 import nnabla as nn
 import nnabla.functions as F
+from lpips import LPIPS
 
 
-def reconstruction_loss(imgA, imgB):
-    return F.mean(F.abs(imgA - imgB))
+def reconstruction_loss_lpips(fake_imgs, real_imgs):
+    with nn.parameter_scope("VGG"):
+        lpips = LPIPS(model="vgg", params_dir="./")
+        # Following the official implementation, we use F.sum here.
+        loss = F.sum(lpips(fake_imgs[0], real_imgs[0]))
+        loss = loss + F.sum(lpips(fake_imgs[1], real_imgs[0]))
+        loss = loss + F.sum(lpips(fake_imgs[2], real_imgs[1]))
+
+    return loss
 
 
 def loss_gen(logits):
@@ -34,27 +42,27 @@ def loss_dis_fake(logits):
     return loss
 
 
-def loss_dis_real(logits, rec_imgs, part, img):
-    # Ground-truth
-    img_128 = F.interpolate(img, output_size=(128, 128))
-    img_256 = F.interpolate(img, output_size=(256, 256))
-
-    loss = 0.0
+def loss_dis_real(logits, rec_imgs, part, img, lmd=1.0):
+    # loss = 0.0
 
     # Hinge loss (following the official implementation)
-    loss += F.mean(F.relu(0.2*F.rand(shape=logits.shape) + 0.8 - logits))
+    loss = F.mean(F.relu(0.2*F.rand(shape=logits.shape) + 0.8 - logits))
 
     # Reconstruction loss for rec_img_big (reconstructed from 8x8 features of the original image)
-    loss += reconstruction_loss(rec_imgs[0], img_128)
-
     # Reconstruction loss for rec_img_small (reconstructed from 8x8 features of the resized image)
-    loss += reconstruction_loss(rec_imgs[1], img_128)
-
     # Reconstruction loss for rec_img_part (reconstructed from a part of 16x16 features of the original image)
-    img_half = F.where(F.greater_scalar(
-        part[0], 0.5), img_256[:, :, :128, :], img_256[:, :, 128:, :])
-    img_part = F.where(F.greater_scalar(
-        part[1], 0.5), img_half[:, :, :, :128], img_half[:, :, :, 128:])
-    loss += reconstruction_loss(rec_imgs[2], img_part)
+    if lmd > 0.0:
+        # Ground-truth
+        img_128 = F.interpolate(img, output_size=(128, 128))
+        img_256 = F.interpolate(img, output_size=(256, 256))
+
+        img_half = F.where(F.greater_scalar(
+            part[0], 0.5), img_256[:, :, :128, :], img_256[:, :, 128:, :])
+        img_part = F.where(F.greater_scalar(
+            part[1], 0.5), img_half[:, :, :, :128], img_half[:, :, :, 128:])
+
+        # Integrated perceptual loss
+        loss = loss + lmd * \
+            reconstruction_loss_lpips(rec_imgs, [img_128, img_part])
 
     return loss
