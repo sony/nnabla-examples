@@ -21,6 +21,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
+    entry_points={
+        'console_scripts':[
+            'neu_cli = neu.cli:main',
+        ],
+    },
     python_requires=">=3.6",
     install_requires=[
         "pyyaml",
