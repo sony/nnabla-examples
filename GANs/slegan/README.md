@@ -45,6 +45,16 @@ python generate.py --model-load-path *directory that contains the parameters*
 
 Note that it will generate two images, one in a regular way, and another with estimated moving average (EMA).
 
+## Interpolation and style mixing
+
+You can also try interpolation and style mixing of generated images.
+
+```
+python interpolate.py --model *path to model parameters* --out *file name to save*
+
+python stylemix.py --model *path to model parameters* --out *file name to save*
+```
+
 
 ---
 
