@@ -12,8 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-ARG CUDA_VER=10.0
-ARG CUDNN_VER=7
+ARG CUDA_VER=11.0
+ARG CUDNN_VER=8
 
 FROM nvidia/cuda:${CUDA_VER}-cudnn${CUDNN_VER}-runtime-ubuntu18.04
 
@@ -23,9 +23,8 @@ ARG CURL_OPTS
 ARG WGET_OPTS
 ARG APT_OPTS
 
-ARG PYTHON_VER=3.7
-ARG CUDA_VER=10.0
-ARG DALI_VER=0.18
+ARG PYTHON_VER=3.8
+ARG CUDA_VER=11.0
 ENV PATH /opt/miniconda3/bin:$PATH
 ENV OMP_NUM_THREADS 1
 
@@ -50,9 +49,11 @@ RUN pip install ${PIP_INS_OPTS} opencv-python || true
 RUN pip install ${PIP_INS_OPTS} jupyter
 
 RUN umask 0 \
-    && pip install ${PIP_INS_OPTS} nnabla-ext-cuda`echo $CUDA_VER | sed 's/\.//g'`-nccl2-mpi2-1-1
+    && CUDA_VER_NDOT=`echo $CUDA_VER | sed 's/\.//g'` \
+    && pip install ${PIP_INS_OPTS} nnabla-ext-cuda${CUDA_VER_NDOT}-nccl2-mpi2-1-1
 
 RUN umask 0 \
-    && pip install ${PIP_INS_OPTS} --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/${CUDA_VER} nvidia-dali==${DALI_VER}
+    && CUDA_VER_NDOT=`echo $CUDA_VER | sed 's/\.//g'` \
+    && pip install ${PIP_INS_OPTS} --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda${CUDA_VER_NDOT}
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VER} 0

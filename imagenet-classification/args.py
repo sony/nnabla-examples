@@ -88,6 +88,8 @@ def add_training_args(parser):
                         help='Path to the model parameters to be loaded.')
     parser.add_argument('--train-config', '-C', type=str, default='cfg/train_default.yaml',
                         help='A config file which describes optimization configuration such as default batch size, solver, number of epochs, and learning rate scheduling.')
+    parser.add_argument("--finetune", action='store_true',
+                        help='Finetuning from a pre-trained parameter set by `--model-load-path`. The final linear layer will be replaced with a new fully connected layer for a new task which outputs the number of classes specified by `--num-classes`.')
 
 
 def mb_to_b(mb):
