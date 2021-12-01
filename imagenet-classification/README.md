@@ -34,6 +34,27 @@ python infer.py {input image file} {h5 parameter file} -a {network architecture 
 
 You can find links to pretrained parameter files at a section ["Training results"](#training-results). Most of the pretrained parameter file maintain weight tensors as NHWC memory layout. Please refer to a section ["Memory layout conversion"](#memory-layout-conversion) for how to convert to NCHW format.
 
+## Finetuning from a pretrained ImageNet model
+
+**TODO:**
+
+* More detailed documentation
+* Create a Colab notebook.
+
+Steps of finetuning demonstrated on Caltech101 dataset:
+
+* Download Caltech 101 dataset and extract the tar file ([Caltech 101 official page](http://www.vision.caltech.edu/Image_Datasets/Caltech101/)).
+* Create dataset including image file names along with category label indices for both training & validation, and label csv file. See [create_caltech101_dataset.py](./create_caltech101_dataset.py) for details.
+* Download a pretrained parameter file. In this exmaple, we use [ResNet50 in an NHWC format trained for 250 epochs](https://nnabla.org/pretrained-models/nnabla-examples/ilsvrc2012/se_resnet50_nhwc_mixup250.h5).
+* Run train.py for finetuninig as following (here we train it with mixed precision and a NHWC format for 10 epochs);
+```shell
+python train.py --finetune --val-interval=1  -a resnet50 -b 192 -t half --channel-last -C cfg/finetune10.yaml -T <path-to-caltech101/>101_ObjectCategories -V <path-to-caltech101>/101_ObjectCategories/ --train-list caltech101_train.txt --val-list caltech101_val.txt --num-classes=101 --model-load-path=rn50-nhwc_mixup250.h5
+```
+* Run inference with finetuned model as following;
+```shell
+python infer.py <path-to-caltech101>101_ObjectCategories/Faces/image_0435.jpg <training-output-path>/param_010.h5 -a resnet50 --num-classes 101 --labels caltech101_categories.csv
+```
+
 ## Training
 
 ### Additional dependencies for training

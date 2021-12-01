@@ -139,6 +139,24 @@ def train():
     # Create mixup object
     mixup = create_mixup_or_none(train_config.mixup, num_classes, comm)
 
+    # Load model for fine-tuning
+    if args.finetune:
+        assert args.model_load_path is not None, "`--model-load-path` must be set in finetuning mode."
+        if comm.rank == 0:
+            logger.info(f'Loading parameter file `{args.model_load_path}.`')
+            logger.info(
+                "NOTE: It doesn't verify the compatibility between the parameter file and the architecture you choose.")
+        nn.load_parameters(args.model_load_path)
+        # String assumption that the last two paramters is the classification layer.
+        param_keys = list(nn.get_parameters().keys())
+        bkey = param_keys[-1]
+        wkey = param_keys[-2]
+        if comm.rank == 0:
+            logger.info(
+                f'Removing the last two parameter for fine tuning under an assumption that those correspond to the final affine layer parameters; `{wkey}` and `{bkey}`.')
+        nn.parameter.pop_parameter(wkey)
+        nn.parameter.pop_parameter(bkey)
+
     # Network for training
     t_model = get_model(args, num_classes,
                         test=False, channel_last=args.channel_last,
