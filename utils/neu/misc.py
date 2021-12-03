@@ -14,11 +14,28 @@
 # limitations under the License.
 
 import os
+import sys
+
+import nnabla as nn
+import numpy as np
+from nnabla.logger import logger
 
 
-def init_nnabla(conf=None, ext_name=None, device_id=None, type_config=None):
+def set_random_pseed(comm):
+    x = nn.Variable.from_numpy_array(np.random.randint(low=0, high=1 << 30))
+    comm.broadcast(x)
+
+    from nnabla.random import set_parameter_seed
+    set_parameter_seed(int(x.d))
+
+    from nnabla.random import pseed
+    logger.info(f"[rank {comm.rank}] seed: {pseed}")
+
+
+def init_nnabla(conf=None, ext_name=None, device_id=None, type_config=None, random_pseed=True):
     import nnabla as nn
     from nnabla.ext_utils import get_extension_context
+
     from .comm import CommunicatorWrapper
     if conf is None:
         conf = AttrDict()
@@ -37,9 +54,12 @@ def init_nnabla(conf=None, ext_name=None, device_id=None, type_config=None):
     comm = CommunicatorWrapper(ctx)
     nn.set_default_context(comm.ctx)
 
+    # set random seed for parameter
+    if random_pseed:
+        set_random_pseed(comm)
+
     # disable outputs from logger except rank==0
     if comm.rank > 0:
-        from nnabla import logger
         import logging
 
         logger.setLevel(logging.ERROR)
@@ -70,11 +90,25 @@ class AttrDict(dict):
         return self[key]
 
     def dump_to_stdout(self):
-        print("================================configs================================")
-        for k, v in self.items():
-            print("{}: {}".format(k, v))
+        self.dump()
 
-        print("=======================================================================")
+    def dump(self, file=sys.stdout, sort_keys=True):
+        if not hasattr(file, "write"):
+            assert isinstance(file, str)
+            file = open(file, 'w')
+
+        out = "\n================================configs================================\n"
+
+        iterator = self.items()
+        if sort_keys:
+            iterator = sorted(iterator, key=lambda x: x[0])
+
+        for k, v in iterator:
+            out += "{}: {}\n".format(k, v)
+
+        out += "======================================================================="
+
+        print(out, file=file)
 
 
 class DictInterfaceFactory(object):

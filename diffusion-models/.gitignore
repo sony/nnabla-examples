@@ -1,0 +1,14 @@
+Pipfile
+
+data/
+data
+
+logdir/
+logdir
+
+outs/
+*outs/
+*outs
+
+*.yaml
+*.h5

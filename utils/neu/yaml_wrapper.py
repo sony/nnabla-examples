@@ -33,6 +33,14 @@ yaml.resolver.Resolver.add_implicit_resolver(
     list('-+0123456789.'))
 
 
+# Convert AttrDict tag to standard dict
+def _represent_attrdict(dumper, instance):
+    return dumper.represent_mapping('tag:yaml.org,2002:map', instance.items())
+
+
+yaml.add_representer(AttrDict, _represent_attrdict)
+
+
 def read_yaml(filepath):
     with open(filepath, "r") as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
@@ -47,3 +55,6 @@ def write_yaml(filepath, obj):
 
     with open(filepath, 'w') as f:
         yaml.dump(obj, f, default_flow_style=False)
+
+
+__all__ = [read_yaml, write_yaml]

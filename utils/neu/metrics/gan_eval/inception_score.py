@@ -27,7 +27,7 @@ from .inceptionv3 import construct_inceptionv3
 from nnabla.ext_utils import get_extension_context
 
 
-def get_args():
+def get_parser():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str,
@@ -47,6 +47,12 @@ def get_args():
                         help='Backend name.')
     parser.add_argument('--device-id', '-d', default=0, type=int,
                         help='Device ID.')
+
+    return parser
+
+
+def get_args():
+    parser = get_parser()
     return parser.parse_args()
 
 
@@ -140,9 +146,7 @@ def load_parameters(params_path):
     nn.load_parameters(params_path)
 
 
-def main():
-
-    args = get_args()
+def main(args):
     # Context
     ctx = get_extension_context(args.context, device_id=args.device_id)
     nn.set_default_context(ctx)
@@ -187,4 +191,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    args = get_args()
+    main(args)

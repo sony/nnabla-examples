@@ -8,6 +8,20 @@ This package is not provided for package managers such as pip and conda so far. 
 
 We usually set a path to this folder at a utils package under each training example folder when you import it. See [Pix2PixHD/utils](../GANs/pix2pixHD/utils/__init__.py) for an example.
 
+Alternatively, you can install neu through pip:
+```
+# move to this directory.
+cd /path/to/nnabla-examples
+
+# Recommend to install with editable option so that you can easily manipulate this package for your project.
+pip install -e .
+```
+
+After installing neu through pip, you can easily import neu like below:
+```python
+from neu.misc import init_nnabla
+comm = init_nnabla(ext_name="cudnn", device_id="0", type_config="float", random_pseed=True)
+```
 
 # Misc
 ## Loading Intermediate h5 to nnp 

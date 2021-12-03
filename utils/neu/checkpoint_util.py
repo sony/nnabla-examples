@@ -13,13 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
+import queue
+
 import nnabla as nn
 from nnabla.logger import logger
-import os
-import json
+
+global prev_save_paths
+prev_save_paths = queue.Queue()
 
 
-def save_checkpoint(path, current_iter, solvers):
+def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
     """Saves the checkpoint file which contains the params and its state info.
 
         Args:
@@ -31,6 +36,9 @@ def save_checkpoint(path, current_iter, solvers):
                      The keys are used just for state's filenames, so can be anything.
                      Also, you can give a solver object if only one solver exists.
                      Then, the "" is used as an identifier.
+            n_keeps: Number of latest checkpoints to keep. If -1, all checkpoints are kept.
+                     Note that we assume save_checkpoint is called from a single line in your script.
+                     When you have to call this from multiple lines, n_keeps must be -1 (you have to disable n_keeps).
 
         Examples:
             # Create computation graph with parameters.
@@ -88,6 +96,7 @@ def save_checkpoint(path, current_iter, solvers):
         solvers = {"": solvers}
 
     checkpoint_info = dict()
+    save_paths = []
 
     for solvername, solver_obj in solvers.items():
         prefix = "{}_".format(solvername.replace(
@@ -98,6 +107,7 @@ def save_checkpoint(path, current_iter, solvers):
         states_fname = prefix + 'states_{}.h5'.format(current_iter)
         states_path = os.path.join(path, states_fname)
         solver_obj.save_states(states_path)
+        save_paths.append(states_path)
         partial_info["states_path"] = states_path
 
         # save registered parameters' name. (just in case)
@@ -114,6 +124,7 @@ def save_checkpoint(path, current_iter, solvers):
     params_fname = 'params_{}.h5'.format(current_iter)
     params_path = os.path.join(path, params_fname)
     nn.parameter.save_parameters(params_path)
+    save_paths.append(params_path)
     checkpoint_info["params_path"] = params_path
     checkpoint_info["current_iter"] = current_iter
 
@@ -124,6 +135,16 @@ def save_checkpoint(path, current_iter, solvers):
         json.dump(checkpoint_info, f)
 
     logger.info("Checkpoint save (.json): {}".format(filename))
+    save_paths.append(filename)
+
+    # keep only n_keeps latest checkpoints.
+    if n_keeps > 0:
+        global prev_save_paths
+        prev_save_paths.put(save_paths)
+        if prev_save_paths.qsize() > n_keeps:
+            oldest = prev_save_paths.get()
+            for path in oldest:
+                os.remove(path)
 
     return
 
