@@ -16,6 +16,9 @@ pip install -r requirements.txt
 * Our Docker workflow offers an easy installation and setup of running environments of our examples.
 * [See this page](doc/docker.md).
 
+## nnabla-examples-utils (neu)
+
+`neu` can now be installed as a python package. It provides a wide range of utility functions. For installation and usage, check [utils](utils/)
 
 ## Interactive Demos
 
