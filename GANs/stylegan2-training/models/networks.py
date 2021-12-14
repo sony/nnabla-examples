@@ -102,12 +102,14 @@ def styled_conv_block(conv_input, w, noise=None, res=4, inmaps=512, outmaps=512,
             conv_out, (batch_size, -1, conv_out.shape[2], conv_out.shape[3]), inplace=False)
 
     if noise is not None:
-        noise_coeff = nn.parameter.get_parameter_or_create(name=f'G_synthesis/{res}x{res}/{namescope}/noise_strength', shape=())
+        noise_coeff = nn.parameter.get_parameter_or_create(
+            name=f'G_synthesis/{res}x{res}/{namescope}/noise_strength', shape=())
         conv_out = F.add2(conv_out, noise*F.reshape(noise_coeff, (1, 1, 1, 1)))
     else:
         conv_out = conv_out
 
-    bias = nn.parameter.get_parameter_or_create(name=f'G_synthesis/{res}x{res}/{namescope}/conv/b', shape=(outmaps,), initializer=np.random.randn(outmaps,).astype(np.float32))
+    bias = nn.parameter.get_parameter_or_create(name=f'G_synthesis/{res}x{res}/{namescope}/conv/b', shape=(
+        outmaps,), initializer=np.random.randn(outmaps,).astype(np.float32))
     conv_out = F.add2(conv_out, F.reshape(
         bias, (1, outmaps, 1, 1), inplace=False))
 
@@ -144,7 +146,8 @@ def conv_layer(conv_input, inmaps, outmaps, kernel_size, downsample=False,
     conv_weight = nn.parameter.get_parameter_or_create(name=f'{name_scope}/W', initializer=init_function,
                                                        shape=(outmaps, inmaps, kernel_size, kernel_size))
     if bias:
-        conv_bias = nn.parameter.get_parameter_or_create(name=f'{name_scope}/b', shape=(outmaps,))
+        conv_bias = nn.parameter.get_parameter_or_create(
+            name=f'{name_scope}/b', shape=(outmaps,))
     else:
         conv_bias = None
 
@@ -167,10 +170,13 @@ def res_block(res_input, res, inmaps, outmaps, block_scope='res_block'):
 
     name_scope = f'Discriminator/{block_scope}_{res}x{res}'
 
-    out = conv_layer(res_input, inmaps, inmaps, kernel_size=3, name_scope=f'{name_scope}/Conv1')
-    out = conv_layer(out, inmaps, outmaps, kernel_size=3, downsample=True, name_scope=f'{name_scope}/Conv2')
+    out = conv_layer(res_input, inmaps, inmaps, kernel_size=3,
+                     name_scope=f'{name_scope}/Conv1')
+    out = conv_layer(out, inmaps, outmaps, kernel_size=3,
+                     downsample=True, name_scope=f'{name_scope}/Conv2')
 
-    skip = conv_layer(res_input, inmaps, outmaps, kernel_size=1, downsample=True, bias=False, act=F.identity, name_scope=f'{name_scope}/ConvSkip')
+    skip = conv_layer(res_input, inmaps, outmaps, kernel_size=1, downsample=True,
+                      bias=False, act=F.identity, name_scope=f'{name_scope}/ConvSkip')
 
     out = F.mul_scalar(F.add2(out, skip), 1 /
                        np.sqrt(2).astype(np.float32), inplace=False)

@@ -38,17 +38,21 @@ class Evaluate(BaseExecution):
                 test_config (yaml file obj): Testing configuration such as seed values, mixing configuration
         """
 
-        assert 0 < test_config['mix_after'] < self.generator.num_conv_layers-1, f'specify mix_after from 1 to {self.generator.num_conv_layers-2}'
+        assert 0 < test_config['mix_after'] < self.generator.num_conv_layers - \
+            1, f'specify mix_after from 1 to {self.generator.num_conv_layers-2}'
 
         print('Testing generation...')
         print(f'truncation value: {test_config["truncation_psi"]}')
         print(f'seed for additional noise: {test_config["stochastic_seed"]}')
 
         if test_config['mixing']:
-            print(f'using style noise seed {test_config["mix_seed"][0]} for layers 0-{test_config["mix_after"] - 1}')
-            print(f'using style noise seed {test_config["mix_seed"][1]} for layers {test_config["mix_after"]}-{self.generator.num_conv_layers}.')
+            print(
+                f'using style noise seed {test_config["mix_seed"][0]} for layers 0-{test_config["mix_after"] - 1}')
+            print(
+                f'using style noise seed {test_config["mix_seed"][1]} for layers {test_config["mix_after"]}-{self.generator.num_conv_layers}.')
         else:
-            print(f'using style noise seed {test_config["mix_seed"][0]} for entire layers.')
+            print(
+                f'using style noise seed {test_config["mix_seed"][0]} for entire layers.')
 
         style_noises_data = mixing_noise(
             self.batch_size, test_config['latent_dim'], 1, seed=test_config['mix_seed'])
@@ -68,7 +72,8 @@ class Evaluate(BaseExecution):
 
     def latent_space_interpolation(self, test_config, args):
         from PIL import Image
-        assert 0 < test_config['mix_after'] < self.generator.num_conv_layers-1, f'specify mix_after from 1 to {self.generator.num_conv_layers-2}'
+        assert 0 < test_config['mix_after'] < self.generator.num_conv_layers - \
+            1, f'specify mix_after from 1 to {self.generator.num_conv_layers-2}'
 
         print('Testing interpolation of generation...')
 

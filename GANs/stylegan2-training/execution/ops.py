@@ -38,7 +38,8 @@ def save_generations(rgb_output, filepath, drange=[-1, 1], return_images=False):
         if return_images:
             images.append(np.uint8(np.clip(image, 0, 255)))
         else:
-            imsave(f'{filepath}_{i}.png', np.uint8(np.clip(image, 0, 255)), channel_first=True)
+            imsave(f'{filepath}_{i}.png', np.uint8(
+                np.clip(image, 0, 255)), channel_first=True)
             print(f'Output saved. Saved {filepath}_{i}.png')
 
     if return_images:
