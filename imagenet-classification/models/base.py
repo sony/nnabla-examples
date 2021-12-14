@@ -79,7 +79,7 @@ def shortcut(x, ochannels, stride, shortcut_type, test, channel_last=False):
               if input channels doesn't match `ochannels`.
             * 'c': Convolution is always applied which outputs `ochannels`.
         test (bool):
-            Construct net for testing. For example with True, batch norm is
+            Construct net for testing. For example with False, batch norm is
             created as batch stat mode (batch_stat=True).
         channel_last (bool):
             If channel_last is True, Channel dimmension must come at last in
@@ -259,7 +259,7 @@ class ResNetBase(object):
             See `BasicBlock` and `BottleneckBlock` for implementations.
 
         test (bool):
-            Construct net for testing. For example with True, batch norm is
+            Construct net for testing. For example with False, batch norm is
             created as batch stat mode (batch_stat=True).
         channel_last (bool):
             If channel_last is True, Channel dimmension comes at last in an input image. A.k.a NHWC order.
