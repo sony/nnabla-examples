@@ -48,13 +48,15 @@ def get_dataset(args, comm):
                                              fix_aspect_ratio=args.fix_aspect_ratio,
                                              comm=comm,
                                              train=True,
-                                             channel_last=args.channel_last)
+                                             channel_last=args.channel_last,
+                                             shuffle=args.shuffle_dataset)
     else:
         data_iterator = SimpleDataIterator(args.batch_size,
                                            args.dataset_root_dir,
                                            image_size=args.image_shape[-2:],
                                            comm=comm, on_memory=args.dataset_on_memory,
                                            fix_aspect_ratio=args.fix_aspect_ratio,
-                                           channel_last=args.channel_last)
+                                           channel_last=args.channel_last,
+                                           shuffle=args.shuffle_dataset)
 
     return data_iterator

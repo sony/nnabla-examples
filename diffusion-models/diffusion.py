@@ -580,6 +580,7 @@ class GaussianDiffusion(object):
 
     def sample_loop(self, model, shape, sampler, *,
                     noise=None,
+                    x_start=None,
                     dump_interval=-1,
                     progress=False,
                     without_auto_forward=False):
@@ -593,6 +594,8 @@ class GaussianDiffusion(object):
             shape (list like object): A data shape.
             sampler (callable): A function to sample x_{t-1} given x_{t} and t. Typically, self.p_sample or self.ddim_sample.
             noise (collable): A noise generator. If None, F.randn(shape) will be used.
+            x_start (nn.Variable): 
+                A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
             interval (int): 
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
@@ -620,7 +623,14 @@ class GaussianDiffusion(object):
                 assert isinstance(noise, np.ndarray)
                 assert noise.shape == shape
 
-            x_t = nn.Variable.from_numpy_array(noise)
+            if x_start is not None:
+                # SDEdit
+                x_t = self.q_sample(x_start,
+                                    F.constant(T - 1, shape=(shape[0], )),
+                                    noise=nn.Variable.from_numpy_array(noise))
+            else:
+                x_t = nn.Variable.from_numpy_array(noise)
+            
             t = nn.Variable.from_numpy_array([T - 1 for _ in range(shape[0])])
 
             # build graph
@@ -641,11 +651,18 @@ class GaussianDiffusion(object):
         else:
             with nn.auto_forward():
                 if noise is None:
-                    x_t = F.randn(shape=shape)
+                    noise = np.random.randn(*shape)
                 else:
                     assert isinstance(noise, np.ndarray)
                     assert noise.shape == shape
+
+                if x_start is not None:
+                    # SDEdit
+                    x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
+                                        noise=nn.Variable.from_numpy_array(noise))
+                else:
                     x_t = nn.Variable.from_numpy_array(noise)
+            
                 cnt = 0
                 for step in indices:
                     t = F.constant(step, shape=(shape[0], ))

@@ -53,9 +53,14 @@ def respace_betas(betas, use_timesteps):
     prev_alphas_cumprod = 1.
     alphas_cumprod = 1.
     timestep_map = []
+    first = True
     for t in range(T):
         alphas_cumprod *= 1. - betas[t]
         if t in use_timesteps:
+            if first:
+                alphas_cumprod = 1. - betas[t]
+                first = False
+
             new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
             new_betas.append(new_beta)
             timestep_map.append(t)
@@ -215,12 +220,13 @@ class Model(object):
 
         return loss_dict, t
 
-    def sample(self, shape, dump_interval=-1, noise=None, use_ema=True, progress=False, use_ddim=False):
+    def sample(self, shape, dump_interval=-1, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,
                                    dump_interval=dump_interval,
                                    noise=noise,
+                                   x_start=x_start,
                                    use_ema=False,
                                    progress=progress,
                                    use_ddim=use_ddim)
@@ -233,14 +239,16 @@ class Model(object):
                 channel_last=self.channel_last,
                 shape=shape,
                 noise=noise,
+                x_start=x_start,
                 dump_interval=dump_interval,
                 progress=progress
             )
 
-    def sample_trajectory(self, shape, noise=None, use_ema=True, progress=False, use_ddim=False):
+    def sample_trajectory(self, shape, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
         return self.sample(shape,
                            dump_interval=100,
                            noise=noise,
+                           x_start=x_start,
                            use_ema=use_ema,
                            progress=progress,
                            use_ddim=use_ddim)
