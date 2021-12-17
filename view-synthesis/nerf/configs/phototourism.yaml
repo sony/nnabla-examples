@@ -1,0 +1,43 @@
+solver:
+  type: Adam
+  lr: 1.0e-3
+  lr_decay_step: 150
+  lr_decay_factor: 0.1
+
+train:
+  num_encodings_position: 15
+  num_encodings_direction: 4
+  num_iterations: 300000
+  test_interval: 10000
+  save_interval: 30000
+  num_samples_course: 128
+  num_samples_fine: 256
+  use_hierarchical_sampling: True
+  chunksize_course: 512 
+  chunksize_fine: 512
+  ray_batch_size: 512
+  num_rand_points: 512
+  use_view_directions: True
+  white_bkgd: False
+  raw_noise_std: 0.0
+  use_ndc: False
+  batching: False
+  n_vocab: 1500
+  n_app: 48
+  n_trans: 16
+
+log: 
+  save_results_dir: results/phototourism
+
+data:
+  name: blender
+  root: 
+  test_hold: 12
+  color_perturb: True
+  occ_perturb: True
+  downscale: 2
+  use_cache: True
+
+checkpoint:
+  param_path: null
+  solver_path: null

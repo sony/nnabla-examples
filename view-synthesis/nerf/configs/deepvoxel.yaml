@@ -1,0 +1,38 @@
+solver:
+  type: Adam
+  lr: 5.0e-4
+  lr_decay_step: 200
+  lr_decay_factor: 0.1
+
+train:
+  num_encodings_position: 10
+  num_encodings_direction: 4
+  num_iterations: 200000
+  test_interval: 10000
+  save_interval: 10000
+  log_interval: 1000
+  num_samples_course: 64
+  num_samples_fine: 128
+  use_hierarchical_sampling: True
+  chunksize_course: 1024  
+  chunksize_fine: 1024  
+  ray_batch_size: 1000
+  num_rand_points: 1024
+  use_view_directions: True
+  white_bkgd: True
+  raw_noise_std: 0.0
+  use_ndc: False
+  batching: False
+
+log: 
+  save_results_dir: results
+
+data:
+  name: deepvoxel
+  root: 
+  scene_name: cube
+  test_skip: 8
+
+checkpoint:
+  param_path: null
+  solver_path: null

@@ -1,0 +1,43 @@
+solver:
+  type: Adam
+  lr: 5.0e-4
+  lr_decay_step: 500
+  lr_decay_factor: 0.1
+
+train:
+  num_encodings_position: 10
+  num_encodings_direction: 4
+  num_iterations: 500000
+  test_interval: 10000
+  save_interval: 20000
+  log_interval: 500
+  num_samples_course: 64
+  num_samples_fine: 192
+  use_hierarchical_sampling: True
+  chunksize_course: 2048 
+  chunksize_fine: 2048
+  ray_batch_size: 2048
+  num_rand_points: 2048
+  use_view_directions: True
+  white_bkgd: True
+  raw_noise_std: 0.0
+  use_ndc: False
+  batching: False
+  n_vocab: 100
+  n_app: 48
+  n_trans: 16
+
+log: 
+  save_results_dir: results/lego
+
+data:
+  name: blender
+  root: 
+  test_hold: 12
+  color_perturb: True
+  occ_perturb: True
+  downscale: 4
+
+checkpoint:
+  param_path: null
+  solver_path: null
