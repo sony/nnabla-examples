@@ -1,0 +1,40 @@
+solver:
+  type: Adam
+  lr: 5.0e-4
+  lr_decay_step: 250
+  lr_decay_factor: 0.1
+
+train:
+  num_encodings_position: 10
+  num_encodings_direction: 4
+  num_iterations: 200000
+  test_interval: 1000
+  save_interval: 10000
+  log_interval: 5000
+  num_samples_course: 64
+  num_samples_fine: 128
+  use_hierarchical_sampling: True
+  chunksize_course: 131072  
+  chunksize_fine: 131072  
+  num_rand_points: 1024
+  ray_batch_size: 1024
+  use_view_directions: True
+  white_bkgd: False
+  raw_noise_std: 0.0
+  use_ndc: True
+  batching: True
+  spherify: False
+
+log: 
+  save_results_dir: results
+
+data:
+  name: llff
+  root: 
+  test_hold: 12
+  factor: 8
+  spherify: False
+
+checkpoint:
+  param_path: null
+  solver_path: null
