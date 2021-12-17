@@ -209,7 +209,8 @@ def train_nerf(config, comm, model, dataset='blender'):
     if model != 'vanilla':
         if dataset != 'phototourism':
             config.train.n_vocab = max(np.max(i_train), np.max(i_test)) + 1
-        print(f'Setting Vocabulary size of embedding as {config.train.n_vocab}')
+        print(
+            f'Setting Vocabulary size of embedding as {config.train.n_vocab}')
 
     if dataset != 'phototourism':
         if model in ['vanilla']:
@@ -320,7 +321,8 @@ def train_nerf(config, comm, model, dataset='blender'):
             fine_loss = F.mean(F.squared_error(rgb_map_fine, image))
             loss = course_loss + fine_loss
 
-        pbar.set_description(f'Total: {np.around(loss.d, 4)}, Course: {np.around(course_loss.d, 4)}, Fine: {np.around(fine_loss.d, 4)}')
+        pbar.set_description(
+            f'Total: {np.around(loss.d, 4)}, Course: {np.around(course_loss.d, 4)}, Fine: {np.around(fine_loss.d, 4)}')
 
         solver.set_parameters(nn.get_parameters(),
                               reset=False, retain_state=True)
@@ -347,7 +349,8 @@ def train_nerf(config, comm, model, dataset='blender'):
 
         if ((i % config.train.save_interval == 0 or i == config.train.num_iterations-1) and i != 0) and (comm is not None and comm.rank == 0):
             nn.save_parameters(os.path.join(save_results_dir, f'iter_{i}.h5'))
-            solver.save_states(os.path.join(save_results_dir, f'solver_iter_{i}.h5'))
+            solver.save_states(os.path.join(
+                save_results_dir, f'solver_iter_{i}.h5'))
 
         if (i % config.train.test_interval == 0 or i == config.train.num_iterations-1) and i != 0:
             avg_psnr, avg_mse = 0.0, 0.0
@@ -470,18 +473,21 @@ def train_nerf(config, comm, model, dataset='blender'):
                     img_to_save = np.concatenate((image[0].data, np.ones(
                         (image[0].shape[0], 5, 3)), rgb_map_fine.data), axis=1)
 
-                filename = os.path.join(save_results_dir, f'{i}_{idx_test}.png')
+                filename = os.path.join(
+                    save_results_dir, f'{i}_{idx_test}.png')
                 try:
                     imsave(filename, np.clip(img_to_save, 0, 1),
                            channel_first=False)
                     print(f'Saved generation at {filename}')
                     if use_transient:
-                        filename_static_trans = os.path.join(save_results_dir, f's_t_{i}_{idx_test}.png')
+                        filename_static_trans = os.path.join(
+                            save_results_dir, f's_t_{i}_{idx_test}.png')
                         imsave(filename_static_trans, np.clip(
                             static_trans_img_to_save, 0, 1), channel_first=False)
 
                     else:
-                        filename_dm = os.path.join(save_results_dir, f'dm_{i}_{idx_test}.png')
+                        filename_dm = os.path.join(
+                            save_results_dir, f'dm_{i}_{idx_test}.png')
                         depth_map_fine = (depth_map_fine.data - depth_map_fine.data.min())/(
                             depth_map_fine.data.max() - depth_map_fine.data.min())
                         imsave(filename_dm,
@@ -499,4 +505,5 @@ def train_nerf(config, comm, model, dataset='blender'):
             test_metric_dict['test_loss'] = avg_mse/len(i_test)
             test_metric_dict['test_psnr'] = avg_psnr/len(i_test)
             monitor_manager.add(i, test_metric_dict)
-            print(f'Saved generations after {i} training iterations! Average PSNR: {avg_psnr/len(i_test)}. Average MSE: {avg_mse/len(i_test)}')
+            print(
+                f'Saved generations after {i} training iterations! Average PSNR: {avg_psnr/len(i_test)}. Average MSE: {avg_mse/len(i_test)}')

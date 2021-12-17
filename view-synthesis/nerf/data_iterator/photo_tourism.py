@@ -320,7 +320,8 @@ class PhototourismDataSource(DataSource):
 
 def get_photo_tourism_dataiterator(config, split, comm):
 
-    print(f'Loading {split} images downscaled by a factor of {config.data.downscale}...')
+    print(
+        f'Loading {split} images downscaled by a factor of {config.data.downscale}...')
     data_source = PhototourismDataSource(config.data.root, img_downscale=int(config.data.downscale),
                                          use_cache=config.data.use_cache, split=split)
     if split == 'train':
