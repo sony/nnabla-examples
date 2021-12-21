@@ -126,7 +126,8 @@ def main():
 
     _, _, render_poses, hwf, _, _, near_plane, far_plane = get_data(config)
     height, width, focal_length = hwf
-    print(f'Rendering with Height {height}, Width {width}, Focal Length: {focal_length}')
+    print(
+        f'Rendering with Height {height}, Width {width}, Focal Length: {focal_length}')
 
     # mapping_net = MLP
     encode_position_function = get_encoding_function(

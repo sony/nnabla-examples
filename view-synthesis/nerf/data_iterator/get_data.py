@@ -57,7 +57,8 @@ def get_data(config):
                                                                spherify=config['data']['spherify'])
         hwf = poses[0, :3, -1]
         poses = poses[:, :3, :4]
-        print(f'Loaded llff, Image Shape: {images.shape}, Pose shape: {render_poses.shape}, HWF: {hwf}')
+        print(
+            f'Loaded llff, Image Shape: {images.shape}, Pose shape: {render_poses.shape}, HWF: {hwf}')
         if not isinstance(i_test, list):
             i_test = [i_test]
 
@@ -78,7 +79,8 @@ def get_data(config):
         images, poses, render_poses, hwf, i_split = load_dv_data(scene=config['data']['scene_name'],
                                                                  basedir=config['data']['root'],
                                                                  testskip=config['data']['test_skip'])
-        print(f'Loaded deepvoxels Images shape: {images.shape}, Poses shape: {render_poses.shape}, HWF: {hwf}')
+        print(
+            f'Loaded deepvoxels Images shape: {images.shape}, Poses shape: {render_poses.shape}, HWF: {hwf}')
         i_train, i_val, i_test = i_split
 
         hemi_R = np.mean(np.linalg.norm(poses[:, :3, -1], axis=-1))

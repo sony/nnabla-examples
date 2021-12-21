@@ -47,7 +47,8 @@ if __name__ == '__main__':
     train_list = filelist[:int(len(filelist)*args.train_split)]
     test_list = filelist[len(train_list):]
 
-    print(f'Total: {len(filelist)} Train: {len(train_list)} Test: {len(test_list)}')
+    print(
+        f'Total: {len(filelist)} Train: {len(train_list)} Test: {len(test_list)}')
 
     with open(f'{args.out_path}', 'w') as f:
         f.write('filename	id	split	dataset\n')
