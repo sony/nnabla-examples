@@ -13,7 +13,7 @@ python external/download_glue.py
 It will download and extract the GLUE dataset in the current working directory. 
 
 ### Pre-trained Weights
-Pre-trained *bert-base-uncased* weights, converted from [author's weights](https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip), can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/language-modeling/BERT-finetuning/nbla_bert_params.h5). You can also refer to the [conversion code](https://github.com/sony/nnabla-examples/language-modeling/BERT-finetuning/convert_tf_params_to_nnabla.py) in case you'd like to know how tensorflow weights are converted to nnabla.
+Pre-trained *bert-base-uncased* weights, converted from [author's weights](https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip), can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/language-modeling/bert-finetuning/nbla_bert_params.h5). You can also refer to the [conversion code](https://github.com/sony/nnabla-examples/language-modeling/BERT-finetuning/convert_tf_params_to_nnabla.py) in case you'd like to know how tensorflow weights are converted to nnabla.
 
 ### Finetune and Evaluate
 Run the following command and the evaluation commands in the table to finetune and evaluate the model on each task:
