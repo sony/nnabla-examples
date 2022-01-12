@@ -13,18 +13,20 @@ python external/download_glue.py
 It will download and extract the GLUE dataset in the current working directory. 
 
 ### Pre-trained Weights
-Pre-trained *bert-base-uncased* weights, converted from [author's weights](https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip), can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/language-modeling/bert-finetuning/nbla_bert_params.h5). You can also refer to the [conversion code](https://github.com/sony/nnabla-examples/language-modeling/BERT-finetuning/convert_tf_params_to_nnabla.py) in case you'd like to know how tensorflow weights are converted to nnabla.
+Pre-trained *bert-base-uncased* weights, converted from [author's weights](https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip), can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/language-modeling/bert-finetuning/nbla_bert_params.h5). You can also refer to the [conversion code](https://github.com/sony/nnabla-examples/blob/master/language-modeling/BERT-finetuning/convert_tf_params_to_nnabla.py) in case you'd like to know how tensorflow weights are converted to nnabla.
 
 ### Finetune and Evaluate
 Run the following command and the evaluation commands in the table to finetune and evaluate the model on each task:
 
 ```shell
 export GLUE_DIR=/path/to/glue_data
+export TASK_NAME=CoLA
+python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name $TASK_NAME     --do_lower_case --data_dir $GLUE_DIR/$TASK_NAME --max_seq_length 64 --eval_batch_size=32 --train_batch_size=16   --num_train_epochs 3 --learning_rate 1e-4  --output_dir ./tmp/eval/$TASK_NAME
 ```
 
 |[Task](https://gluebenchmark.com/tasks)|Metric|Score|Command|
 |---|:---:|:---:|:---:|
-|[CoLA](https://nyu-mll.github.io/CoLA/) |Matthew's corr|0.5624| ```python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name $TASK_NAME     --do_lower_case --data_dir $GLUE_DIR/$TASK_NAME --max_seq_length 64 --eval_batch_size=32 --train_batch_size=16   --num_train_epochs 3 --learning_rate 1e-4  --output_dir ./tmp/eval/$TASK_NAME``` |
+|[CoLA](https://nyu-mll.github.io/CoLA/) |Matthew's corr|0.5624| ```python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name CoLA     --do_lower_case --data_dir $GLUE_DIR/CoLA --max_seq_length 64 --eval_batch_size=32 --train_batch_size=16   --num_train_epochs 3 --learning_rate 1e-4  --output_dir ./tmp/eval/CoLA``` |
 |[SST-2](https://nlp.stanford.edu/sentiment/index.html) |Accuracy|0.9143| ```python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name SST-2     --do_lower_case --data_dir $GLUE_DIR/SST-2 --max_seq_length 128 --eval_batch_size=32 --train_batch_size=16   --num_train_epochs 3 --learning_rate 2e-5  --output_dir ./tmp/eval/SST-2```|
 |[MRPC](https://microsoft.com/en-us/download/details.aspx?id=52398) |Accuracy/F1|0.8732/0.9097|```python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name MRPC     --do_lower_case --data_dir $GLUE_DIR/MRPC --max_seq_length 128 --eval_batch_size=32 --train_batch_size=32   --num_train_epochs 3 --learning_rate 2e-5  --output_dir ./tmp/eval/MRPC```|
 |[STS-B	](http://ixa2.si.ehu.es/stswiki/index.php/STSbenchmark) |Person/Spearman corr.|0.8804/0.8784|```python finetune_and_eval.py --model_name_or_path bert-base-uncased --task_name STS-B --do_lower_case --data_dir $GLUE_DIR/STS-B --max_seq_length 128 --eval_batch_size=32 --train_batch_size=32   --num_train_epochs 3 --learning_rate 3e-5  --output_dir ./tmp/eval/STS-B```|
