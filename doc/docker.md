@@ -102,7 +102,7 @@ The following script executes MNIST classification training on a container.
 
 
 ```shell
-cd mnist-collection
+cd image-classification/mnist-collection
 docker_run_user --gpus 0 local/nnabla-examples python classification.py -c cudnn -d 0
 ```
 

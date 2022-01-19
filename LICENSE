@@ -234,7 +234,7 @@
 
     The following components are provided under Nvidia Source Code License-NC.
 
-    1. StyleGAN2 - For details, see, /GANs/stylegan2/ops.py:_setup_kernel
+    1. StyleGAN2 - For details, see, /image-generation/stylegan2/ops.py:_setup_kernel
          Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
          
     The following components are provided under the new BSD license.
@@ -356,7 +356,7 @@
 
     The following components are provided under Nvidia Source Code License-NC.
 
-    1. StyleGAN2 - For details, see, /GANs/stylegan2/ops.py:_setup_kernel
+    1. StyleGAN2 - For details, see, /image-generation/stylegan2/ops.py:_setup_kernel
          Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
 
 
@@ -526,7 +526,7 @@
 
     The following components are provided under Creative Commons Attribution-Noncommercial 4.0 License.
 
-    1. First Order Motion Model - For details, see, /GANs/first-order-model/external_utils.py:Visualizer
+    1. First Order Motion Model - For details, see, /facial-motion-transfer/first-order-model/external_utils.py:Visualizer
          Copyright (c) 2019 by Aliaksandr Siarohin, All rights reserved.
          
     =======================================================================================
