@@ -11,6 +11,11 @@ data:
   output_video: "video.avi"
   frame_propagation: False
 
+checkpoint:
+  path: "./devc_weights"
+  vgg19: "devc_vgg19_conv.h5"
+  non_local: "devc_nonlocal.h5"
+  colornet: "devc_colornet.h5"
 
 wls_filter_on: True
 lambda_value: 500

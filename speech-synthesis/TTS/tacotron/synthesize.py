@@ -24,6 +24,7 @@ from scipy.io import wavfile
 
 from hparams import hparams as hp
 from model.model import Tacotron
+from pathlib import Path
 
 import sys
 sys.path.append(str(Path().cwd().parents[2] / 'utils'))

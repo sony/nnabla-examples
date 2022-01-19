@@ -57,7 +57,7 @@ The data iterator for Cifar-10 dataset will automatically download the dataset.
 All you have to do is specifying `cifar10` as dataset name like `python train.py --dataset cifar10`.
 
 ### imagenet
-To download the original ILSVRC2012 dataset, please follow [the instruction for the imagenet classification examples](https://github.com/sony/nnabla-examples/tree/master/imagenet-classification#preparing-imagenet-dataset).
+To download the original ILSVRC2012 dataset, please follow [the instruction for the imagenet classification examples](https://github.com/sony/nnabla-examples/tree/master/image-classification/imagenet#preparing-imagenet-dataset).
 After downloading it, you will have `<your data dir>/ilsvrc2012/train` and `<your data dir>/ilsvrc2012/val`.
 You can train your model on imagenet with 256x256 resolution by specifying your dataset path as `python train.py --dataset imagenet_256 --data_dir <your data dir>`.
 (You should specify the parent directory having `train` as sub-directory.)

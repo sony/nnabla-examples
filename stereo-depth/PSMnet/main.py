@@ -207,10 +207,10 @@ def main():
                 # Update parameters by computed gradients
                 solver.update()
                 print('Iter %d training loss = %.3f' %
-                      (index, loss.d)
+                      (index, loss.d))
                 total_train_loss += loss.d
                 index += 1
-            train_error=total_train_loss/train_size
+            train_error = total_train_loss/train_size
             monitor_time_train.add(epoch)
             print('epoch %d total training loss = %.3f' % (epoch, train_error))
 
@@ -220,7 +220,7 @@ def main():
                   ((time.time() - start_full_time)/3600))
 
             # Save Parameter
-            out_param_file=os.path.join(
+            out_param_file = os.path.join(
                 args.savemodel, 'psmnet_trained_param_' + str(epoch) + '.h5')
             nn.save_parameters(out_param_file)
 

@@ -12,13 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import sys
+common_utils_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', 'utils'))
+sys.path.append(common_utils_path)
+
 from neu.tts.hparams import HParams
 
 hparams = HParams(
 
     # dataset parameters
-    corpus_path='/speech/misc/denguyeb1/data/ljspeech/LJSpeech-1.1/',
-    precomputed_path='/home/denguyeb/Desktop/datasets/hifi/',
+    corpus_path='./datasets/LJSpeech-1.1/',
+    precomputed_path='./datasets/hifi/',
 
     output_path="./log/hifigan/",      # directory to save results
 
