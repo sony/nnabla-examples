@@ -6,7 +6,7 @@ NEU, nnabla examples utils, provides a bunch of reusable components for writing 
 
 This package is not provided for package managers such as pip and conda so far. You have to set a python path to this folder to use `neu` package.
 
-We usually set a path to this folder at a utils package under each training example folder when you import it. See [Pix2PixHD/utils](../GANs/pix2pixHD/utils/__init__.py) for an example.
+We usually set a path to this folder at a utils package under each training example folder when you import it. See [Pix2PixHD/utils](../image-translation/pix2pixHD/utils/__init__.py) for an example.
 
 Alternatively, you can install neu through pip:
 ```
@@ -832,7 +832,7 @@ write_yaml(config_path, config)
 - [`neu.datasets.ade20k.create_data_iterator(batch_size, data_list, image_shape, comm=None, shuffle=True, rng=None, with_memory_cache=False, with_parallel=False, with_file_cache=False, flip=True)`](neu/datasets/ade20k.py?plain=1#L207)
 - [`neu.datasets.city_scapes.create_data_iterator(batch_size, data_list, image_shape, comm=None, shuffle=True, rng=None, with_memory_cache=False, with_parallel=False, with_file_cache=False, flip=True)`](neu/datasets/city_scapes.py?plain=1#L153)
 
-For details on usage, check [Pix2PixHD](../GANs/pix2pixHD)
+For details on usage, check [Pix2PixHD](../image-translation/pix2pixHD)
 
 ## metrics
 

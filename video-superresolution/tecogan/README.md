@@ -53,7 +53,7 @@ The pre-trained TecoGAN weights can be used to generate High-Resolution frames f
 ### Inference using the downloaded pre-trained weights.
 Clone the nnabla-examples [repository](https://github.com/sony/nnabla-examples.git) and run the following command to download test data and ground-truth data
 ```
-cd nnabla-examples/GANs/tecogan
+cd nnabla-examples/video-superresolution/tecogan
 python download_test_data.py 
 ```
 Run the following command to generate HR images from a given sample of LR images
