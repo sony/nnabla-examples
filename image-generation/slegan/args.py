@@ -49,7 +49,7 @@ def get_args(batch_size=8, image_size=256, max_iter=100000):
                         help="Number of latent variables.")
     parser.add_argument("--monitor-path", type=str, default="./result/tmp",
                         help="Monitor path.")
-    parser.add_argument("--model-load-path", type=str, default=".",
+    parser.add_argument("--model-load-path", type=str, default="",
                         help="Path to load parameters from")
     parser.add_argument("--train-samples", type=int, default=-1,
                         help="Number of data to be used. When -1 is set all data is used.")
