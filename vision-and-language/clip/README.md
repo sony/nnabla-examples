@@ -46,7 +46,7 @@ Returns the names of the available CLIP models.
 
 #### `clip.load(path)`
 
-WIP
+ Loads the model specified by the path to the trained model file.
 
 #### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
 
