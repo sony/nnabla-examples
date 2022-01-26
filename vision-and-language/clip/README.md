@@ -1,6 +1,6 @@
 # NNabla-CLIP
 
-This repository is a nnabla implementation of CLIP released by openAI.
+This repository is a nnabla implementation of CLIP released by openAI.  
 Click [here](https://arxiv.org/abs/2103.00020) for the original paper.
 
 ## Approach
@@ -42,6 +42,7 @@ with nn.auto_forward():
 Trained models are available as:
 - [ViT-B/32](https://drive.google.com/file/d/1I_A4esqGGDSuSu1-VrjTvPjxV52WB62A/view?usp=sharing)(default) to `data/`
 - [ViT-B/16](https://drive.google.com/file/d/1M_9wXEXjuRwSe3Zcdn9gFrMmtkRyg3Qm/view?usp=sharing) to `data/`
+- [ViT-L/14](https://drive.google.com/file/d/1n9R0uXvS9fLVMUjEtkMYwdd4PmcZ7gFq/view?usp=sharing) to `data/`
 
 
 ## API
@@ -61,7 +62,8 @@ Returns a Variable containing tokenized sequences of given text input(s). This c
 
 #### `clip.encode_image(image: Variable)`
 
-Given a batch of images, returns the image features encoded by the vision portion of the CLIP model. The input shape must be ***(batch_size, c, h, w)***
+Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.  
+The input shape must be ***(batch_size, c, h, w)***
 
 #### `clip.encode_text(text: Variable)`
 
