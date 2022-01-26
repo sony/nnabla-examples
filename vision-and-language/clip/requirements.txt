@@ -1,6 +1,5 @@
 ftfy
 regex
-albumentations
 nnabla
 nnabla_ext_cuda102
 nnabla-converter
