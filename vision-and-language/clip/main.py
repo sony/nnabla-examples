@@ -15,9 +15,13 @@
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.ext_utils import get_extension_context
 from PIL import Image
 
 import clip
+
+ctx = get_extension_context('cudnn')
+nn.set_default_context(ctx)
 
 def main():
     with nn.auto_forward():
