@@ -226,8 +226,6 @@ def encode_image(x):
     if not isinstance(x, nn.Variable):
         x = nn.Variable.from_numpy_array(x)
         
-    x = F.reshape(x, (1, x.shape[0], x.shape[1], x.shape[2]))
-
     return vision_transformer(x, image_resolution, vision_patch_size, vision_width, vision_layers, vision_heads, embed_dim)
 
 

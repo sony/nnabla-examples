@@ -24,6 +24,7 @@ def main():
         clip.load('data/ViT-B-32.h5')
 
         image = clip.preprocess(Image.open("CLIP.png"))
+        image = F.reshape(image, (1, image.shape[0], image.shape[1], image.shape[2]))
         text = clip.tokenize(["a diagram", "a dog", "a cat"])
 
         image_features = clip.encode_image(image)

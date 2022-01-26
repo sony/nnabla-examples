@@ -122,8 +122,9 @@ def preprocess(image):
     image = np.array(image)
     
     image = _normalize(image, mean, std)
+    image = image.transpose((2, 0, 1))
     
-    return image.transpose((2, 0, 1))
+    return nn.Variable.from_numpy_array(image)
 
 def encode_text(x):
     return m_encode_text(x)
