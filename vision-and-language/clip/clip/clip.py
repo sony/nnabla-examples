@@ -160,4 +160,4 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
                 raise RuntimeError(f"Input {texts[i]} is too long for context length {context_length}")
         result[i, :len(tokens)] = np.array(tokens)
 
-    return result
+    return nn.Variable.from_numpy_array(result)

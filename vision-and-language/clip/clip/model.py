@@ -225,9 +225,7 @@ def encode_image(x):
     return vision_transformer(x, image_resolution, vision_patch_size, vision_width, vision_layers, vision_heads, embed_dim)
 
 
-def encode_text(text):
-    text = nn.Variable.from_numpy_array(text)
-    
+def encode_text(text):  
     param_dict = nn.get_parameters()
 
     embed_dim = param_dict['text_projection'].shape[1]
