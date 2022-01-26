@@ -1,6 +1,7 @@
 # NNabla-CLIP
 
 This repository is a nnabla implementation of CLIP released by openAI.
+Click [here](https://arxiv.org/abs/2103.00020) for the original paper.
 
 ## Approach
 
