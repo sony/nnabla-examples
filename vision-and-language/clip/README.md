@@ -36,17 +36,23 @@ with nn.auto_forward():
     print("Label probs:", probs.d)  # prints: [[0.9927937  0.00421068 0.00299572]]
 ```
 
+## Download trained models
+
+Trained models are available as:
+- [ViT-B/32](https://drive.google.com/file/d/1I_A4esqGGDSuSu1-VrjTvPjxV52WB62A/view?usp=sharing)(default) to `data/`
+- [ViT-B/16](https://drive.google.com/file/d/1M_9wXEXjuRwSe3Zcdn9gFrMmtkRyg3Qm/view?usp=sharing) to `data/`
+
+
 ## API
 
 The CLIP module `clip` provides the following methods:
 
-#### `clip.available_models()`
-
-Returns the names of the available CLIP models.
-
 #### `clip.load(path)`
 
  Loads the model specified by the path to the trained model file.
+
+ #### `clip.preprocess(image: PIL Image)`
+ Returns 
 
 #### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
 
