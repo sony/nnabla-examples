@@ -13,9 +13,6 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
-from typing import Tuple, Union
-
 import numpy as np
 
 import nnabla as nn
@@ -96,10 +93,9 @@ def multi_head_attention(query, key, value, d_model, num_heads, need_weights=Fal
     dropout_p = 0.0
 
     attn_output, attn_output_weights = _scaled_dot_product_attention(q, k, v, attn_mask, dropout_p)
-    # attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, batch_size, embed_dim)
     attn_output = F.reshape(F.transpose(
         attn_output, (1, 0, 2)), (tgt_len, batch_size, embed_dim))  # attn_output: (L_T, B, E_v)
-    # attn_output = linear(attn_output, out_proj_weight, out_proj_bias)
+
     out_proj_weight = F.transpose(out_proj_weight, (1, 0))
     attn_output = F.affine(attn_output, out_proj_weight, out_proj_bias, base_axis=2)
 
@@ -296,7 +292,6 @@ def logits(image, text):
     logit_scale = F.exp(logit_scale)
 
     image_features = image_features.reshape((1, image_features.shape[0], image_features.shape[1]))
-    # text_features = text_features.reshape((1, text_features.shape[1], -1))
     text_features = F.transpose(text_features, (1, 0))
     text_features = text_features.reshape((1, text_features.shape[0], text_features.shape[1]))
 

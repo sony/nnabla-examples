@@ -13,10 +13,6 @@
 # limitations under the License.
 
 
-import hashlib
-import os
-import urllib
-import warnings
 from typing import Any, Union, List
 
 import numpy as np
@@ -24,8 +20,6 @@ from PIL import Image
 from tqdm import tqdm
 
 import nnabla as nn
-
-import albumentations as A
 
 from .model import build_model
 from .simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -77,8 +71,6 @@ def load(name, jit=False, download_root=None):
 
     params = nn.get_parameters()
 
-    # vision_width = state_dict["visual.conv1.weight"].shape[0]
-    # vision_layers = len([k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
     vision_patch_size = params["visual/conv1/W"].shape[-1]
     grid_size = round((params["visual/positional_embedding"].shape[0] - 1) ** 0.5)
     image_resolution = vision_patch_size * grid_size
