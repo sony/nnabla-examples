@@ -25,6 +25,7 @@ with nn.auto_forward():
     clip.load('data/ViT-B-32.h5')
 
     image = clip.preprocess(Image.open("CLIP.png"))
+    image = F.reshape(image, (1, image.shape[0], image.shape[1], image.shape[2]))
     text = clip.tokenize(["a diagram", "a dog", "a cat"])
 
     image_features = clip.encode_image(image)
@@ -52,17 +53,17 @@ The CLIP module `clip` provides the following methods:
  Loads the model specified by the path to the trained model file.
 
  #### `clip.preprocess(image: PIL Image)`
- Returns 
+ Returns a Variable pre-processed for input to the image encoder.
 
 #### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
 
-Returns a NdArray containing tokenized sequences of given text input(s). This can be used as the input to the model
+Returns a Variable containing tokenized sequences of given text input(s). This can be used as the input to the model.
 
-#### `clip.encode_image(image: numpy.ndarray)`
+#### `clip.encode_image(image: Variable)`
 
-Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.
+Given a batch of images, returns the image features encoded by the vision portion of the CLIP model. The input shape must be ***(batch_size, c, h, w)***
 
-#### `clip.encode_text(text: numpy.ndarray)`
+#### `clip.encode_text(text: Variable)`
 
 Given a batch of text tokens, returns the text features encoded by the language portion of the CLIP model.
 
