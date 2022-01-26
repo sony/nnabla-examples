@@ -37,8 +37,7 @@ from .model import logits as m_logits
 
 BICUBIC = Image.BICUBIC
 
-__all__ = ["available_models",
-            "tokenize", 
+__all__ = ["tokenize", 
             "load", 
             "encode_text",
             "encode_image", 
@@ -46,10 +45,6 @@ __all__ = ["available_models",
             "logits",
             ]
 _tokenizer = _Tokenizer()
-
-_MODELS = {
-    "ViT-B/32": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
-}
 
 def _normalize(img, mean, std, max_pixel_value=255.0):
     mean = np.array(mean, dtype=np.float32)
@@ -138,10 +133,6 @@ def encode_image(x):
 
 def logits(image, text):
     return m_logits(image, text)
-
-def available_models() -> List[str]:
-    """Returns the names of available CLIP models"""
-    return list(_MODELS.keys())
 
 
 def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: bool = False):
