@@ -1,5 +1,17 @@
-from collections import OrderedDict
-from typing import Tuple, Union
+# Copyright 2021 Sony Group Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import numpy as np
 
@@ -81,10 +93,9 @@ def multi_head_attention(query, key, value, d_model, num_heads, need_weights=Fal
     dropout_p = 0.0
 
     attn_output, attn_output_weights = _scaled_dot_product_attention(q, k, v, attn_mask, dropout_p)
-    # attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, batch_size, embed_dim)
     attn_output = F.reshape(F.transpose(
         attn_output, (1, 0, 2)), (tgt_len, batch_size, embed_dim))  # attn_output: (L_T, B, E_v)
-    # attn_output = linear(attn_output, out_proj_weight, out_proj_bias)
+
     out_proj_weight = F.transpose(out_proj_weight, (1, 0))
     attn_output = F.affine(attn_output, out_proj_weight, out_proj_bias, base_axis=2)
 
@@ -211,14 +222,10 @@ def encode_image(x):
     if not isinstance(x, nn.Variable):
         x = nn.Variable.from_numpy_array(x)
         
-    x = F.reshape(x, (1, x.shape[0], x.shape[1], x.shape[2]))
-
     return vision_transformer(x, image_resolution, vision_patch_size, vision_width, vision_layers, vision_heads, embed_dim)
 
 
-def encode_text(text):
-    text = nn.Variable.from_numpy_array(text)
-    
+def encode_text(text):  
     param_dict = nn.get_parameters()
 
     embed_dim = param_dict['text_projection'].shape[1]
@@ -283,7 +290,6 @@ def logits(image, text):
     logit_scale = F.exp(logit_scale)
 
     image_features = image_features.reshape((1, image_features.shape[0], image_features.shape[1]))
-    # text_features = text_features.reshape((1, text_features.shape[1], -1))
     text_features = F.transpose(text_features, (1, 0))
     text_features = text_features.reshape((1, text_features.shape[0], text_features.shape[1]))
 

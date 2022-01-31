@@ -1,6 +1,7 @@
 # NNabla-CLIP
 
-This repository is a nnabla implementation of CLIP released by openAI.
+This repository is a nnabla implementation of CLIP released by openAI.  
+Click [here](https://arxiv.org/abs/2103.00020) for the original paper.
 
 ## Approach
 
@@ -24,6 +25,7 @@ with nn.auto_forward():
     clip.load('data/ViT-B-32.h5')
 
     image = clip.preprocess(Image.open("CLIP.png"))
+    image = F.reshape(image, (1, image.shape[0], image.shape[1], image.shape[2]))
     text = clip.tokenize(["a diagram", "a dog", "a cat"])
 
     image_features = clip.encode_image(image)
@@ -35,27 +37,35 @@ with nn.auto_forward():
     print("Label probs:", probs.d)  # prints: [[0.9927937  0.00421068 0.00299572]]
 ```
 
+## Download trained models
+
+Trained models are available as:
+- [ViT-B/32](https://drive.google.com/file/d/1I_A4esqGGDSuSu1-VrjTvPjxV52WB62A/view?usp=sharing)(default) to `data/`
+- [ViT-B/16](https://drive.google.com/file/d/1M_9wXEXjuRwSe3Zcdn9gFrMmtkRyg3Qm/view?usp=sharing) to `data/`
+- [ViT-L/14](https://drive.google.com/file/d/1n9R0uXvS9fLVMUjEtkMYwdd4PmcZ7gFq/view?usp=sharing) to `data/`
+
+
 ## API
 
 The CLIP module `clip` provides the following methods:
 
-#### `clip.available_models()`
-
-Returns the names of the available CLIP models.
-
 #### `clip.load(path)`
 
-WIP
+ Loads the model specified by the path to the trained model file.
+
+ #### `clip.preprocess(image: PIL Image)`
+ Returns a Variable pre-processed for input to the image encoder.
 
 #### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
 
-Returns a NdArray containing tokenized sequences of given text input(s). This can be used as the input to the model
+Returns a Variable containing tokenized sequences of given text input(s). This can be used as the input to the model.
 
-#### `clip.encode_image(image: numpy.ndarray)`
+#### `clip.encode_image(image: Variable)`
 
-Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.
+Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.  
+The input shape must be ***(batch_size, c, h, w)***
 
-#### `clip.encode_text(text: numpy.ndarray)`
+#### `clip.encode_text(text: Variable)`
 
 Given a batch of text tokens, returns the text features encoded by the language portion of the CLIP model.
 

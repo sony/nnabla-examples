@@ -1,7 +1,18 @@
-import hashlib
-import os
-import urllib
-import warnings
+# Copyright 2021 Sony Group Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 from typing import Any, Union, List
 
 import numpy as np
@@ -9,8 +20,6 @@ from PIL import Image
 from tqdm import tqdm
 
 import nnabla as nn
-
-import albumentations as A
 
 from .model import build_model
 from .simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -22,8 +31,7 @@ from .model import logits as m_logits
 
 BICUBIC = Image.BICUBIC
 
-__all__ = ["available_models",
-            "tokenize", 
+__all__ = ["tokenize", 
             "load", 
             "encode_text",
             "encode_image", 
@@ -31,10 +39,6 @@ __all__ = ["available_models",
             "logits",
             ]
 _tokenizer = _Tokenizer()
-
-_MODELS = {
-    "ViT-B/32": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
-}
 
 def _normalize(img, mean, std, max_pixel_value=255.0):
     mean = np.array(mean, dtype=np.float32)
@@ -67,8 +71,6 @@ def load(name, jit=False, download_root=None):
 
     params = nn.get_parameters()
 
-    # vision_width = state_dict["visual.conv1.weight"].shape[0]
-    # vision_layers = len([k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
     vision_patch_size = params["visual/conv1/W"].shape[-1]
     grid_size = round((params["visual/positional_embedding"].shape[0] - 1) ** 0.5)
     image_resolution = vision_patch_size * grid_size
@@ -112,8 +114,9 @@ def preprocess(image):
     image = np.array(image)
     
     image = _normalize(image, mean, std)
+    image = image.transpose((2, 0, 1))
     
-    return image.transpose((2, 0, 1))
+    return nn.Variable.from_numpy_array(image)
 
 def encode_text(x):
     return m_encode_text(x)
@@ -123,10 +126,6 @@ def encode_image(x):
 
 def logits(image, text):
     return m_logits(image, text)
-
-def available_models() -> List[str]:
-    """Returns the names of available CLIP models"""
-    return list(_MODELS.keys())
 
 
 def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: bool = False):
@@ -161,4 +160,4 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
                 raise RuntimeError(f"Input {texts[i]} is too long for context length {context_length}")
         result[i, :len(tokens)] = np.array(tokens)
 
-    return result
+    return nn.Variable.from_numpy_array(result)
