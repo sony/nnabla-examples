@@ -74,5 +74,5 @@ Given a batch of text tokens, returns the text features encoded by the language 
 
 Given a batch of images and a batch of text tokens, returns two ndarrays, containing the logit scores corresponding to each image and text input. The values are cosine similarities between the corresponding image and text features, times 100.
 
-#### Contributer
+#### Contributor
 This work was done during [Soma Kanazawa's](https://github.com/soma-knzw) internship at Sony.
