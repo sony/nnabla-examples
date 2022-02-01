@@ -1,7 +1,7 @@
 # NNabla-CLIP
 
-This repository is a nnabla implementation of CLIP released by openAI.  
-Click [here](https://arxiv.org/abs/2103.00020) for the original paper.
+This repository contains the nnabla implementation of CLIP(Contrastive Language-Image Pre-Training) released by openAI.  
+Click [here](https://arxiv.org/abs/2103.00020) for the original paper "Learning Transferable Visual Models From Natural Language Supervision".
 
 ## Approach
 
@@ -42,8 +42,9 @@ with nn.auto_forward():
 Trained models are available as:
 - [ViT-B/32](https://drive.google.com/file/d/1I_A4esqGGDSuSu1-VrjTvPjxV52WB62A/view?usp=sharing)(default) to `data/`
 - [ViT-B/16](https://drive.google.com/file/d/1M_9wXEXjuRwSe3Zcdn9gFrMmtkRyg3Qm/view?usp=sharing) to `data/`
-- [ViT-L/14](https://drive.google.com/file/d/1n9R0uXvS9fLVMUjEtkMYwdd4PmcZ7gFq/view?usp=sharing) to `data/`
+- [ViT-L/14](https://drive.google.com/file/d/1n9R0uXvS9fLVMUjEtkMYwdd4PmcZ7gFq/view?usp=sharing) to `data/`  
 
+You can also refer to the [conversion code](notebook-examples/convert_weights.ipynb) in case you'd like to know how PyTorch weights are converted to nnabla.
 
 ## API
 
@@ -72,3 +73,6 @@ Given a batch of text tokens, returns the text features encoded by the language 
 #### `clip.logits(image: numpy.ndarray, text: numpy.ndarray)`
 
 Given a batch of images and a batch of text tokens, returns two ndarrays, containing the logit scores corresponding to each image and text input. The values are cosine similarities between the corresponding image and text features, times 100.
+
+#### Contributor
+This work was done during [Soma Kanazawa's](https://github.com/soma-knzw) internship at Sony.
