@@ -232,6 +232,11 @@
         Copyright (c) 2019 Xingyi Zhou.
         All rights reserved.
 
+    3. CLIP, vision-and-language/clip/clip
+        simple_tokenizer.py
+
+        Copyright (c) 2021 OpenAI
+
     The following components are provided under Nvidia Source Code License-NC.
 
     1. StyleGAN2 - For details, see, /image-generation/stylegan2/ops.py:_setup_kernel
