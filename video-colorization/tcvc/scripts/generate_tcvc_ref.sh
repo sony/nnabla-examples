@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Sony Corporation. All Rights Reserved.
+# Copyright 2021 Sony Group Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+MODEL_PATH="./results/tcvc_01"
 
-def save_nnp(input, output, batchsize):
-    runtime_contents = {
-        'networks': [
-            {'name': 'Validation',
-             'batch_size': batchsize,
-             'outputs': output,
-             'names': input}],
-        'executors': [
-            {'name': 'Runtime',
-             'network': 'Validation',
-             'data': [k for k, _ in input.items()],
-             'output':[k for k, _ in output.items()]}]}
-    return runtime_contents
+python generate.py --load-path "${MODEL_PATH}/param_015.h5" --gen_feat

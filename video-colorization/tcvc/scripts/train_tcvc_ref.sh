@@ -12,6 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MODEL_PATH="./results/tcvc_01"
-
-python generate.py --load-path "${MODEL_PATH}/param_015.h5"
+python train.py --device-id 0 --fix-global-epoch 0 --d-n-scales 1 --g-n-scales 1 --save-path ./results/tcvc_01 --gen_feat
