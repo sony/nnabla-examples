@@ -106,7 +106,7 @@ def tf_resizebilinear(x, scale=None, output_size=(299, 299), align_corners=False
     return output
 
 
-def im2ndarray(image_paths, imsize=(299, 299), normalize=True):
+def im2ndarray(image_paths, imsize=(299, 299), normalize=True, use_tf_resize=True):
     """
         retrieve image paths first, then convert each image
         to nn.Variable. len(image_paths) must be the same as batch_size.
@@ -121,7 +121,8 @@ def im2ndarray(image_paths, imsize=(299, 299), normalize=True):
         TODO: enable imresize, accept multi resolution images.
     """
     for i, image_path in enumerate(image_paths):
-        image = imread(image_path)
+        import nnabla.utils.image_utils as iu
+        image = iu.imread(image_path, num_channels=3, channel_first=True)
         image = image.astype(np.float32)  # cast to float
         if i == 0:
             images = np.expand_dims(image, 0)
@@ -129,9 +130,38 @@ def im2ndarray(image_paths, imsize=(299, 299), normalize=True):
             image = np.expand_dims(image, 0)  # not images
             images = np.concatenate([images, image])
 
-    images = tf_resizebilinear(
-        images, output_size=imsize, align_corners=False, half_pixel_centers=False)
-    if normalize:
-        images = (images - 128.) / 128.
+    return npy2ndarray(images, imsize=imsize, normalize=normalize, use_tf_resize=use_tf_resize)
 
-    return nn.NdArray.from_numpy_array(images)
+
+def npy2ndarray(im_npy, imsize=(299, 299), normalize=True, use_tf_resize=True):
+    """
+        Convert each image
+        to nn.Variable. len(image_paths) must be the same as batch_size.
+
+        Args: 
+            im_npy (list): Cacatenation of images as numpy format. The shape should be (Batch, Channel, Height, Width).
+            imsize (tuple of int): resized image height and width.
+            normalize (bool): if True (by default), normalize images
+                              so that the values are within [-1., +1.], assuming given images have values within [0, 255]. 
+            use_tf_resize (bool): If True, use tesor flow resizer implemented by numpy. 
+                                  The result must be compatible with tensor flow's implementation, but slow.
+                                  If False, nnabla.functions.interpolate will be used. Default is True.
+        Returns:
+            _ (nn.NdArray): NdArray converted from images.
+        TODO: accept multi resolution images.
+    """
+    if use_tf_resize:
+        images = tf_resizebilinear(
+            im_npy.astype(np.float32), output_size=imsize, align_corners=False, half_pixel_centers=False)
+
+    images = nn.NdArray.from_numpy_array(im_npy)
+
+    if not use_tf_resize:
+        import nnabla.functions as F
+        images = F.interpolate(images, output_size=imsize,
+                               mode="linear", align_corners=False)
+
+    if normalize:
+        images = (images - 127.5) / 127.5
+
+    return images

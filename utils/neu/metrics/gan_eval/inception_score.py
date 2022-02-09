@@ -22,8 +22,9 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 
 from tqdm import tqdm
-from .im2ndarray import im2ndarray
+from .im2ndarray import npy2ndarray
 from .inceptionv3 import construct_inceptionv3
+from .common import get_data_iterator
 from nnabla.ext_utils import get_extension_context
 
 
@@ -47,6 +48,8 @@ def get_parser():
                         help='Backend name.')
     parser.add_argument('--device-id', '-d', default=0, type=int,
                         help='Device ID.')
+    parser.add_argument('--faster-resize', action="store_true",
+                        help='If specified, nnabla.interpolate is used to perform resize on GPU.')
 
     return parser
 
@@ -98,44 +101,40 @@ def get_conditional_dist(fake_images):
     return py_given_x
 
 
-def get_all_features_on_imagepaths(image_paths, batch_size):
+def get_all_features_on_imagepaths(image_paths, batch_size, faster_resize=False):
     """Extract all the given images' feature.
         Args:
             image_paths (list): list of image file's paths.
             batch_size (int): batch size.
+            faster_resize (bool): If true, resize is performed on GPU by nnabla.interpolate.
+                                  Otherwise, slower but the same resize implementation with tensorflow by numpy will be used.
 
         Returns:
             all_py_given_x (np.ndarray): (N) images' class probabilities. shape: (N, 1008)
     """
     print("loading images...")
     num_images = len(image_paths)
-    num_loop, num_remainder = divmod(num_images, batch_size)
-    batched_images = image_paths[:-num_remainder]
-    rest_image_paths = image_paths[-num_remainder:]
 
     pbar = tqdm(total=num_images)
-    if batch_size > 1 and num_remainder != 0:
-        images = im2ndarray(rest_image_paths, imsize=(299, 299))
+    data_iter = get_data_iterator(image_paths, batch_size,
+                                  shuffle=False, stop_exhausted=False, channel_first=True, num_channels=3)
+    samples = 0
+    all_py_given_x = []
+    while samples < num_images:
+        d_npy = data_iter.next()[0]
+        if samples + len(d_npy) > num_images:
+            d_npy = d_npy[:num_images]
+
+        images = npy2ndarray(d_npy, imsize=(299, 299),
+                             normalize=True, use_tf_resize=not faster_resize)
         py_given_x = get_conditional_dist(images)
-        all_py_given_x = py_given_x.data
-        pbar.update(num_remainder)
-    else:
-        # when batch_size = 1
-        all_py_given_x = np.zeros((0, 1008))
-        batched_images = rest_image_paths
 
-    for i in range(num_loop):
-        image_paths = batched_images[i*batch_size:(i+1)*batch_size]
-        images = im2ndarray(image_paths, imsize=(299, 299))
-        py_given_x = get_conditional_dist(images)
-        all_py_given_x = np.concatenate(
-            [all_py_given_x, py_given_x.data], axis=0)
-        pbar.update(batch_size)
+        all_py_given_x.append(py_given_x.data)
 
-    all_py_given_x = np.concatenate([all_py_given_x[num_remainder:, :],
-                                     all_py_given_x[:num_remainder, :]], 0)
+        pbar.update(len(d_npy))
+        samples += len(d_npy)
 
-    return all_py_given_x
+    return np.concatenate(all_py_given_x, axis=0)
 
 
 def load_parameters(params_path):
@@ -172,8 +171,9 @@ def main(args):
         raise RuntimeError(f"Invalid path: {path}")
 
     print("calculating all features of fake data...")
+    faster_resize = args.faster_resize
     all_py_given_x = get_all_features_on_imagepaths(
-        fake_image_paths, batch_size)
+        fake_image_paths, batch_size, faster_resize)
 
     print("Finished extracting features. Calculating inception Score...")
 
