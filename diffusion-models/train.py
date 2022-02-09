@@ -172,11 +172,16 @@ def main(**kwargs):
         "ema": dummy_solver_ema,
     }
 
+    # setup output directory
+    if comm.rank == 0:
+        os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
+
     start_iter = 0  # exclusive
     if args.resume:
         parent = os.path.dirname(os.path.abspath(args.output_dir))
         all_logs = sorted(fnmatch.filter(
             os.listdir(parent), "*{}*".format(args.dataset)))
+
         if len(all_logs):
             latest_dir = os.path.join(parent, all_logs[-1])
             checkpoints = sorted(fnmatch.filter(
@@ -311,7 +316,7 @@ def main(**kwargs):
 
             comm.barrier()
 
-        if i > 0 and i % args.gen_interval == 0:
+        if i > 0 and args.gen_interval > 0 and i % args.gen_interval == 0:
             # sampling
             sample_out, _, _ = gen_model.sample(shape=(16, ) + x.shape[1:],
                                                 use_ema=True, progress=False)

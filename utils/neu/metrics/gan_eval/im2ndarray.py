@@ -151,7 +151,7 @@ def npy2ndarray(im_npy, imsize=(299, 299), normalize=True, use_tf_resize=True):
         TODO: accept multi resolution images.
     """
     if use_tf_resize:
-        images = tf_resizebilinear(
+        im_npy = tf_resizebilinear(
             im_npy.astype(np.float32), output_size=imsize, align_corners=False, half_pixel_centers=False)
 
     images = nn.NdArray.from_numpy_array(im_npy)

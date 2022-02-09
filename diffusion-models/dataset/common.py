@@ -46,7 +46,6 @@ def resize_ccrop(img, size, channel_first=True):
 
     return rsz
 
-
 class SimpleDatasource(DataSource):
     def __init__(self, img_paths, img_size, *,
                  labels=None, rng=None, on_memory=True,

@@ -77,11 +77,7 @@ def _cifar10(args):
 def _imagenet(args):
     # default resolution is 64
     _refine_image_shape(args, 64)
-
-    if args.image_size <= 64:
-        args.dataset_root_dir = os.path.join(args.data_dir, "train_64x64")
-    else:
-        args.dataset_root_dir = os.path.join(args.data_dir, "ilsvrc2012")
+    args.dataset_root_dir = os.path.join(args.data_dir, "ilsvrc2012")
 
 
 def _custum_dataset(args):

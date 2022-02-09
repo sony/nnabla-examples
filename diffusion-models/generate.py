@@ -29,6 +29,26 @@ from model import Model
 from diffusion import ModelVarType
 
 
+def refine_obsolete_conf(conf: AttrDict):
+    """
+    Add default arguments for obsolete config.
+    """
+    
+    if "model_var_type" in conf:
+        conf.model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
+    else:
+        conf.model_var_type = ModelVarType.FIXED_SMALL
+
+    if "channel_last" not in conf:
+        conf.channel_last = False
+    
+    if "num_attention_head_channels" not in conf:
+        conf.num_attention_head_channels = None
+    
+    if "resblock_resample" not in conf:
+        conf.resblock_resample = False
+
+
 @click.command()
 # configs for generating process
 @click.option("--device-id", default='0', help="Device id.", show_default=True)
@@ -64,18 +84,13 @@ def main(**kwargs):
         # The last step should be included always.
         use_timesteps.append(conf.num_diffusion_timesteps - 1)
 
-    # setup model variance type
-    model_var_type = ModelVarType.FIXED_SMALL
-    if "model_var_type" in conf:
-        model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
-
-    channel_last = False
-    if "channel_last" in conf:
-        channel_last = conf.channel_last
+    refine_obsolete_conf(conf)
+    if comm.rank == 0:
+        conf.dump()
 
     model = Model(beta_strategy=conf.beta_strategy,
                   use_timesteps=use_timesteps,
-                  model_var_type=model_var_type,
+                  model_var_type=conf.model_var_type,
                   num_diffusion_timesteps=conf.num_diffusion_timesteps,
                   attention_num_heads=conf.num_attention_heads,
                   attention_head_channels=conf.num_attention_head_channels,
@@ -85,7 +100,7 @@ def main(**kwargs):
                   channel_mult=conf.channel_mult,
                   num_res_blocks=conf.num_res_blocks,
                   resblock_resample=conf.resblock_resample,
-                  channel_last=channel_last)
+                  channel_last=conf.channel_last)
 
     # load parameters
     assert os.path.exists(
@@ -109,6 +124,7 @@ def main(**kwargs):
                                                         use_ema=args.ema,
                                                         progress=comm.rank == 0,
                                                         use_ddim=args.ddim)
+        print(len(nn.get_parameters()))
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
@@ -117,14 +133,14 @@ def main(**kwargs):
             save_path = os.path.join(
                 args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
             save_tiled_image(sample_out.astype(np.uint8),
-                             save_path, channel_last=channel_last)
+                             save_path, channel_last=conf.channel_last)
             local_saved_cnt += 1
         else:
             for b in range(B):
                 save_path = os.path.join(
                     args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
-                    np.uint8), channel_first=not channel_last)
+                    np.uint8), channel_first=not conf.channel_last)
                 local_saved_cnt += 1
 
         # create video for x_starts
@@ -134,7 +150,7 @@ def main(**kwargs):
                 xstart = x_starts[i][1]
                 assert isinstance(xstart, np.ndarray)
                 im = get_tiled_image(
-                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=channel_last).astype(np.uint8)
+                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=conf.channel_last).astype(np.uint8)
                 clips.append(im)
 
             clip = mp.ImageSequenceClip(clips, fps=5)

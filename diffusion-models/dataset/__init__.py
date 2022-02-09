@@ -31,6 +31,13 @@ def get_dataset(args, comm):
     assert hasattr(args, "data_dir")
     assert hasattr(args, "channel_last")
 
+    # refine
+    if not hasattr(args, "fix_aspect_ratio"):
+        args.fix_aspect_ratio = True
+
+    if not hasattr(args, "shuffle_dataset"):
+        args.shuffle_dataset = True
+
     if args.dataset == "cifar10":
         data_iterator = Cifar10DataIterator(
             args.batch_size, comm=comm, train=True, channel_last=args.channel_last)
