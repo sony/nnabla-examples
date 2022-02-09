@@ -27,27 +27,30 @@ from neu.datasets import _get_sliced_data_source
 
 def resize_ccrop(img, size, channel_first=True):
     assert isinstance(size, int)
-    h1, w1 = img.shape[-2:] if channel_first else img.shape[:-2]
+    assert len(img.shape) == 3
+    h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
     s = size / min(h1, w1)
 
     rsz = imresize(img,
                    (max(size, int(round(s * w1))), max(size, int(round(s * h1)))),
                    channel_first=channel_first)
 
-    h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-2]
+    h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
     h_off = (h2 - size) // 2
     w_off = (w2 - size) // 2
     rsz = rsz[:, h_off:h_off+size, w_off:w_off +
               size] if channel_first else rsz[h_off:h_off+size, w_off:w_off+size]
 
-    h3, w3 = rsz.shape[-2:] if channel_first else rsz.shape[:-2]
+    h3, w3 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
     assert h3 == size and w3 == size
 
     return rsz
 
 
 class SimpleDatasource(DataSource):
-    def __init__(self, img_paths, img_size, labels=None, rng=None, on_memory=True, fix_aspect_ratio=True):
+    def __init__(self, img_paths, img_size, *,
+                 labels=None, rng=None, on_memory=True,
+                 fix_aspect_ratio=True, channel_last=False):
         super(SimpleDatasource, self).__init__(shuffle=True, rng=rng)
 
         if labels is not None:
@@ -68,6 +71,7 @@ class SimpleDatasource(DataSource):
         self._size = len(self.img_paths)
         self.on_memory = on_memory
         self.fix_aspect_ratio = fix_aspect_ratio
+        self.channel_last = channel_last
 
         if self.on_memory:
             self.images = [None for _ in range(self.size)]
@@ -111,12 +115,13 @@ class SimpleDatasource(DataSource):
         if self.fix_aspect_ratio:
             # perform resize and center crop to keep original aspect ratio.
             img = imread(self.img_paths[image_idx],
-                         channel_first=True, num_channels=3)
-            img = resize_ccrop(img, self.im_size[0], channel_first=True)
+                         channel_first=not self.channel_last, num_channels=3)
+            img = resize_ccrop(
+                img, self.im_size[0], channel_first=not self.channel_last)
         else:
             # Breaking original aspect ratio, forcely resize image to self.im_size.
             img = imread(
-                self.img_paths[image_idx], channel_first=True, size=self.im_size, num_channels=3)
+                self.img_paths[image_idx], channel_first=not self.channel_last, size=self.im_size, num_channels=3)
 
         if self.on_memory:
             self.images[image_idx] = img
@@ -128,7 +133,8 @@ SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 
 def SimpleDataIterator(batch_size, root_dir, image_size,
-                       comm=None, shuffle=True, rng=None, on_memory=True, fix_aspect_ratio=True):
+                       comm=None, shuffle=True, rng=None, on_memory=True,
+                       fix_aspect_ratio=True, channel_last=False):
     # get all files
     paths = [os.path.join(root_dir, x)
              for x in os.listdir(root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
@@ -141,7 +147,8 @@ def SimpleDataIterator(batch_size, root_dir, image_size,
                           img_size=image_size,
                           rng=rng,
                           on_memory=on_memory,
-                          fix_aspect_ratio=fix_aspect_ratio)
+                          fix_aspect_ratio=fix_aspect_ratio,
+                          channel_last=channel_last)
 
     logger.info(f"Initialized data iterator. {ds.size} images are found.")
 

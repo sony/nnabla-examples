@@ -40,7 +40,7 @@ def get_output_dir_name(org, dataset):
 
 
 def str_as_integer_list(ctx, param, value):
-    if value is None or len(value) == 0:
+    if value is None or len(value) == 0 or value.lower() == "none":
         return None
 
     return tuple(int(x) for x in value.split(","))
@@ -61,9 +61,13 @@ def str_as_integer_list(ctx, param, value):
               type=click.Choice(["linear", "cosine"], case_sensitive=False), show_choices=True)
 @click.option("--num-diffusion-timesteps", default=1000, help="Number of diffusion timesteps.", show_default=True)
 @click.option("--ssn/--no-ssn", default=True, type=bool, help="use scale shift norm or not.")
+@click.option("--resblock-resample/--no-resblock-resample", default=True, type=bool, help="Use resblock for down/up sampling.")
 @click.option("--num-attention-heads", default=4, type=int, help="Number of multihead attention heads", show_default=True)
 @click.option("--attention-resolutions", default="16,8", type=str, callback=str_as_integer_list,
               help="Resolutions which attention is applied. Comma separated string should be passed. If None, use default for dataset.")
+@click.option("--num-attention-head-channels", default=None, type=int,
+              help="Number of channels of each attention head."
+                   "If specified, # of heads for each attention layer is automatically calculated and num-attention-heads will be ignored.", show_default=True)
 @click.option("--base-channels", default=None, type=int, help="Base channel size. If None, use default for dataset.")
 @click.option("--channel-mult", default=None, type=str, callback=str_as_integer_list,
               help="Channel multipliers for each block. Comma separated string should be passed. If None, use default for dataset.")
@@ -71,6 +75,8 @@ def str_as_integer_list(ctx, param, value):
 @click.option("--dropout", default=0.0, type=float, help="Dropout prob.", show_default=True)
 @click.option("--model-var-type", type=click.Choice(ModelVarType.get_supported_keys(), case_sensitive=False),
               default="fixed_small", help="A type of the model variance.", show_default=True, show_choices=True)
+@click.option("--channel-last/--no-channel-last", default=False, type=bool,
+              help="Use channel last layout.", show_default=True)
 # data related configs
 @click.option("--dataset", default="custum", help="Dataset name to train model on.",
               type=click.Choice(["celebahq", "cifar10", "imagenet", "custom"], case_sensitive=False), show_choices=True)
@@ -83,7 +89,7 @@ def str_as_integer_list(ctx, param, value):
               help="If True, the data once loaded will be kept on Host memory.", show_default=True)
 @click.option("--fix-aspect-ratio/--no-fix-aspect-ratio", default=True,
               help="Whether keep aspect ratio or not for loaded training images.", show_default=True)
-# configs for dumpling
+# configs for logging
 @click.option("--output-dir", default="./logdir", help="output dir", show_default=True)
 @click.option("--save-interval", default=int(1e4), help="Number of iters between saves.", show_default=True)
 @click.option("--gen-interval", default=int(1e4), help="Number of iters between each generation.", show_default=True)
@@ -107,11 +113,34 @@ def main(**kwargs):
                   model_var_type=ModelVarType.get_vartype_from_key(
                       args.model_var_type),
                   attention_num_heads=args.num_attention_heads,
+                  attention_head_channels=args.num_attention_head_channels,
                   attention_resolutions=args.attention_resolutions,
                   scale_shift_norm=args.ssn,
                   base_channels=args.base_channels,
                   channel_mult=args.channel_mult,
-                  num_res_blocks=args.num_res_blocks)
+                  num_res_blocks=args.num_res_blocks,
+                  resblock_resample=args.resblock_resample,
+                  channel_last=args.channel_last)
+
+    use_timesteps = list(
+        range(0, args.num_diffusion_timesteps, 4))  # sampling interval
+    if use_timesteps[-1] != args.num_diffusion_timesteps - 1:
+        # The last step should be included always.
+        use_timesteps.append(args.num_diffusion_timesteps - 1)
+
+    gen_model = Model(beta_strategy=args.beta_strategy,
+                      use_timesteps=use_timesteps,
+                      model_var_type=model.model_var_type,
+                      num_diffusion_timesteps=args.num_diffusion_timesteps,
+                      attention_num_heads=args.num_attention_heads,
+                      attention_head_channels=args.num_attention_head_channels,
+                      attention_resolutions=args.attention_resolutions,
+                      scale_shift_norm=args.ssn,
+                      base_channels=args.base_channels,
+                      channel_mult=args.channel_mult,
+                      num_res_blocks=args.num_res_blocks,
+                      resblock_resample=args.resblock_resample,
+                      channel_last=args.channel_last)
 
     # build graph
     x = nn.Variable(args.image_shape)  # assume data_iterator returns [0, 255]
@@ -121,7 +150,6 @@ def main(**kwargs):
                                            loss_scaling=None if args.loss_scaling == 1.0 else args.loss_scaling)
     assert loss_dict.batched_loss.shape == (args.batch_size, )
     assert t.shape == (args.batch_size, )
-    assert t.persistent == True
 
     # optimizer
     solver = S.Adam()
@@ -265,15 +293,17 @@ def main(**kwargs):
 
         if i > 0 and i % args.gen_interval == 0:
             # sampling
-            sample_out, _, _ = model.sample(
-                shape=(16, ) + x.shape[1:], use_ema=True, progress=False)
+            sample_out, _, _ = gen_model.sample(shape=(16, ) + x.shape[1:],
+                                                use_ema=True, progress=False)
             assert sample_out.shape == (16, ) + args.image_shape[1:]
 
             # scale back to [0, 255]
             sample_out = (sample_out + 1) * 127.5
 
             save_path = os.path.join(image_dir, f"gen_{i}_{comm.rank}.png")
-            save_tiled_image(sample_out.astype(np.uint8), save_path)
+
+            save_tiled_image(sample_out.astype(np.uint8),
+                             save_path, channel_last=args.channel_last)
 
 
 if __name__ == "__main__":

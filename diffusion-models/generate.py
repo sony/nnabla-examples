@@ -32,6 +32,7 @@ from diffusion import ModelVarType
 @click.command()
 # configs for generating process
 @click.option("--device-id", default='0', help="Device id.", show_default=True)
+@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
 @click.option("--samples", default=16, help="# of generating samples on each device.", show_default=True)
 @click.option("--batch-size", default=32, help="# of generating samples for each inference.", show_default=True)
 # model configs
@@ -53,7 +54,7 @@ def main(**kwargs):
     conf = read_yaml(args.config)
 
     comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config="float", random_pseed=True)
+                       type_config=args.type_config, random_pseed=True)
     if args.sampling_interval is None:
         args.sampling_interval = 1
 
@@ -68,16 +69,23 @@ def main(**kwargs):
     if "model_var_type" in conf:
         model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
 
+    channel_last = False
+    if "channel_last" in conf:
+        channel_last = conf.channel_last
+
     model = Model(beta_strategy=conf.beta_strategy,
                   use_timesteps=use_timesteps,
                   model_var_type=model_var_type,
                   num_diffusion_timesteps=conf.num_diffusion_timesteps,
                   attention_num_heads=conf.num_attention_heads,
+                  attention_head_channels=conf.num_attention_head_channels,
                   attention_resolutions=conf.attention_resolutions,
                   scale_shift_norm=conf.ssn,
                   base_channels=conf.base_channels,
                   channel_mult=conf.channel_mult,
-                  num_res_blocks=conf.num_res_blocks)
+                  num_res_blocks=conf.num_res_blocks,
+                  resblock_resample=conf.resblock_resample,
+                  channel_last=channel_last)
 
     # load parameters
     assert os.path.exists(
@@ -92,13 +100,15 @@ def main(**kwargs):
                 1) // num_samples_per_iter
 
     local_saved_cnt = 0
+
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
-        sample_out, _, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
-                                               dump_interval=1,
-                                               use_ema=args.ema,
-                                               progress=comm.rank == 0,
-                                               use_ddim=args.ddim)
+        sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
+                                                        noise=None,
+                                                        dump_interval=-1,
+                                                        use_ema=args.ema,
+                                                        progress=comm.rank == 0,
+                                                        use_ddim=args.ddim)
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
@@ -106,14 +116,15 @@ def main(**kwargs):
         if args.tiled:
             save_path = os.path.join(
                 args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
-            save_tiled_image(sample_out.astype(np.uint8), save_path)
+            save_tiled_image(sample_out.astype(np.uint8),
+                             save_path, channel_last=channel_last)
             local_saved_cnt += 1
         else:
             for b in range(B):
                 save_path = os.path.join(
                     args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
-                    np.uint8), channel_first=True)
+                    np.uint8), channel_first=not channel_last)
                 local_saved_cnt += 1
 
         # create video for x_starts
@@ -123,7 +134,7 @@ def main(**kwargs):
                 xstart = x_starts[i][1]
                 assert isinstance(xstart, np.ndarray)
                 im = get_tiled_image(
-                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=False).astype(np.uint8)
+                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=channel_last).astype(np.uint8)
                 clips.append(im)
 
             clip = mp.ImageSequenceClip(clips, fps=5)

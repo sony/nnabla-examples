@@ -38,8 +38,9 @@ def _info(msg):
     logger.info(f"{prefix} {msg}")
 
 
-def ImagenetDataIterator(batch_size, root_dir, image_size=(256, 256), fix_aspect_ratio=True,
-                         comm=None, shuffle=True, rng=None, train=True,
+def ImagenetDataIterator(batch_size, root_dir, *,
+                         image_size=(256, 256), fix_aspect_ratio=True,
+                         comm=None, shuffle=True, rng=None, train=True, channel_last=False,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils
 
@@ -83,7 +84,8 @@ def ImagenetDataIterator(batch_size, root_dir, image_size=(256, 256), fix_aspect
         raise NotImplementedError("val is not supported now.")
 
     ds = SimpleDatasource(img_paths=paths, img_size=image_size, labels=labels,
-                          rng=rng, on_memory=False, fix_aspect_ratio=fix_aspect_ratio)
+                          rng=rng, on_memory=False, fix_aspect_ratio=fix_aspect_ratio,
+                          channel_last=channel_last)
 
     _info(f"Loaded imagenet dataset. # of images: {ds.size}.")
 

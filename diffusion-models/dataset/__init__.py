@@ -29,22 +29,25 @@ def get_dataset(args, comm):
     assert hasattr(args, "image_shape")
     assert len(args.image_shape) == 4
     assert hasattr(args, "data_dir")
+    assert hasattr(args, "channel_last")
 
     if args.dataset == "cifar10":
         data_iterator = Cifar10DataIterator(
-            args.batch_size, comm=comm, train=True)
+            args.batch_size, comm=comm, train=True, channel_last=args.channel_last)
     elif args.dataset.startswith("imagenet") and max(*args.image_shape[-2:]) > 64:
         data_iterator = ImagenetDataIterator(args.batch_size,
                                              args.dataset_root_dir,
                                              image_size=args.image_shape[-2:],
                                              fix_aspect_ratio=args.fix_aspect_ratio,
                                              comm=comm,
-                                             train=True)
+                                             train=True,
+                                             channel_last=args.channel_last)
     else:
         data_iterator = SimpleDataIterator(args.batch_size,
                                            args.dataset_root_dir,
                                            image_size=args.image_shape[-2:],
                                            comm=comm, on_memory=args.dataset_on_memory,
-                                           fix_aspect_ratio=args.fix_aspect_ratio)
+                                           fix_aspect_ratio=args.fix_aspect_ratio,
+                                           channel_last=args.channel_last)
 
     return data_iterator

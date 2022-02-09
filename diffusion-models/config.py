@@ -14,6 +14,8 @@
 
 import os
 
+from utils import Shape4D
+
 
 def _check_args_has(args, attr):
     assert isinstance(attr, str), f"attr must be str not {type(attr)}."
@@ -25,25 +27,36 @@ def _refine_if_none(val, default):
 
 
 def _refine_image_shape(args, default_resolution):
+    _check_args_has(args, "channel_last")
+
     args.image_size = _refine_if_none(args.image_size, default_resolution)
 
-    args.image_shape = (args.batch_size, 3, args.image_size, args.image_size)
+    if args.channel_last:
+        args.image_shape = (
+            args.batch_size, args.image_size, args.image_size, 3)
+    else:
+        args.image_shape = (args.batch_size, 3,
+                            args.image_size, args.image_size)
 
 
 def _refine_lr(args):
     _check_args_has(args, "image_shape")
     _check_args_has(args, "loss_scaling")
+    _check_args_has(args, "accum")
 
     if max(*args.image_shape[-2:]) <= 64:
         args.lr = _refine_if_none(args.lr, 1e-4)
-        args.grad_clip = -1  # disable gradient clipping
+        args.clip_grad = -1  # disable gradient clipping
     else:
         # bigger than 64
         args.lr = _refine_if_none(args.lr, 2e-5)
-        args.grad_clip = 1.
+        args.clip_grad = 1.
 
     if args.loss_scaling > (1.0 + 1e-5):
         args.lr /= args.loss_scaling
+
+    if args.accum > 1:
+        args.lr /= args.accum
 
 
 def _celebahq(args):
@@ -80,10 +93,12 @@ def _custum_dataset(args):
 
 def _common(args):
     _check_args_has(args, "image_shape")
+    _check_args_has(args, "channel_last")
 
     _refine_lr(args)
 
-    B, C, H, W = args.image_shape
+    B, C, H, W = Shape4D(
+        args.image_shape, args.channel_last).get_as_tuple("bchw")
 
     if H <= 32 and W <= 32:
         args.channel_mult = _refine_if_none(args.channel_mult, (1, 2, 2, 2))
