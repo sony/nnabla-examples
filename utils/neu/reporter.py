@@ -314,7 +314,7 @@ class AverageLogger(object):
         self.cnt = 0.
 
     def update(self, val):
-        val = get_value(val)
+        val = get_value(val, dtype=float)
         oldcnt = self.cnt
         self.cnt += 1
 
@@ -412,30 +412,33 @@ class KVReporter(object):
 
         self.is_synced = True  # No need to sync initial values
 
-    def sync_all(self, reset=True):
+    def sync_all(self, reset=True, sync=True):
         if self.is_synced:
             return
 
         for name, logger in sorted(self.name2logger.items(), key=lambda x: x):
-            # sync across all devices
-            synced_val = nn.NdArray.from_numpy_array(
-                np.asarray(get_value(logger.val)))
-            synced_cnt = nn.NdArray.from_numpy_array(
-                np.asarray(get_value(logger.cnt)))
-            if self.comm is not None:
-                try:
-                    synced_val *= synced_cnt
-                    self.comm.all_reduce(
-                        [synced_val], division=False, inplace=True)
-                    self.comm.all_reduce(
-                        [synced_cnt], division=False, inplace=True)
-                    synced_val /= synced_cnt
-                except:
-                    raise ValueError(
-                        f"Sync error. rank: {self.comm.rank}, key: {name}")
+            if sync:
+                # sync across all devices
+                synced_val = nn.NdArray.from_numpy_array(
+                    np.asarray(get_value(logger.val)))
+                synced_cnt = nn.NdArray.from_numpy_array(
+                    np.asarray(get_value(logger.cnt)))
+                if self.comm is not None:
+                    try:
+                        synced_val *= synced_cnt
+                        self.comm.all_reduce(
+                            [synced_val], division=False, inplace=True)
+                        self.comm.all_reduce(
+                            [synced_cnt], division=False, inplace=True)
+                        synced_val /= synced_cnt
+                    except:
+                        raise ValueError(
+                            f"Sync error. rank: {self.comm.rank}, key: {name}")
 
-            # update
-            self.name2val[name] = get_value(synced_val.get_data("r"))
+                # update
+                self.name2val[name] = get_value(synced_val.get_data("r"))
+            else:
+                self.name2val[name] = get_value(logger.val)
 
         self.is_synced = True
 
@@ -450,8 +453,7 @@ class KVReporter(object):
         self.name2logger[key] = self.name2logger[key]
 
     def desc(self, reset=True, sync=True):
-        if sync:
-            self.sync_all(reset=reset)
+        self.sync_all(reset=reset, sync=sync)
 
         desc = "[report]"
 
@@ -461,8 +463,7 @@ class KVReporter(object):
         return desc
 
     def dump(self, file=sys.stdout, reset=True, sync=True):
-        if sync:
-            self.sync_all(reset=reset)
+        self.sync_all(reset=reset, sync=sync)
 
         key2str = OrderedDict()
         max_key_width = 0

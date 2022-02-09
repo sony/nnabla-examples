@@ -16,13 +16,16 @@
 import os
 import sys
 
-import nnabla as nn
 import numpy as np
 from nnabla.logger import logger
 
 
 def set_random_pseed(comm):
-    x = nn.Variable.from_numpy_array(np.random.randint(low=0, high=1 << 30))
+    import nnabla as nn
+    tc = comm.ctx.backend[0].split(":")[1]
+
+    x = nn.Variable.from_numpy_array(np.random.randint(
+        low=0, high=1 << 16 if tc == "half" else 1 << 30))
     comm.broadcast(x)
 
     from nnabla.random import set_parameter_seed
@@ -193,7 +196,7 @@ def makedirs(dirpath):
 def get_current_time():
     from datetime import datetime
 
-    return datetime.now().strftime('%m%d_%H%M%S')
+    return datetime.now().strftime('%y%m%d_%H%M%S')
 
 
 def get_iteration_per_epoch(dataset_size, batch_size, round="ceil"):

@@ -27,6 +27,7 @@ from neu.checkpoint_util import load_checkpoint, save_checkpoint
 from neu.misc import AttrDict, get_current_time, init_nnabla
 from neu.reporter import KVReporter, save_tiled_image
 from neu.yaml_wrapper import write_yaml
+from neu.mixed_precision import MixedPrecisionManager
 
 from dataset import get_dataset
 from model import Model
@@ -49,6 +50,7 @@ def str_as_integer_list(ctx, param, value):
 @click.command()
 # configs for training process
 @click.option("--accum", default=1, help="# of gradient accumulation.", show_default=True)
+@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
 @click.option("--device-id", default='0', help="Device id.", show_default=True)
 @click.option("--batch-size", default=4, help="Batch size to train.", show_default=True)
 @click.option("--n-iters", default=int(5e5), help="# of training iterations.", show_default=True)
@@ -104,7 +106,7 @@ def main(**kwargs):
     args.output_dir = get_output_dir_name(args.output_dir, args.dataset)
 
     comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config="float", random_pseed=True)
+                       type_config=args.type_config, random_pseed=True)
 
     data_iterator = get_dataset(args, comm)
 
@@ -214,6 +216,8 @@ def main(**kwargs):
 
     comm.barrier()
 
+    mpm = MixedPrecisionManager(use_fp16=args.type_config == "half")
+
     for i in piter:
         # update solver's lr
         # cur_lr = get_warmup_lr(lr, args.n_warmup, i)
@@ -222,6 +226,9 @@ def main(**kwargs):
         # evaluate graph
         dummy_solver_ema.zero_grad()  # just in case
         solver.zero_grad()
+
+        retry_cnt = 0
+
         for accum_iter in range(args.accum):  # accumelate
             data, label = data_iterator.next()
             x.d = data.copy()
@@ -229,15 +236,25 @@ def main(**kwargs):
             loss_dict.loss.forward(clear_no_need_grad=True)
 
             all_reduce_cb = None
+            # if accum_iter == args.accum - 1:
+            #     all_reduce_cb = comm.get_all_reduce_callback(
+            #         params=solver.get_parameters().values())
+
+            is_overflow = mpm.backward(loss_dict.loss, solver,
+                                       clear_buffer=True, communicator_callbacks=all_reduce_cb)
+
+            if is_overflow:
+                retry_cnt += 1
+                if retry_cnt == 20:
+                    raise ValueError("Overflow happens too many times.")
+
+                accum_iter = 0
+                continue
+
             if accum_iter == args.accum - 1:
-                all_reduce_cb = comm.get_all_reduce_callback(
-                    params=solver.get_parameters().values())
+                comm.all_reduce(
+                    [x.grad for x in nn.get_parameters().values()], division=True, inplace=False)
 
-            loss_dict.loss.backward(
-                clear_buffer=True, communicator_callbacks=all_reduce_cb)
-
-            # logging
-            # loss
             reporter.kv_mean("loss", loss_dict.loss)
 
             if is_learn_sigma(model.model_var_type):
@@ -256,12 +273,14 @@ def main(**kwargs):
                     reporter.kv_mean(f"vlb_q{q_level}", loss_dict.vlb.d[j])
 
         # update
-        if args.grad_clip > 0:
-            solver.clip_grad_by_norm(args.grad_clip)
-        solver.update()
+        is_overflow = mpm.update(solver, clip_grad=args.clip_grad)
 
         # update ema params
-        ema_op.forward(clear_no_need_grad=True)
+        if is_overflow:
+            i -= 1
+            continue
+        else:
+            ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
         if args.dump_grad_norm:
@@ -277,11 +296,12 @@ def main(**kwargs):
 
         if i % args.show_interval == 0:
             if args.progress:
-                desc = reporter.desc(reset=True, sync=True)
+                desc = reporter.desc(
+                    reset=True, sync=True if args.type_config == "float" else False)
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True)
+                              0 else None, reset=True, sync=True if args.type_config == "float" else False)
 
             reporter.flush_monitor(i)
 
