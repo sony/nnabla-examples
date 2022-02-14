@@ -23,21 +23,24 @@ import clip
 ctx = get_extension_context('cudnn')
 nn.set_default_context(ctx)
 
+
 def main():
     with nn.auto_forward():
         clip.load('data/ViT-B-32.h5')
 
         image = clip.preprocess(Image.open("CLIP.png"))
-        image = F.reshape(image, (1, image.shape[0], image.shape[1], image.shape[2]))
+        image = F.reshape(
+            image, (1, image.shape[0], image.shape[1], image.shape[2]))
         text = clip.tokenize(["a diagram", "a dog", "a cat"])
 
         image_features = clip.encode_image(image)
         text_features = clip.encode_text(text)
-            
+
         logits_per_image, logits_per_text = clip.logits(image, text)
         probs = F.softmax(logits_per_image, axis=-1)
 
-        print("Label probs:", probs.d)  # prints: [[0.9927937  0.00421068 0.00299572]]
+        # prints: [[0.9927937  0.00421068 0.00299572]]
+        print("Label probs:", probs.d)
 
 
 if __name__ == "__main__":
