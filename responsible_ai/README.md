@@ -72,40 +72,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <br>
 
 # 3. Fairness
-## Three Metrics [code](./three_metrics/)
-> **The Impossibility Theorem of Machine Fairness -- A Causal Perspective**
-> Kailash Karthik Saravanakumar.
-> *arXiv technical report ([arXiv 2007.06024](https://arxiv.org/abs/2007.06024)*
-
-<p align="center">
-<img src="./three_metrics/images/three_metrics_work_flow_diagram.png" width="70%">
-</p>
-
-## Gender Bias Mitigation [code](./gender_bias_mitigation/)
+## Fairness of Machine Learning [code](./gender_bias_mitigation/)
 > **Data preprocessing techniques for classification without discrimination**
 > Kamiran, Faisal and Calders, Toon. 
-> *[Knowledge and Information Systems, 33(1):1–33, 2012](https://link.springer.com/content/pdf/10.1007/s10115-011-0463-8.pdf)* 
+> [Knowledge and Information Systems, 33(1):1–33, 2012](https://link.springer.com/content/pdf/10.1007/s10115-011-0463-8.pdf)* 
 
 <p align="center">
-<img src="./gender_bias_mitigation/images/xai-bias-mitigation-workflow.png" width="70%">
-</p>
-
-## Adversarial Debiasing [code](./adversarial_debiasing/)
-> **Mitigating Unwanted Biases with Adversarial Learning**
-> Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell.
-> *[Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society. 2018, pp. 335–340](https://dl.acm.org/doi/pdf/10.1145/3278721.3278779)* 
-
-<p align="center">
-<img src="./adversarial_debiasing/images/adversarial_debiasing_workflow.png" width="80%">
-</p>
-
-## Rejection Option-Based Classification [code](./rejection_option_based_classification/)
-> **Decision Theory for Discrimination-Aware Classification**
-> F. Kamiran, A. Karim and X. Zhang.
-> *[IEEE 12th International Conference on Data Mining, 2012, pp. 924-929](https://ieeexplore.ieee.org/document/6413831)* 
-
-<p align="center">
-<img src="./rejection_option_based_classification/images/roc_workflow_diagram.png" width="80%">
+<img src="./gender_bias_mitigation/images/xai-bias-mitigation-workflow.png">
 </p>
 
 ## Facial evaluation for skin color [code](./face_evaluation/)
