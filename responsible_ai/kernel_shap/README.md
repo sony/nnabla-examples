@@ -1,5 +1,5 @@
 # Kernel SHAP (tabular data)
-**SH**apley **A**dditive ex**P**lanation, **SHAP**, is an approach to explain the output of any machine learning model using a game theory. It links optimal credit allocation with local explanations using the classic Shapley values from game theory and their related extensions. This is an implementation of Neural Network Libraries on [SHAP](https://arxiv.org/abs/1705.07874). 
+**SH**apley **A**dditive ex**P**lanation, **SHAP**, is an approach to explain the output of any machine learning model using a game theory. It links optimal credit allocation with local explanations using the classic Shapley values from game theory and their related extensions. This is an implementation of Neural Network Libraries on [SHAP](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html). 
 
 
 <p align="center">
@@ -47,4 +47,4 @@ This helps you to understand how each features affect the prediction.
 
  
 ## Citation
-This is based on [A Unified Approach to Interpreting Model Predictions](https://arxiv.org/abs/1705.07874).
+This is based on [A Unified Approach to Interpreting Model Predictions](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html).
