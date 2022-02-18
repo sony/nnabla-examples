@@ -1,5 +1,5 @@
 # Copyright 2019,2020,2021 Sony Corporation.
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2021,2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-from six.moves import range
+from six.moves import range  # noqa
 
 from collections import namedtuple
 
@@ -117,9 +117,9 @@ class LinearDecayEGreedyExplorer(EGreedyExplorer):
 
     def linear_decay_epsilon(self):
         self.epsilon = max(
-           self.eps_end,
-           self.eps_start +
-           (self.eps_end - self.eps_start) * self.time / self.eps_steps)
+            self.eps_end,
+            self.eps_start +
+            (self.eps_end - self.eps_start) * self.time / self.eps_steps)
 
     def select_action(self, obs, val=False):
         if val:
