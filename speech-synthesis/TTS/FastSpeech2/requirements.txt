@@ -1,0 +1,10 @@
+tqdm
+librosa
+numba==0.48.0
+g2p_en
+tensorboard
+tensorboardX
+tgt # TextGridTools
+pyworld
+matplotlib
+torch
