@@ -18,6 +18,12 @@ Note that this requirements.txt dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.
 See [NNabla CUDA extension package installation guide](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
+We recommend to use the Dockerfile in the docker directory.
+```bash
+cd docker
+docker build -t you_image_name -f Dockerfile .
+```
+
 ## Dataset
 Download the [LJSpeech](https://keithito.com/LJ-Speech-Dataset/) data set and change `corpus_path` to the corresponding directory containing `../LJSpeech-1.1/`.
 Adjust `precomputed_path` to the desired directory, which stores all precomputed values.
@@ -55,10 +61,10 @@ python synthesize.py -c cudnn -d <list of GPUs e.g., 0,1,2,3> \
 Note that the outputs are mel spectrograms. Use a vocoder such as [HiFi-GAN](https://github.com/sony/nnabla-examples/tree/master/speech-synthesis/HiFiGAN/) in order to generate audio waveforms from mel spectrograms.
 
 
-The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/FastSpeech2/model.h5).
+The pre-trained model can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/fastspeech2/model.h5).
 
 
-Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/FastSpeech2/samples.7z).
+Synthesized audio samples can be downloaded from [here](https://nnabla.org/pretrained-models/nnabla-examples/speech-synthesis/TTS/fastspeech2/samples.7z).
 
 
 # References

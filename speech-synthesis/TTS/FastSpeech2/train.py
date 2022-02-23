@@ -1,3 +1,17 @@
+# Copyright 2021 Sony Group Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import os
 from pathlib import Path
@@ -174,8 +188,6 @@ class Trainer:
         hp = self.hp
         path = Path(hp.output_path) / 'artifacts'
         if (hp.comm.rank == 0):
-            # export to tensorboard
-            self.monitor.write_to_tb(self.cur_epoch)
             # save all training states
             self.save_checkpoint(path / 'states')
             # save all model parameters
@@ -183,8 +195,8 @@ class Trainer:
                 path = path / f"epoch_{self.cur_epoch}"
                 path.mkdir(parents=True, exist_ok=True)
                 self.model.save_parameters(str(path / 'model.h5'))
-                self.write_on_tensorboard('train')
-                self.write_on_tensorboard('valid')
+                self.write_output('train', path)
+                self.write_output('valid', path)
 
     def callback_on_finish(self):
         if self.hp.comm.rank == 0:
@@ -196,7 +208,7 @@ class Trainer:
         if self.hp.comm.rank == 0:
             path = Path(path)
             self.model.save_parameters(str(path / 'model.h5'))
-            self.optim.save_states(str(path / 'optim.h5'))
+            self.optim._solver.save_states(str(path / 'optim.h5'))
             with open(Path(self.hp.output_path) / 'checkpoint.json', 'w') as f:
                 json.dump(dict(cur_epoch=self.cur_epoch,
                                params_path=str(path),
@@ -218,25 +230,22 @@ class Trainer:
             path = Path(info['params_path'])
             self.optim._iter = info['optim_n_iters']
             self.cur_epoch = info['cur_epoch']
-        self.optim.load_states(str(path / 'optim.h5'))
+        self.optim._solver.load_states(str(path / 'optim.h5'))
 
-    def write_on_tensorboard(self, key):
+    def write_output(self, key, path):
         r"""write a few samples to tensorboard."""
         p = self.placeholder[key]
         p['loss'].forward(clear_buffer=True)
 
         # valiate data
         batch_mel = p['mel_pos'].d.copy()
-        fig, axs = plt.subplots(1, 4, figsize=(18, 3.5))
+        _, axs = plt.subplots(1, 4, figsize=(18, 3.5))
         _min, _max = batch_mel.min(), batch_mel.max()
 
-        for i, (ax, m) in enumerate(zip(axs.flat, batch_mel)):
+        for _, (ax, m) in enumerate(zip(axs.flat, batch_mel)):
             ax.set(xlabel='Frame', ylabel='Frequency')
             ax.imshow(m.T, aspect='auto', origin='lower',
                       vmin=_min, vmax=_max)
 
-        # write to tensorboard
-        self.monitor.tb_writer[key].add_figure(
-            'mel_spectrogram', fig, self.cur_epoch
-        )
-        self.monitor.tb_writer[key].flush()
+        plt.savefig(path/(f'{key}.png'), bbox_inches='tight')
+        plt.close()

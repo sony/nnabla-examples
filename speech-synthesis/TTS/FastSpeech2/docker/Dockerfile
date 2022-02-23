@@ -1,5 +1,4 @@
 FROM nnabla/nnabla-ext-cuda-multi-gpu:py38-cuda110-mpi3.1.6-v1.20.0
-LABEL maintainer="Bac.NguyenCong@sony.com"
 
 ENV HTTP_PROXY ${http_proxy}
 ENV HTTPS_PROXY ${https_proxy}
