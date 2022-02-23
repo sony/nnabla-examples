@@ -18,8 +18,8 @@ from neu.tts.hparams import HParams
 
 hparams = HParams(
 
-    corpus_path='/speech/misc/denguyeb1/data/ljspeech/LJSpeech-1.1/',
-    precomputed_path='/home/denguyeb/Desktop/datasets/ljspeech/',
+    corpus_path='LJSpeech-1.1/',
+    precomputed_path='ljspeech/',
 
     output_path='./log/fastspeech2/',
 
