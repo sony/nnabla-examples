@@ -37,7 +37,7 @@ class Adaptor(Module):
         self.duration = DurationPredictor(hp)
 
     def call(self, x, mask_phone, target_pitch=None, target_energy=None,
-             target_duration=None,  control_pitch=1.0, control_energy=1.0,
+             target_duration=None, control_pitch=1.0, control_energy=1.0,
              control_duration=1.0):
         """Returns variance adaptor.
 

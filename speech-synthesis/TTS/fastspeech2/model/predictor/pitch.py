@@ -42,7 +42,7 @@ class PitchPredictor(Module):
             np.linspace(p_min, p_max, hp.n_bins - 1), need_grad=False)
         self.pitch_bins = F.tile(bins, (hp.batch_size, 1))
 
-    def call(self, x,  mask=None, target=None, control=1.0):
+    def call(self, x, mask=None, target=None, control=1.0):
         r"""Returns pitch prediction.
 
         Args:

@@ -51,8 +51,10 @@ class Trainer:
         self.dataloader = dataloader
         self.rng = rng
         self.hp = hp
-        self.one_epoch_train = max(1, dataloader['train'].size // hp.batch_size)
-        self.one_epoch_valid = max(1, dataloader['valid'].size // hp.batch_size)
+        self.one_epoch_train = max(
+            1, dataloader['train'].size // hp.batch_size)
+        self.one_epoch_valid = max(
+            1, dataloader['valid'].size // hp.batch_size)
 
         # create saved directory
         path = Path(hp.output_path) / 'artifacts'

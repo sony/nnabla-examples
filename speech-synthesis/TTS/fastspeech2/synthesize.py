@@ -42,7 +42,7 @@ def synthesize(args):
     model = FastSpeech2(hp)
 
     model.training = False
-    model.load_parameters(args.model,  raise_if_missing=True)
+    model.load_parameters(args.model, raise_if_missing=True)
 
     phone_inp = nn.Variable((hp.batch_size, hp.max_len_phone))
     phone_len = nn.Variable((hp.batch_size, 1))

@@ -24,6 +24,7 @@ from .decoder import Decoder
 from .encoder import Encoder
 from neu.tts.module import Module
 
+
 class PostNet(Module):
     r"""The PostNet implementation.
 
@@ -88,7 +89,7 @@ class FastSpeech2(Module):
         self.postnet = PostNet(hp.n_mels)
 
     def call(self, x, len_phone, target_pitch=None, target_energy=None,
-             target_duration=None,  control_pitch=1.0,
+             target_duration=None, control_pitch=1.0,
              control_energy=1.0, control_duration=1.0):
         r"""Returns mel-spectrograms from text.
 

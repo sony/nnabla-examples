@@ -35,7 +35,6 @@ from neu.tts.optimizer import Optimizer
 from utils.optim import NoamScheduler
 
 
-
 def run(args):
     # create output path
     Path(hp.output_path).mkdir(parents=True, exist_ok=True)
