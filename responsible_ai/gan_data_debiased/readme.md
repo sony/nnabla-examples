@@ -1,7 +1,26 @@
-## NNabla-GAN-Debiasing
+# GAN Data Debiasing
+This is a colab interactive demo of GAN Data Debiasing.
+In this tutorial, we will build a fair dataset by using GAN to generate images that remove inappropriate correlations.
 
+<p align="center">
+<img src='images/gan_data_debiasing_workflow.png'>
+</p>
+<p align="center">
+Figure: Overview of GAN Data Debiasing.
+</p>
+
+# Interactive demo
+
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [GAN Data Debiasing](https://arxiv.org/abs/2012.01469) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gan_data_debiasing.ipynb) | Mitigate the dataset bias with GAN|<a href="url"><img src="images/gan_data_debiasing_workflow.png" align="center" height="90" ></a>|
+
+
+
+#### If you want to train the GAN-debiased model from the scratch please follow the below steps.
+***
 ### Dataset
-* Pleas download celebA dataset and decompress for training
+* Please download celebA dataset and decompress for training
 * Run `python crop_images.py` file to crop the aligned & cropped 178×218 images to 128x128.
 
 ### Configuration
@@ -50,8 +69,8 @@ Train the protected attribute classifier (generate the labels for generated imag
 --model-save-path [PATH to save the model parmeters]`
 
 Once the training got completed , check the model fairness.
-
-### References
+***
+# References
 1. [Fair Attribute Classification through Latent Space De-biasing ](https://arxiv.org/abs/2012.01469)
 2. [FairALM: Augmented Lagrangian Method for Training Fair Models with Little Regret](https://arxiv.org/abs/2004.01355)
 3. [Directional Bias Amplification](https://arxiv.org/abs/2102.12594)
