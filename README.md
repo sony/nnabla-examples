@@ -65,14 +65,9 @@ We have prepared interactive demos, where you can play around without having to 
 ### eXplainable AI
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
-<<<<<<< HEAD
- [Grad-CAM](https://openaccess.thecvf.com/content_iccv_2017/html/Selvaraju_Grad-CAM_Visual_Explanations_ICCV_2017_paper.html) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
- [SHAP](https://proceedings.neurips.cc/paper/2017/file/8a20a8621978632d76c43dfd28b67767-Paper.pdf) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/shap.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/shap/images/sample.png" align="center" height="90" ></a>|
- [Skin color (Masked Images)](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial_plugin.ipynb) | Facial evaluation for skin color |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/face_evaluation/Masked_Images.png" align="center" height="90" ></a>|
-=======
  [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
  [SHAP](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/shap.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/shap/images/sample.png" align="center" height="90" ></a>|
->>>>>>> ed09753 (Rebase and updat RAEDME(top))
+ [Skin color (Masked Images)](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/face_evaluation_tutorial_plugin.ipynb) | Facial evaluation for skin color |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/face_evaluation/Masked_Images.png" align="center" height="90" ></a>|
 
 ### Fairness of Machine Learning
 |Name| Notebook           | Task  | Example                       |
