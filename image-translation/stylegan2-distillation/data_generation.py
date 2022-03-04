@@ -18,7 +18,8 @@ import os
 import sys
 import argparse
 
-stylegan2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..', 'image-generation/stylegan2'))
+stylegan2_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '../..', 'image-generation/stylegan2'))
 sys.path.insert(0, stylegan2_path)
 from generate import synthesis
 from networks import mapping_network
