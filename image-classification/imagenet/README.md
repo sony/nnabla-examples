@@ -17,7 +17,7 @@ git clone git@github.com:sony/nnabla-examples.git
 
 ### Set up dependencies
 
-We recommend you to follow [our Docker workflow](../doc/docker.md) to set up a training environment.
+We recommend you to follow [our Docker workflow](../../doc/docker.md) to set up a training environment.
 If you would like to manually install all the requirements, install the following.
 
 * Python >= 3.6
