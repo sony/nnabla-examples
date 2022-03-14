@@ -59,7 +59,8 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <br>
 
 # 3. Fairness
-## Three Metrics [code](./three_metrics/)
+## Evaluation Measure
+### Three Metrics [code](./three_metrics/)
 > **The Impossibility Theorem of Machine Fairness -- A Causal Perspective**
 > Kailash Karthik Saravanakumar.
 > *arXiv technical report ([arXiv 2007.06024](https://arxiv.org/abs/2007.06024)*
@@ -68,7 +69,17 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./three_metrics/images/three_metrics_work_flow_diagram.png" width="70%">
 </p>
 
-## Gender Bias Mitigation [code](./gender_bias_mitigation/)
+### Facial evaluation for skin color [code](./face_evaluation/)
+> **Diversity in Faces**
+> Michele Merler, Nalini Ratha, Rogerio S. Feris, John R. Smith.
+> *arXiv technical report ([arxiv 1901.10436](https://arxiv.org/abs/1901.10436))* 
+
+<p align="center">
+<img src="./face_evaluation/skin_color.png">
+</p>
+
+## Pre Processing
+### Gender Bias Mitigation [code](./gender_bias_mitigation/)
 > **Data preprocessing techniques for classification without discrimination**
 > Kamiran, Faisal and Calders, Toon. 
 > *[Knowledge and Information Systems, 33(1):1–33, 2012](https://link.springer.com/content/pdf/10.1007/s10115-011-0463-8.pdf)* 
@@ -77,7 +88,18 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./gender_bias_mitigation/images/xai-bias-mitigation-workflow.png" width="70%">
 </p>
 
-## Adversarial Debiasing [code](./adversarial_debiasing/)
+
+### GAN Data Debiased [code](./gan_data_debiased/)
+> **Fair Attribute Classification through Latent Space De-biasing**
+> Vikram V. Ramaswamy, Sunnie S. Y. Kim, Olga Russakovsky. 
+> *[IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2021](https://openaccess.thecvf.com/content/CVPR2021/papers/Ramaswamy_Fair_Attribute_Classification_Through_Latent_Space_De-Biasing_CVPR_2021_paper.pdf)* 
+
+<p align="center">
+<img src="./gan_data_debiased/images/gan_data_debiasing_workflow.png" width="70%">
+</p>
+
+## In Processing
+### Adversarial Debiasing [code](./adversarial_debiasing/)
 > **Mitigating Unwanted Biases with Adversarial Learning**
 > Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell.
 > *[Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society. 2018, pp. 335–340](https://dl.acm.org/doi/pdf/10.1145/3278721.3278779)* 
@@ -86,6 +108,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./adversarial_debiasing/images/adversarial_debiasing_workflow.png" width="80%">
 </p>
 
+## Post Processing
 ## Rejection Option-Based Classification [code](./rejection_option_based_classification/)
 > **Decision Theory for Discrimination-Aware Classification**
 > F. Kamiran, A. Karim and X. Zhang.
@@ -95,12 +118,4 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./rejection_option_based_classification/images/roc_workflow_diagram.png" width="80%">
 </p>
 
-## Facial evaluation for skin color [code](./face_evaluation/)
-> **Diversity in Faces**
-> Michele Merler, Nalini Ratha, Rogerio S. Feris, John R. Smith.
-> *arXiv technical report ([arxiv 1901.10436](https://arxiv.org/abs/1901.10436))* 
-
-<p align="center">
-<img src="./face_evaluation/skin_color.png">
-</p>
 
