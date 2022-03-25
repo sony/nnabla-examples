@@ -18,11 +18,12 @@ import os
 import sys
 import argparse
 
-stylegan2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(stylegan2_path)
-from stylegan2.generate import synthesis
-from stylegan2.networks import mapping_network
-from stylegan2.ops import lerp, convert_images_to_uint8
+stylegan2_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '../..', 'image-generation/stylegan2'))
+sys.path.insert(0, stylegan2_path)
+from generate import synthesis
+from networks import mapping_network
+from ops import lerp, convert_images_to_uint8
 
 import numpy as np
 from tqdm import trange
