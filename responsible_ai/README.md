@@ -34,6 +34,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./kernel_shap/images/sample.png" width="500px">  
 </p>
 
+## Eigen-CAM [code](./eigencam/)
+[Muhammad, M. B. & Yeasin, M. "Eigen-CAM: Class Activation Map using Principal Components". in 2020 International Joint Conference on Neural Networks (IJCNN) 1–7 (IEEE, 2020).](https://ieeexplore.ieee.org/document/9206626)
+
+<p align="center">
+<img src="./eigencam/images/visualization_result.png" width="500px">  
+</p>
+
 </br>
 
 # 2. Influence
