@@ -1,4 +1,4 @@
-# A nnabla implementaion of Graph Convolutional Network
+# Graph U-Nets
 
 This is nnabla implementation of Graph U-Nets
 
