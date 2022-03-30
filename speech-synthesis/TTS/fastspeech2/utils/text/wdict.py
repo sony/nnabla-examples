@@ -27,12 +27,12 @@ References:
 """
 
 __ABBREVIATIONS__ = [
-    ('mrs', 'misess'), ('mr', 'mister'), ('dr', 'doctor'),
+    ('mrs', 'missis'), ('mr', 'mister'), ('dr', 'doctor'),
     ('st', 'saint'), ('co', 'company'), ('jr', 'junior'),
     ('maj', 'major'), ('gen', 'general'), ('drs', 'doctors'),
     ('rev', 'reverend'), ('lt', 'lieutenant'), ('hon', 'honorable'),
     ('sgt', 'sergeant'), ('capt', 'captain'), ('esq', 'esquire'),
-    ('ltd', 'limited'), ('col', 'colonel'), ('ft', 'fort'),
+    ('ltd', 'limited'), ('col', 'colonel'), ('ft', 'foot'),
 ]
 
 ___VALID_SYMBOLS___ = [

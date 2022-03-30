@@ -47,9 +47,9 @@ def get_alignment(tier, sr, hop_length):
     r"""Returns alignment.
 
     Args:
-        tier ([type]): [description]
-        sr ([type]): [description]
-        hop_length ([type]): [description]
+        tier (Tier): Input tier.
+        sr (int): Sampling rate.
+        hop_length (int): The hop length.
 
     Returns:
         List[str]: List of phonemes.

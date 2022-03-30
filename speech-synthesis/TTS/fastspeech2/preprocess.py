@@ -100,10 +100,8 @@ def run():
     file_valid = Path(hp.precomputed_path) / 'meta_test.csv'
     if not (file_train.exists() and file_valid.exists()):
         random.Random(hp.seed).shuffle(files)
-        with open(file_train, 'w') as f:
-            f.writelines(files[:int(0.98 * len(files))])
-        with open(file_valid, 'w') as f:
-            f.writelines(files[int(0.98 * len(files)):])
+        open(file_train, 'w').writelines(files[:int(0.98 * len(files))])
+        open(file_valid, 'w').writelines(files[int(0.98 * len(files)):])
 
 
 if __name__ == "__main__":

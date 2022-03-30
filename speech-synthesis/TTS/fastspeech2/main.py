@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     for key, value in hp.__dict__.items():
         name = "--" + key
-        if type(value) == list:
+        if isinstance(value, (list, tuple)):
             nargs, t = '+', type(value[0])
         else:
             nargs, t = None, type(value)

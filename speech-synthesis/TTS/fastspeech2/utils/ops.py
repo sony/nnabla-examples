@@ -30,9 +30,8 @@ class Regulator(PythonFunction):
         return 1
 
     def setup_impl(self, inputs, outputs):
-        o0 = outputs[0]
         b, _, d = inputs[0].shape
-        o0.reset_shape((b, self.max_len, d), True)
+        outputs[0].reset_shape((b, self.max_len, d), True)
 
     def forward_impl(self, inputs, outputs):
         inp = inputs[0].data
