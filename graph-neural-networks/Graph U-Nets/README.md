@@ -3,7 +3,7 @@
 This is nnabla implementation of Graph U-Nets
 
 Reference
-- Gao, Hongyang, and Shuiwang Ji. "Graph U-Nets." ICML. 2019.
+- Hongyang Gao and Shuiwang Ji, "Graph U-Nets," ICML 2019.
 - [PyTorch Implementation of Graph U-Nets](https://github.com/HongyangGao/Graph-U-Nets)
 
 ## Dataset and Task
@@ -15,7 +15,7 @@ We use [Cora dataset](https://relational.fit.cvut.cz/dataset/CORA) for semi-supe
 The dataset will be downloaded automatically.
 
 ```sh
-$python train.py --epoch 50 --seed 915
+$python train.py --epoch 50
 ```
 
 ## Requirements
@@ -27,4 +27,4 @@ $python train.py --epoch 50 --seed 915
 
 ## Notes
 
-- This implementaion does not use public split but random split.
+- This implementaion does not use public split but random train/val/test split.

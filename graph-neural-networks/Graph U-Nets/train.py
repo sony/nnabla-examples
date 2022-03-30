@@ -1,4 +1,4 @@
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ if __name__ == '__main__':
     num_nodes = len(G.nodes)
     num_classes = max(labels) + 1
 
-    train_mask, valid_mask, _ = get_mask(
-        20, 500, 500, num_nodes, num_classes, labels, seed=args.seed)
+    train_mask, valid_mask, test_mask = get_mask(
+        20, 500, 1000, num_nodes, num_classes, labels, seed=args.seed)
 
     print('Preprocessing data...')
     A_hat = normalize_adj(G)
@@ -61,8 +61,8 @@ if __name__ == '__main__':
         np.expand_dims(valid_mask, axis=1))
 
     pool_rate = [0.25, 0.25, 0.25, 0.25]
-    out = model(A_hat, X, pool_rate, num_classes, 0.5) 
-    out_valid = model(A_hat, X, pool_rate, num_classes, 0.)
+    out = model(A_hat, X, pool_rate, num_classes, train=True)
+    out_valid = model(A_hat, X, pool_rate, num_classes, train=False)
 
     loss, acc = metrics(out, labels, train_mask)
     _, acc_valid = metrics(out_valid, labels, valid_mask)
@@ -87,5 +87,9 @@ if __name__ == '__main__':
         print("loss: {:.3f} acc: {:.3f} acc_valid: {:.3f}".format(
             loss.d, acc.d, acc_valid.d))
 
+    _, acc_test = metrics(out_valid, labels, test_mask)
+    acc_test.forward()
+
     print('Training finished.')
     print('Best validation accuracy: {:.3f}'.format(best_acc))
+    print('Test accuracy: {:.3f}'.format(acc_test.d))

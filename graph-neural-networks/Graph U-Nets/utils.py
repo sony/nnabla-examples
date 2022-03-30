@@ -1,4 +1,4 @@
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ def load_cora(shuffle=True, seed=None):
                           sep='\t', header=None, names=["target", "source"])
     if shuffle:
         edge_df = edge_df.sample(frac=1, random_state=seed)
-    
+
     G = nx.from_pandas_edgelist(edge_df)
 
     feature_names = ['word_{}'.format(i) for i in range(1433)]
