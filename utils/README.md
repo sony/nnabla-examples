@@ -6,7 +6,7 @@ NEU, nnabla examples utils, provides a bunch of reusable components for writing 
 
 This package is not provided for package managers such as pip and conda so far. You have to set a python path to this folder to use `neu` package.
 
-We usually set a path to this folder at a utils package under each training example folder when you import it. See [Pix2PixHD/utils](../image-translation/pix2pixHD/utils/__init__.py) for an example.
+We usually set a path to this folder at a utils package under each training example folder when you import it. See [Pix2PixHD/utils](../image-translation/pix2pixHD/utils.py) for an example.
 
 Alternatively, you can install neu through pip:
 ```
