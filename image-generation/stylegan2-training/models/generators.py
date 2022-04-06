@@ -1,3 +1,17 @@
+# Copyright 2022 Sony Group Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import nnabla as nn
 import nnabla.functions as F
 import nnabla.initializer as I
@@ -33,14 +47,18 @@ class Generator(object):
 
     def synthesis(self, w_mixed, constant_bc, seed=-1, noises_in=None):
 
+        def _slice_wplus(wplus, at):
+            if wplus.shape[1] == 1:
+                return wplus
+            return F.reshape(F.slice(w_mixed, start=(0, at, 0), stop=(w_mixed.shape[0], at + 1, w_mixed.shape[2]), step=(1, 1, 1)), (w_mixed.shape[0], w_mixed.shape[2]), inplace=False)
+
         batch_size = w_mixed.shape[0]
 
         if noises_in is None:
             noise = F.randn(shape=(batch_size, 1, 4, 4), seed=seed)
         else:
             noise = noises_in[0]
-        w = F.reshape(F.slice(w_mixed, start=(0, 0, 0), stop=(w_mixed.shape[0], 1, w_mixed.shape[2]), step=(
-            1, 1, 1)), (w_mixed.shape[0], w_mixed.shape[2]), inplace=False)
+        w = _slice_wplus(w_mixed, 0)
         h = styled_conv_block(constant_bc, w, noise, res=self.resolutions[0],
                               outmaps=self.feature_map_dim, namescope="Conv")
         torgb = styled_conv_block(h, w, noise=None, res=self.resolutions[0], outmaps=3, inmaps=self.feature_map_dim,
@@ -58,8 +76,7 @@ class Generator(object):
             i1 = (2+i)*2-5
             i2 = (2+i)*2-4
             i3 = (2+i)*2-3
-            w_ = F.reshape(F.slice(w_mixed, start=(0, i1, 0), stop=(
-                w_mixed.shape[0], i1+1, w_mixed.shape[2]), step=(1, 1, 1)), w.shape, inplace=False)
+            w_ = _slice_wplus(w_mixed, i1)
             if i > downsize_index:
                 outmaps = outmaps // 2
             curr_shape = (
@@ -72,8 +89,7 @@ class Generator(object):
             h = styled_conv_block(h, w_, noise, res=self.resolutions[i], outmaps=outmaps, inmaps=inmaps,
                                   kernel_size=3, up=True, namescope="Conv0_up")
 
-            w_ = F.reshape(F.slice(w_mixed, start=(0, i2, 0), stop=(
-                w_mixed.shape[0], i2+1, w_mixed.shape[2]), step=(1, 1, 1)), w.shape, inplace=False)
+            w_ = _slice_wplus(w_mixed, i2)
             if i > downsize_index:
                 inmaps = inmaps // 2
             if noises_in is None:
@@ -83,8 +99,8 @@ class Generator(object):
             h = styled_conv_block(h, w_, noise, res=self.resolutions[i], outmaps=outmaps, inmaps=inmaps,
                                   kernel_size=3, pad_size=1, namescope="Conv1")
 
-            w_ = F.reshape(F.slice(w_mixed, start=(0, i3, 0), stop=(
-                w_mixed.shape[0], i3+1, w_mixed.shape[2]), step=(1, 1, 1)), w.shape, inplace=False)
+            # toRGB blocks
+            w_ = _slice_wplus(w_mixed, i3)
             curr_torgb = styled_conv_block(h, w_, noise=None, res=self.resolutions[i], outmaps=3, inmaps=inmaps,
                                            kernel_size=1, pad_size=0, demodulate=False, namescope="ToRGB", act=F.identity)
 
@@ -106,6 +122,7 @@ class Generator(object):
             w += [mapping_network(style_noises[1], outmaps=self.mapping_network_dim,
                                   num_layers=self.mapping_network_num_layers)]
 
+            # truncation trick
             dlatent_avg = nn.parameter.get_parameter_or_create(
                 name="dlatent_avg", shape=(1, 512))
 
@@ -147,3 +164,21 @@ class Generator(object):
                 return rgb_output, w_mixed
             else:
                 return rgb_output
+
+    def synthesis_by_w(self, w):
+        '''
+        w (nn.Variable) : [batch_size, 1, 512]
+        '''
+        assert w.ndim == 3
+        assert w.shape[1] == 1
+        assert w.shape[2] == 512  # Fixed at this moment.
+        batch_size = w.shape[0]
+        with nn.parameter_scope(self.global_scope):
+            # generate output from generator
+            constant_bc = nn.parameter.get_parameter_or_create(
+                            name="G_synthesis/4x4/Const/const",
+                            shape=(1, 512, 4, 4), initializer=np.random.randn(1, 512, 4, 4).astype(np.float32))
+            constant_bc = F.broadcast(
+                constant_bc, (batch_size,) + constant_bc.shape[1:])
+            rgb_output = self.synthesis(w, constant_bc)
+            return rgb_output
