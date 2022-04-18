@@ -22,8 +22,8 @@ from nnabla.ext_utils import get_extension_context
 from nnabla.utils.data_iterator import DataIterator
 from nnabla.logger import logger
 
-from pointnet import pointnet_classification
-from loss import classification_loss_with_orthogonal_loss
+from pointnet2 import pointnet2_classification_msg, pointnet2_classification_ssg
+from loss import classification_loss
 from running_utils import categorical_accuracy
 
 # Install neu (nnabla examples utils) to import these functions.
@@ -68,22 +68,28 @@ def evaluate(args):
     ctx = get_extension_context(extension_module, device_id=args.device_id)
     nn.set_default_context(ctx)
 
+    # Feature dim, with normal vector or not
+    feature_dim = 6 if args.with_normal else 3
+
     # Create validation graph
     valid_batch_size = 4  # Setting 4 is for using all data of valid dataset
-    point_cloud_valid = nn.Variable((valid_batch_size, args.num_points, 3))
+    point_cloud_valid = nn.Variable(
+        (valid_batch_size, args.num_points, feature_dim))
     label_valid = nn.Variable((valid_batch_size, 1))
-    pred_valid, internal_valid_variables = pointnet_classification(
-        point_cloud_valid, train=False, num_classes=args.num_classes
-    )
+
+    if args.model_type == "ssg":
+        pred_valid = pointnet2_classification_ssg(
+            point_cloud_valid, train=False, num_classes=args.num_classes)
+    elif args.model_type == "msg":
+        pred_valid = pointnet2_classification_msg(
+            point_cloud_valid, train=False, num_classes=args.num_classes)
+    else:
+        raise ValueError
+
     pred_valid.persistent = True
-    loss_valid, internal_losses_valid = classification_loss_with_orthogonal_loss(
-        pred_valid,
-        label_valid,
-        internal_valid_variables["pointnet_feature_internal_variables"]["feature_transformation_mat"],
-    )
+    loss_valid = classification_loss(pred_valid, label_valid)
     valid_vars = {"point_cloud": point_cloud_valid, "label": label_valid}
-    valid_loss_vars = {"loss": loss_valid,
-                       "pred": pred_valid, **internal_losses_valid}
+    valid_loss_vars = {"loss": loss_valid, "pred": pred_valid}
 
     # Load snapshot
     load_checkpoint(args.checkpoint_json_path, {})
@@ -96,7 +102,7 @@ def evaluate(args):
         False,
         args.num_points,
         normalize=True,
-        with_normal=False,
+        with_normal=args.with_normal,
     )
     logger.info(f"Validation dataset size: {valid_data_iter.size}")
 
@@ -113,15 +119,18 @@ def main():
     parser.add_argument(
         "--data_dir", type=str, default=os.path.join(os.path.dirname(__file__), "data", "modelnet40_normal_resampled")
     )
+    parser.add_argument("--model_type", type=str,
+                        default="ssg", choices=["msg", "ssg"])
     parser.add_argument("--num_classes", type=int, default=40)
     parser.add_argument("--num_points", type=int, default=1024)
+    parser.add_argument("--with_normal", action="store_true")
 
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--context", type=str, default="cudnn")
     parser.add_argument(
         "--checkpoint_json_path",
         type=str,
-        default="./pointnet_classification_result/seed_100/checkpoint_best/checkpoint_best.json",
+        default="./pointnet2_classification_result/seed_100/checkpoint_best/checkpoint_best.json",
     )
 
     args = parser.parse_args()

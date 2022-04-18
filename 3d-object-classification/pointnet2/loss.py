@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random as py_random
-import numpy as np
-
 import nnabla as nn
-from nnabla.logger import logger
+import nnabla.functions as F
 
 
-def categorical_accuracy(pred: np.ndarray, label: np.ndarray) -> np.ndarray:
-    pred_label = np.argmax(pred, axis=1)
-    return (pred_label == label.flatten()).mean()
+def classification_loss(pred_logit: nn.Variable, label: nn.Variable) -> nn.Variable:
+    """classification loss
 
+    Args:
+        pred_logit (nn.Variable): pred logit, shape(batch, num_classes)
+        label (nn.Variable): label, shape(batch, 1)
+        transformation_mat (nn.Variable): label, shape(batch, K, K)
 
-def set_global_seed(seed: int) -> None:
-    np.random.seed(seed=seed)
-    py_random.seed(seed)
-    nn.seed(seed)
-    logger.info("Set seed to {}".format(seed))
+    Returns:
+        nn.Variable: loss
+    """
+    cross_entropy_loss = F.softmax_cross_entropy(pred_logit, label)
+    classify_loss = F.mean(cross_entropy_loss)
+    return classify_loss

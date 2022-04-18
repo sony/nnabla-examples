@@ -1,4 +1,4 @@
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,20 +13,47 @@
 # limitations under the License.
 
 import os
-from typing import Dict, List, Optional, Tuple, Iterable
+from typing import Any, Dict, List, Optional, Tuple, Iterable
 import numpy as np
 from tqdm import tqdm
+import pickle
 
 from nnabla.utils.data_iterator import DataIterator, data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.logger import logger
 
-from .data_utils import (
-    load_from_pickle,
-    normalize_point_cloud,
-    save_as_pickle,
-    load_txt_file,
-)
+
+def normalize_point_cloud(data: np.ndarray) -> np.ndarray:
+    """normalize point cloud
+    Args:
+        data (np.ndarray): shape(batch, num_points, dim)
+
+    Returns:
+        np.ndarray: normalized point cloud
+    """
+    transformed_data = data.copy()
+    centroid = np.mean(transformed_data, axis=1)
+    transformed_data = transformed_data - centroid
+    max_vector = np.max(np.sqrt(np.sum(transformed_data**2, axis=2)), axis=1)
+    transformed_data = transformed_data / max_vector
+    return transformed_data
+
+
+def load_txt_file(file_path: str) -> List[str]:
+    with open(file_path) as f:
+        file_lines = [line.rstrip() for line in f]
+    return file_lines
+
+
+def save_as_pickle(obj: Any, file_path: str) -> None:
+    with open(file_path, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def load_from_pickle(file_path: str) -> Any:
+    with open(file_path, "rb") as f:
+        obj = pickle.load(f)
+    return obj
 
 
 def load_dataset_path_file(data_dir: str, txt_file_name: str) -> List[str]:
@@ -41,7 +68,7 @@ def load_dataset_path_file(data_dir: str, txt_file_name: str) -> List[str]:
 def load_txt_as_np_array(
     data_paths: Iterable[Tuple[str, str]], num_points: int, classes_dict: Dict[str, int]
 ) -> Tuple[np.ndarray, np.ndarray]:
-    point_cloud_data = []
+    points_data = []
     label_data = []
 
     for data_path in tqdm(data_paths, total=len(data_paths)):
@@ -50,12 +77,12 @@ def load_txt_as_np_array(
         point_cloud = np.loadtxt(
             point_cloud_data_path, delimiter=",").astype(np.float32)
         point_cloud = point_cloud[:num_points, :]
-        point_cloud_data.append(point_cloud)
+        points_data.append(point_cloud)
         # label
         label = int(classes_dict[class_name])
         label_data.append(label)
 
-    return np.array(point_cloud_data, dtype=np.float32), np.array(label_data, dtype=np.int32)
+    return np.array(points_data, dtype=np.float32), np.array(label_data, dtype=np.int32)
 
 
 class ModelNet40NormalResampledDataset(DataSource):
@@ -67,6 +94,7 @@ class ModelNet40NormalResampledDataset(DataSource):
         shuffle: bool,
         num_points: int,
         normalize: bool,
+        with_normal: bool,
         rng: Optional[int] = None,
     ) -> None:
         super().__init__(shuffle=shuffle, rng=rng)
@@ -74,6 +102,7 @@ class ModelNet40NormalResampledDataset(DataSource):
         self._train = train
         self._batch_size = batch_size
         self._normalize = normalize
+        self._with_normal = with_normal
 
         if self._train:
             processed_data_path = os.path.join(
@@ -103,19 +132,21 @@ class ModelNet40NormalResampledDataset(DataSource):
 
         self._size = len(self._point_clouds)
         self._variables = ("point_cloud", "label")
-        if rng is None:
-            rng = np.random.RandomState(313)
-        self.rng = rng
+        self.rng = np.random.RandomState(rng)
         self.reset()
 
     def _get_data(self, position):
         index = self._indexes[position]
         point_cloud = np.array(self._point_clouds[index], dtype=np.float32)[
-                               np.newaxis, :, :3]  # not use normal vector
+                               np.newaxis, :, :]
         label = np.array([self._labels[index]], dtype=np.int32)
 
         if self._normalize:
-            point_cloud = normalize_point_cloud(point_cloud)
+            point_cloud[:, :, :3] = normalize_point_cloud(
+                point_cloud[:, :, :3])
+
+        if not self._with_normal:
+            point_cloud = point_cloud[:, :, :3]
 
         return (np.squeeze(point_cloud), label)
 
@@ -134,8 +165,10 @@ def data_iterator_modelnet40_normal_resampled(
     shuffle: bool,
     num_points: int,
     normalize: bool,
-    stop_exhausted: bool = True,
-    with_memory_cache: bool = True,
+    with_normal: bool,
+    use_thread: bool = True,
+    stop_exhausted: bool = False,
+    with_memory_cache: bool = False,
     with_file_cache: bool = False,
     rng: Optional[int] = None,
 ) -> DataIterator:
@@ -146,11 +179,13 @@ def data_iterator_modelnet40_normal_resampled(
         shuffle,
         num_points,
         normalize,
+        with_normal,
     )
     return data_iterator(
         dataset,
         batch_size,
         rng=rng,
+        use_thread=use_thread,
         with_memory_cache=with_memory_cache,
         with_file_cache=with_file_cache,
         stop_exhausted=stop_exhausted,

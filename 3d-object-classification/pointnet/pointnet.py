@@ -1,4 +1,4 @@
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
 
-from model_utils import point_cloud_transform_net, feature_transform_net
+from pointnet_utils import point_cloud_transform_net, feature_transform_net
 
 
 def pointnet_feature_extraction(point_cloud: nn.Variable, train: bool) -> Tuple[nn.Variable, Dict[str, nn.Variable]]:
@@ -118,7 +118,7 @@ def pointnet_classification(
         affine_h2 = PF.batch_normalization(affine_h2, batch_stat=train)
         affine_h2 = F.relu(affine_h2)
         if train:
-            affine_h2 = F.dropout(affine_h2, p=0.2)
+            affine_h2 = F.dropout(affine_h2, p=0.4)
 
     with nn.parameter_scope("affine3"):
         pred_logit = PF.affine(affine_h2, num_classes)
