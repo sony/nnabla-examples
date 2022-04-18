@@ -89,7 +89,7 @@ def ImagenetDataIterator(batch_size, root_dir, *,
     ds = SimpleDatasource(img_paths=paths, img_size=image_size, labels=labels,
                           rng=rng, on_memory=False, 
                           fix_aspect_ratio=fix_aspect_ratio,
-                          random_crop=random_crop
+                          random_crop=random_crop, 
                           channel_last=channel_last)
 
     _info(f"Loaded imagenet dataset. # of images: {ds.size}.")
