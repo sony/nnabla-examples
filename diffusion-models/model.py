@@ -125,7 +125,7 @@ class Model(object):
 
         unet = UNet(num_classes=self.num_classes,
                     model_channels=self.base_channels,
-                    c=output_channels,
+                    output_channels=output_channels,
                     num_res_blocks=self.num_res_blocks,
                     attention_resolutions=self.attention_resolutions,
                     attention_head_channels=self.attention_head_channels,

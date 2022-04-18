@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from random import random
 from .cifar10 import Cifar10DataIterator
 from .imagenet import ImagenetDataIterator
 from .common import SimpleDataIterator
@@ -34,7 +35,10 @@ def get_dataset(args, comm):
     # refine
     if not hasattr(args, "fix_aspect_ratio"):
         args.fix_aspect_ratio = True
-
+    
+    if not hasattr(args, "random_crop"):
+        args.random_crop = False
+    
     if not hasattr(args, "shuffle_dataset"):
         args.shuffle_dataset = True
 
@@ -46,6 +50,7 @@ def get_dataset(args, comm):
                                              args.dataset_root_dir,
                                              image_size=args.image_shape[-2:],
                                              fix_aspect_ratio=args.fix_aspect_ratio,
+                                             random_crop=args.random_crop,
                                              comm=comm,
                                              train=True,
                                              channel_last=args.channel_last,
@@ -56,6 +61,7 @@ def get_dataset(args, comm):
                                            image_size=args.image_shape[-2:],
                                            comm=comm, on_memory=args.dataset_on_memory,
                                            fix_aspect_ratio=args.fix_aspect_ratio,
+                                           random_crop=args.random_crop,
                                            channel_last=args.channel_last,
                                            shuffle=args.shuffle_dataset)
 

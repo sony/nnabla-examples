@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 import os
-import sys
 import queue
 
 import numpy as np
+from neu.datasets import _get_sliced_data_source
 from nnabla import logger
+from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.image_utils import imread, imresize
-from nnabla.utils.data_iterator import data_iterator
-
-from neu.datasets import _get_sliced_data_source
 
 
-def resize_ccrop(img, size, channel_first=True):
+def resize_center_crop(img, size, channel_first=True):
     assert isinstance(size, int)
     assert len(img.shape) == 3
     h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
     s = size / min(h1, w1)
 
+    # todo: box -> bicubic may improve downsammple quality?
     rsz = imresize(img,
                    (max(size, int(round(s * w1))), max(size, int(round(s * h1)))),
                    channel_first=channel_first)
@@ -46,10 +46,37 @@ def resize_ccrop(img, size, channel_first=True):
 
     return rsz
 
+
+def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
+    assert isinstance(size, int)
+    assert len(img.shape) == 3
+    h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
+    
+    assert max_crop_scale >= 1.0
+    pre_crop_size = np.random.randrange(size, math.ceil(size * max_crop_scale) + 1)
+    resize_scale = pre_crop_size / min(h1, h2)
+
+    # todo: box -> bicubic may improve downsammple quality?
+    h_rsz = max(pre_crop_size, int(round(resize_scale * h1)))
+    w_rsz = max(pre_crop_size, int(round(resize_scale * w1)))
+    rsz = imresize(img, (w_rsz, h_rsz), channel_first=channel_first)
+
+    h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    h_off = np.random.randrange(h2 - size + 1)
+    w_off = np.random.randrange(w2 - size + 1)
+    rsz = rsz[:, h_off:h_off+size, w_off:w_off +
+              size] if channel_first else rsz[h_off:h_off+size, w_off:w_off+size]
+
+    h3, w3 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    assert h3 == size and w3 == size
+
+    return rsz
+
+
 class SimpleDatasource(DataSource):
     def __init__(self, img_paths, img_size, *,
                  labels=None, rng=None, on_memory=True,
-                 fix_aspect_ratio=True, channel_last=False):
+                 fix_aspect_ratio=True, random_crop=False, channel_last=False):
         super(SimpleDatasource, self).__init__(shuffle=True, rng=rng)
 
         if labels is not None:
@@ -70,6 +97,7 @@ class SimpleDatasource(DataSource):
         self._size = len(self.img_paths)
         self.on_memory = on_memory
         self.fix_aspect_ratio = fix_aspect_ratio
+        self.random_crop = random_crop
         self.channel_last = channel_last
 
         if self.on_memory:
@@ -112,11 +140,18 @@ class SimpleDatasource(DataSource):
             return (self.images[image_idx], label)
 
         if self.fix_aspect_ratio:
-            # perform resize and center crop to keep original aspect ratio.
+            # perform resize and crop to keep original aspect ratio.
             img = imread(self.img_paths[image_idx],
                          channel_first=not self.channel_last, num_channels=3)
-            img = resize_ccrop(
-                img, self.im_size[0], channel_first=not self.channel_last)
+            
+            if self.random_crop:
+                # crop randomly so that cropped size equals to self.im_size
+                img = resize_random_crop(
+                    img, self.im_size[0], channel_first=not self.channel_last)
+            else:
+                # always crop the center region of an image
+                img = resize_center_crop(
+                    img, self.im_size[0], channel_first=not self.channel_last)
         else:
             # Breaking original aspect ratio, forcely resize image to self.im_size.
             img = imread(
@@ -133,7 +168,7 @@ SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 def SimpleDataIterator(batch_size, root_dir, image_size,
                        comm=None, shuffle=True, rng=None, on_memory=True,
-                       fix_aspect_ratio=True, channel_last=False):
+                       fix_aspect_ratio=True, random_crop=False, channel_last=False):
     # get all files
     paths = [os.path.join(root_dir, x)
              for x in os.listdir(root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
@@ -147,6 +182,7 @@ def SimpleDataIterator(batch_size, root_dir, image_size,
                           rng=rng,
                           on_memory=on_memory,
                           fix_aspect_ratio=fix_aspect_ratio,
+                          random_crop=random_crop,
                           channel_last=channel_last)
 
     logger.info(f"Initialized data iterator. {ds.size} images are found.")
