@@ -1,6 +1,6 @@
-# DQN training example
+# CategoricalDQN training example
 
-This is an example code for training models with [DQN algorithm](https://www.nature.com/articles/nature14236) on nnabla.
+This is an example code for training models with [CategoricalDQN algorithm](https://arxiv.org/abs/1707.06887) on nnabla.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ $ pip install gym[accept-rom-license]
 Just run the below command. You will see the [cartpole](https://gym.openai.com/envs/CartPole-v1/) controlled by the reinforcement learning agent in a couple of minutes!
 
 ```
-$ python dqn_training_example.py
+$ python c51_training_example.py
 ```
 
 You can also train the models on atari games. Check the comments in the training script for details.

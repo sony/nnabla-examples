@@ -1,5 +1,5 @@
 # Copyright 2019,2020,2021 Sony Corporation.
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2021,2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ from sampler import ObsSampler
 from replay_memory import ReplayMemory
 from validator import Validator
 from explorer import GreedyExplorer
-from output_path import OutputPath
+from output_path import OutputPath  # noqa
 
 from nnabla.ext_utils import get_extension_context
 import nnabla as nn

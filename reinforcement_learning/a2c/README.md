@@ -1,6 +1,7 @@
-# DQN training example
+# A2C training example
 
-This is an example code for training models with [DQN algorithm](https://www.nature.com/articles/nature14236) on nnabla.
+This is an example code for training models with A2C algorithm on nnabla.
+A2C is a synchronous version of A3C (Asynchronous Advantage Actor-Critic) proposed by V. Mnih, et al. in the paper: [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783).
 
 ## Prerequisites
 
@@ -38,7 +39,7 @@ $ pip install gym[accept-rom-license]
 Just run the below command. You will see the [cartpole](https://gym.openai.com/envs/CartPole-v1/) controlled by the reinforcement learning agent in a couple of minutes!
 
 ```
-$ python dqn_training_example.py
+$ python a2c_training_example.py
 ```
 
 You can also train the models on atari games. Check the comments in the training script for details.

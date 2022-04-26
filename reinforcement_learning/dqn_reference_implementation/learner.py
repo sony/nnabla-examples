@@ -1,5 +1,5 @@
 # Copyright 2019,2020,2021 Sony Corporation.
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2021,2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-from six.moves import range
+from six.moves import range  # noqa
 
 import nnabla as nn
-import nnabla.logger as logger
+import nnabla.logger as logger  # noqa
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.solvers as S
-import nnabla.utils.save as save
+import nnabla.utils.save as save  # noqa
 
 from collections import namedtuple
-import os
+import os  # noqa
 
 
 def update_variable_dict(d, h, name):
@@ -127,7 +127,7 @@ class QLearner(object):
             qnext_params[k].data.copy_from(v.data)
 
     def save_model(self):
-        from nnabla.utils.save import save
+        from nnabla.utils.save import save  # noqa
         with nn.parameter_scope(self.name_q):
             save(self.save_path.get_filepath('qnet_{:08d}.nnp'.format(self.update_count)),
                  {'networks': [

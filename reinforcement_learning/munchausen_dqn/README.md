@@ -1,6 +1,6 @@
-# DQN training example
+# MunchausenDQN training example
 
-This is an example code for training models with [DQN algorithm](https://www.nature.com/articles/nature14236) on nnabla.
+This is an example code for training models with [MunchausenDQN algorithm](https://proceedings.neurips.cc/paper/2020/file/2c6a0bae0f071cbbf0bb3d5b11d90a82-Paper.pdf) on nnabla.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ $ pip install gym[accept-rom-license]
 Just run the below command. You will see the [cartpole](https://gym.openai.com/envs/CartPole-v1/) controlled by the reinforcement learning agent in a couple of minutes!
 
 ```
-$ python dqn_training_example.py
+$ python m_dqn_training_example.py
 ```
 
 You can also train the models on atari games. Check the comments in the training script for details.
