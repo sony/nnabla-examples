@@ -4,6 +4,15 @@ This is a colab interactive demo of application of adversarial debiasing in clas
  1. First model is a classifier which predicts target variable based on input features (training data).
  2. Second model is an adversary and it tries to predict sensitive attribute based on the predictions of the classifier model.
 ![adversarial_debiasing_workflow daigram](images/adversarial_debiasing_workflow_diagram.png)
+
+### Interactive demo
+
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [Adversarial Debiasingn for images](https://arxiv.org/abs/1801.07593) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/adversarial_debiasing_images.ipynb) | Mitigate the model bias with Adversarial networks |<a href="url"><img src="images/adversarial_debiasing_workflow_diagram.png" align="center" height="90" ></a>|
+ 
+
+
 ### Dataset
 * This example uses CelebA dataset for training & validation. 
 Please download the dataset and store it in a directory named 'data'.

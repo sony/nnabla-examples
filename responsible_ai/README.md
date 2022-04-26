@@ -115,6 +115,15 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./adversarial_debiasing/images/adversarial_debiasing_workflow.png" width="80%">
 </p>
 
+### Adversarial Debiasing for Images [code](./adversarial_debiasing_images/)
+> **Mitigating Unwanted Biases with Adversarial Learning**
+> Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell.
+> *[Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society. 2018, pp. 335–340](https://dl.acm.org/doi/pdf/10.1145/3278721.3278779)* 
+
+<p align="center">
+<img src="./adversarial_debiasing_images/images/adversarial_debiasing_workflow_diagram.png" width="80%">
+</p>
+
 ## Post Processing
 ## Rejection Option-Based Classification [code](./rejection_option_based_classification/)
 > **Decision Theory for Discrimination-Aware Classification**
