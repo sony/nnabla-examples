@@ -630,7 +630,7 @@ class GaussianDiffusion(object):
                                     noise=nn.Variable.from_numpy_array(noise))
             else:
                 x_t = nn.Variable.from_numpy_array(noise)
-            
+
             t = nn.Variable.from_numpy_array([T - 1 for _ in range(shape[0])])
 
             # build graph
@@ -662,7 +662,7 @@ class GaussianDiffusion(object):
                                         noise=nn.Variable.from_numpy_array(noise))
                 else:
                     x_t = nn.Variable.from_numpy_array(noise)
-            
+
                 cnt = 0
                 for step in indices:
                     t = F.constant(step, shape=(shape[0], ))

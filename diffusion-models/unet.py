@@ -164,10 +164,10 @@ def attn_block(x, name, *, num_heads=4, num_head_channels=None, channel_last=Fal
             f"input channels (= {C}) is not divisible by num_head_channels (= {num_head_channels})"
 
         num_heads = C // num_head_channels
-    
+
     assert C % num_heads == 0, \
         f"input channels (= {C}) is not divisible by num_heads (= {num_heads})"
-    
+
     num_head_channels = x_shape.c // num_heads
 
     with nn.parameter_scope(name):
@@ -178,20 +178,21 @@ def attn_block(x, name, *, num_heads=4, num_head_channels=None, channel_last=Fal
         if not channel_last:
             # (B, 3 * C, H, W) -> (B, H, W, 3 * C)
             qkv = F.transpose(qkv, (0, 2, 3, 1))
-        
+
         #  always (B, H, W, 3 * C) here
         q, k, v = chunk(qkv, 3, axis=-1)
-        
+
         # scale is applied both q and k to avoid large value in dot op.
         scale = 1 / math.sqrt(math.sqrt(num_head_channels))
-        
+
         q = F.reshape(q * scale, (B * num_heads, H * W, -1))
         k = F.reshape(k * scale, (B * num_heads, H * W, -1))
         v = F.reshape(v, (B * num_heads, H * W, -1))
 
         # create attention weight
-        w = F.batch_matmul(q, k, transpose_b = True) # (B * num_heads, H * W (for q), H * W (for k))
-        w = F.softmax(w, axis=-1) # take softmax for each query
+        # (B * num_heads, H * W (for q), H * W (for k))
+        w = F.batch_matmul(q, k, transpose_b=True)
+        w = F.softmax(w, axis=-1)  # take softmax for each query
 
         # attention
         a = F.reshape(F.batch_matmul(w, v), (B, H, W, C))
@@ -369,7 +370,7 @@ class UNet(object):
 
                 h = conv(x, ch, name="first_conv",
                          channel_last=self.channel_last)
-                
+
                 emb = self.timestep_embedding(t)
                 ret["emb"] = emb
                 emb = nonlinearity(emb)
@@ -535,36 +536,37 @@ def test_intermediate(conf=None, h5=None):
             "channel_mult": (1, 1, 2, 2, 4, 4),
             "ssn": False,
         })
-    
 
-    # refinement    
+    # refinement
     from diffusion import ModelVarType
     if "model_var_type" in conf:
-        conf.model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
+        conf.model_var_type = ModelVarType.get_vartype_from_key(
+            conf.model_var_type)
     else:
         conf.model_var_type = ModelVarType.FIXED_SMALL
-    
+
     if "channel_last" not in conf:
         conf.channel_last = False
-    
+
     if "num_attention_head_channels" not in conf:
         conf.num_attention_head_channels = None
-    
+
     if "resblock_resample" not in conf:
         conf.resblock_resample = False
 
-    
     if h5 is not None:
         nn.load_parameters(h5)
 
     np.random.seed(803)
-    x = nn.Variable.from_numpy_array(np.random.randn(*((1, ) + conf.image_shape[1:])))
-    t = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.num_diffusion_timesteps, size=1))
+    x = nn.Variable.from_numpy_array(
+        np.random.randn(*((1, ) + conf.image_shape[1:])))
+    t = nn.Variable.from_numpy_array(np.random.randint(
+        low=0, high=conf.num_diffusion_timesteps, size=1))
     print(x.d.sum(), t.d)
-    
+
     # x = nn.Variable.from_numpy_array(np.full((1, ) + conf.image_shape[1:], 0.1))
     # t = nn.Variable.from_numpy_array([803])
-    
+
     # define output channel
     from diffusion import is_learn_sigma
     output_channels = x.shape[-1] if conf.channel_last else x.shape[1]
@@ -640,13 +642,14 @@ def test(loop, intermediate, config, h5):
 
     if intermediate:
         logger.info("Test intermediate values of Unet.")
-        
+
         import os
 
         # check and load config
         conf = None
         if config is not None:
-            assert os.path.exists(config), f"config file `{config}` is not found."
+            assert os.path.exists(
+                config), f"config file `{config}` is not found."
             logger.info(f"... with config={config} as followd:")
 
             from neu.yaml_wrapper import read_yaml
@@ -656,7 +659,7 @@ def test(loop, intermediate, config, h5):
         if h5 is not None:
             assert os.path.exists(h5), f"config file `{h5}` is not found."
             logger.info(f"... with h5={h5}")
-        
+
         test_intermediate(conf, h5)
 
 

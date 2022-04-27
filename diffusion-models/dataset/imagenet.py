@@ -40,7 +40,7 @@ def _info(msg):
 
 
 def ImagenetDataIterator(batch_size, root_dir, *,
-                         image_size=(256, 256), 
+                         image_size=(256, 256),
                          fix_aspect_ratio=True,
                          random_crop=False,
                          comm=None, shuffle=True, rng=None, train=True, channel_last=False,
@@ -87,9 +87,9 @@ def ImagenetDataIterator(batch_size, root_dir, *,
         raise NotImplementedError("val is not supported now.")
 
     ds = SimpleDatasource(img_paths=paths, img_size=image_size, labels=labels,
-                          rng=rng, on_memory=False, 
+                          rng=rng, on_memory=False,
                           fix_aspect_ratio=fix_aspect_ratio,
-                          random_crop=random_crop, 
+                          random_crop=random_crop,
                           channel_last=channel_last)
 
     _info(f"Loaded imagenet dataset. # of images: {ds.size}.")

@@ -28,22 +28,24 @@ from neu.yaml_wrapper import read_yaml
 from model import Model
 from diffusion import ModelVarType
 
+
 def refine_obsolete_conf(conf: AttrDict):
     """
     Add default arguments for obsolete config.
     """
-    
+
     if "model_var_type" in conf:
-        conf.model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
+        conf.model_var_type = ModelVarType.get_vartype_from_key(
+            conf.model_var_type)
     else:
         conf.model_var_type = ModelVarType.FIXED_SMALL
 
     if "channel_last" not in conf:
         conf.channel_last = False
-    
+
     if "num_attention_head_channels" not in conf:
         conf.num_attention_head_channels = None
-    
+
     if "resblock_resample" not in conf:
         conf.resblock_resample = False
 
@@ -75,7 +77,7 @@ def main(**kwargs):
 
     comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
                        type_config="float", random_pseed=True)
-    
+
     if args.sampling_interval is None:
         args.sampling_interval = 1
 
@@ -111,9 +113,10 @@ def main(**kwargs):
     # data iterator
     from dataset import get_dataset
     conf.dataset = "imagenet"  # just fixed ever
-    conf.dataset_root_dir = os.path.join(os.environ["SGE_LOCALDIR"], "ilsvrc2012") # just fixed ever
+    conf.dataset_root_dir = os.path.join(
+        os.environ["SGE_LOCALDIR"], "ilsvrc2012")  # just fixed ever
     conf.batch_size = args.batch_size
-    conf.shuffle_dataset = False # fixed samples
+    conf.shuffle_dataset = False  # fixed samples
     imagenet_di = get_dataset(conf, comm)
 
     num_iter = (args.samples + args.batch_size - 1) // args.batch_size
@@ -125,7 +128,8 @@ def main(**kwargs):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
         d, _ = imagenet_di.next()
         sample_out, xts, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
-                                                 x_start=nn.Variable.from_numpy_array(d / 127.5 - 1),
+                                                 x_start=nn.Variable.from_numpy_array(
+                                                     d / 127.5 - 1),
                                                  dump_interval=1,
                                                  use_ema=args.ema,
                                                  progress=comm.rank == 0,
@@ -137,11 +141,13 @@ def main(**kwargs):
         if args.tiled:
             save_path = os.path.join(
                 args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
-            save_tiled_image(sample_out.astype(np.uint8), save_path, channel_last=conf.channel_last)
+            save_tiled_image(sample_out.astype(np.uint8),
+                             save_path, channel_last=conf.channel_last)
 
             org_save_path = os.path.join(
                 args.output_dir, f"org_{local_saved_cnt}_{comm.rank}.png")
-            save_tiled_image(d.astype(np.uint8), org_save_path, channel_last=conf.channel_last)
+            save_tiled_image(d.astype(np.uint8), org_save_path,
+                             channel_last=conf.channel_last)
 
             local_saved_cnt += 1
         else:
@@ -153,7 +159,8 @@ def main(**kwargs):
 
                 org_save_path = os.path.join(
                     args.output_dir, f"org_{local_saved_cnt}_{comm.rank}.png")
-                imsave(d[b].astype(np.uint8), org_save_path, channel_first=not conf.channel_last)
+                imsave(d[b].astype(np.uint8), org_save_path,
+                       channel_first=not conf.channel_last)
 
                 local_saved_cnt += 1
 

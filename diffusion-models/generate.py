@@ -33,18 +33,19 @@ def refine_obsolete_conf(conf: AttrDict):
     """
     Add default arguments for obsolete config.
     """
-    
+
     if "model_var_type" in conf:
-        conf.model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
+        conf.model_var_type = ModelVarType.get_vartype_from_key(
+            conf.model_var_type)
     else:
         conf.model_var_type = ModelVarType.FIXED_SMALL
 
     if "channel_last" not in conf:
         conf.channel_last = False
-    
+
     if "num_attention_head_channels" not in conf:
         conf.num_attention_head_channels = None
-    
+
     if "resblock_resample" not in conf:
         conf.resblock_resample = False
 

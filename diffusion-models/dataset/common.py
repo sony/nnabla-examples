@@ -51,9 +51,10 @@ def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
     assert isinstance(size, int)
     assert len(img.shape) == 3
     h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
-    
+
     assert max_crop_scale >= 1.0
-    pre_crop_size = np.random.randrange(size, math.ceil(size * max_crop_scale) + 1)
+    pre_crop_size = np.random.randrange(
+        size, math.ceil(size * max_crop_scale) + 1)
     resize_scale = pre_crop_size / min(h1, h2)
 
     # todo: box -> bicubic may improve downsammple quality?
@@ -143,7 +144,7 @@ class SimpleDatasource(DataSource):
             # perform resize and crop to keep original aspect ratio.
             img = imread(self.img_paths[image_idx],
                          channel_first=not self.channel_last, num_channels=3)
-            
+
             if self.random_crop:
                 # crop randomly so that cropped size equals to self.im_size
                 img = resize_random_crop(

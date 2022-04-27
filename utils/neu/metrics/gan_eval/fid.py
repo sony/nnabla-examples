@@ -171,7 +171,6 @@ def get_all_features_on_imagepaths(image_paths: list, batch_size: int, faster_re
         d_npy = data_iter.next()[0]
         if samples + len(d_npy) > num_images:
             d_npy = d_npy[:num_images]
-            
 
         images = npy2ndarray(d_npy, imsize=(299, 299),
                              normalize=True, use_tf_resize=not faster_resize)
