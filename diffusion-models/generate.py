@@ -53,7 +53,6 @@ def refine_obsolete_conf(conf: AttrDict):
 @click.command()
 # configs for generating process
 @click.option("--device-id", default='0', help="Device id.", show_default=True)
-@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
 @click.option("--samples", default=16, help="# of generating samples on each device.", show_default=True)
 @click.option("--batch-size", default=32, help="# of generating samples for each inference.", show_default=True)
 # model configs
@@ -75,7 +74,7 @@ def main(**kwargs):
     conf = read_yaml(args.config)
 
     comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config=args.type_config, random_pseed=True)
+                       type_config=conf.type_config, random_pseed=True)
     if args.sampling_interval is None:
         args.sampling_interval = 1
 
@@ -117,6 +116,12 @@ def main(**kwargs):
 
     local_saved_cnt = 0
 
+    # setup output dir
+    if comm.rank == 0:
+        os.makedirs(args.output_dir, exist_ok=True)
+    
+    comm.barrier()
+
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
         sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
@@ -125,7 +130,6 @@ def main(**kwargs):
                                                         use_ema=args.ema,
                                                         progress=comm.rank == 0,
                                                         use_ddim=args.ddim)
-        print(len(nn.get_parameters()))
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
