@@ -517,7 +517,7 @@ class GaussianDiffusion(object):
         noise = noise_like(x_t.shape, noise_function, repeat_noise)
         assert noise.shape == x_t.shape
 
-        # sample from gaussian N(model_mean, )
+        # sample from gaussian N(model_mean, model_var)
         return preds.mean + F.exp(0.5 * preds.log_var) * noise, preds.xstart
 
     # DDIM sampler

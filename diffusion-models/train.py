@@ -21,6 +21,7 @@ import fnmatch
 import click
 import nnabla as nn
 import nnabla.solvers as S
+from nnabla.logger import logger
 import numpy as np
 
 from neu.checkpoint_util import load_checkpoint, save_checkpoint
@@ -34,6 +35,47 @@ from model import Model
 from utils import get_warmup_lr, sum_grad_norm, create_ema_op
 from config import refine_args_by_dataset
 from diffusion import ModelVarType, is_learn_sigma
+
+
+def setup_resume(output_dir, dataset, solvers, is_master=False):
+    # return
+    start_iter = 0
+
+    parent = os.path.dirname(os.path.abspath(output_dir))
+    all_logs = sorted(fnmatch.filter(
+        os.listdir(parent), "*{}*".format(dataset)))
+    if len(all_logs):
+        latest_dir = os.path.join(parent, all_logs[-1])
+        checkpoints = sorted(fnmatch.filter(
+            os.listdir(latest_dir), "checkpoint_*.json"))
+
+        # extract iteration count and use it as key
+        iter_cp = [(int(x.split(".")[0].split("_")[-1]), x) for x in checkpoints]
+
+        for iter, checkpoint in reversed(sorted(iter_cp)):
+            try:
+                cp_path = os.path.join(latest_dir, checkpoint)
+                start_iter = load_checkpoint(cp_path, solvers)
+
+                for sname, slv in solvers.items():
+                    slv.zero_grad()
+
+                if is_master:
+                    # copy loaded checkpoint to the current output_dir so that the current output_dir has at least one checkpoint
+                    os.makedirs(output_dir, exist_ok=True)
+
+                    import shutil
+                    shutil.copy(cp_path, output_dir)
+
+                logger.info(f"Load checkpoint from {cp_path}")
+
+                break
+            except:
+                logger.warning(f"{checkpoint} is broken. Try to load previous checkpoints.")
+        else:
+            logger.warning("No valid checkpoint. Train from scratch")
+
+    return start_iter
 
 
 def get_output_dir_name(org, dataset):
@@ -172,26 +214,14 @@ def main(**kwargs):
         "ema": dummy_solver_ema,
     }
 
-    # setup output directory
-    if comm.rank == 0:
-        os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
-
     start_iter = 0  # exclusive
     if args.resume:
-        parent = os.path.dirname(os.path.abspath(args.output_dir))
-        all_logs = sorted(fnmatch.filter(
-            os.listdir(parent), "*{}*".format(args.dataset)))
+        start_iter = setup_resume(args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
 
-        if len(all_logs):
-            latest_dir = os.path.join(parent, all_logs[-1])
-            checkpoints = sorted(fnmatch.filter(
-                os.listdir(latest_dir), "checkpoint_*.json"))
-            if len(checkpoints):
-                latest_cp = os.path.join(latest_dir, checkpoints[-1])
-                start_iter = load_checkpoint(latest_cp, solvers)
+    if comm.rank == 0:
+        image_dir = os.path.join(args.output_dir, "image")
+        os.makedirs(image_dir, exist_ok=True)
 
-                for sname, slv in solvers.items():
-                    slv.zero_grad()
     comm.barrier()
 
     # Reporter
@@ -202,10 +232,6 @@ def main(**kwargs):
         reporter.set_key(f"loss_q{i}")
         if is_learn_sigma(model.model_var_type):
             reporter.set_key(f"vlb_q{i}")
-
-    image_dir = os.path.join(args.output_dir, "image")
-    if comm.rank == 0:
-        os.makedirs(image_dir, exist_ok=True)
 
     if args.progress:
         from tqdm import trange
@@ -221,7 +247,7 @@ def main(**kwargs):
 
     comm.barrier()
 
-    mpm = MixedPrecisionManager(use_fp16=args.type_config == "half")
+    mpm = MixedPrecisionManager(use_fp16=args.type_config == "half", initial_log_loss_scale=15)
 
     for i in piter:
         # update solver's lr
