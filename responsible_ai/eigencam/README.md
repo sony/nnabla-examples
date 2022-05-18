@@ -17,7 +17,8 @@ Figure: overview of Eigen-CAM
 **eXplainable AI**
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
- [Eigen-CAM](https://ieeexplore.ieee.org/document/9206626) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/eigencam.ipynb) | visual explanations |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/eigencam/images/visualization_result.png" align="center" height="90" ></a>|
+ [Eigen-CAM tutorial and RealTime Visualization YoloV2](https://ieeexplore.ieee.org/document/9206626) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/eigencam.ipynb) | visual explanations |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/eigencam/images/visualization_result.png" align="center" height="90" ></a>|
+ [Eigen-CAM for CenterNet](https://ieeexplore.ieee.org/document/9206626) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/eigencam_for_CenterNet.ipynb) | visual explanations |<a href="url"><img src="./images/centernet.png" align="center" height="90" ></a>|
  
 # Citation
 Muhammad, M. B. & Yeasin, M. "[Eigen-CAM: Class Activation Map using Principal Components.](https://ieeexplore.ieee.org/document/9206626)" in 2020 International Joint Conference on Neural Networks (IJCNN) 1–7 (IEEE, 2020).
