@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Copyright 2021 Sony Group Corporation.
+# Copyright 2022 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-if [ ! -d "modelnet40_normal_resampled" ]; then
-wget https://shapenet.cs.stanford.edu/media/modelnet40_normal_resampled.zip --no-check-certificate
-unzip modelnet40_normal_resampled.zip
-rm modelnet40_normal_resampled.zip
-else
-echo "modelnet40_normal_resampled already exists"
-fi
+
+import numpy as np
+import nnabla as nn
+import random as py_random
+
+from nnabla.logger import logger
+
+
+def categorical_accuracy(pred: np.ndarray, label: np.ndarray) -> np.ndarray:
+    pred_label = np.argmax(pred, axis=1)
+    return (pred_label == label.flatten()).mean()
+
+
+def set_global_seed(seed: int) -> None:
+    np.random.seed(seed=seed)
+    py_random.seed(seed)
+    nn.seed(seed)
+    logger.info("Set seed to {}".format(seed))

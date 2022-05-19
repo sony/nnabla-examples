@@ -6,7 +6,7 @@ This is a nnabla implementation of the [PointNet: Deep Learning on Point Sets fo
 
 ### Python environment
 
-Install `python >= 3.6`, then set up python dependencies from [requirements.txt](./requirements.txt):
+Install `python >= 3.7`, then set up python dependencies from [requirements.txt](./requirements.txt):
 
 ```bash
 pip install -r ./requirements.txt
@@ -16,16 +16,21 @@ Note that this requirements.txt dose not contain `nnabla-ext-cuda`.
 If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` and use GPU devices.
 See [NNabla CUDA extension package installation guide](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
-## Dataset
-
-To download the [ModelNet40 dataset](https://shapenet.cs.stanford.edu/media/modelnet40_normal_resampled.zip), run the following script.
+After installing python dependencies, install neu (Nnable Examples Utils).
 
 ```bash
-$ cd ./data
-$ ./download_data.sh
+# move to this directory.
+$ cd /path/to/nnabla-examples
+
+$ pip install -e .
 ```
 
-This script should download and unpack the data automatically into the data/ folder.
+See [NEU](https://github.com/nnabla/nnabla-examples/tree/master/utils) to get more details.
+
+## Dataset
+
+Follow the data download instruction in [author's github](https://github.com/charlesq34/pointnet2#shape-classification).
+Create an empty `. /data` directory and move the uncompressed data folder to `./data/modelnet40_normal_resampled`.
 
 ## Train
 
@@ -38,7 +43,7 @@ This will take about 2.5 hours using one GeForce RTX 3060, and you can find the 
 ## Evaluation
 
 ```bash
-python evaluate.py --device_id <device id> --context "cudnn" --snapshot_dir <your snapshot dir>
+python evaluate.py --device_id <device id> --context "cudnn" --checkpoint_json_path <your checkpoint json path>
 ```
 
 The evaluation results will be shown in your console.

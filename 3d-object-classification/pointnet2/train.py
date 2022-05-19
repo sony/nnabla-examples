@@ -24,12 +24,12 @@ import nnabla.solvers as S
 from nnabla.logger import logger
 from nnabla.monitor import Monitor, MonitorSeries
 
-from pointnet import pointnet_classification
-from loss import classification_loss_with_orthogonal_loss
+from pointnet2 import pointnet2_classification_msg, pointnet2_classification_ssg
+from loss import classification_loss
 from running_utils import categorical_accuracy, set_global_seed
 
 # Install neu (nnabla examples utils) to import these functions.
-# See [NEU](./utils).
+# See [NEU](https://github.com/nnabla/nnabla-examples/tree/master/utils).
 from neu.datasets.modelnet40_normal_resampled import data_iterator_modelnet40_normal_resampled
 from neu.checkpoint_util import save_checkpoint
 from neu.learning_rate_scheduler import create_learning_rate_scheduler
@@ -66,10 +66,6 @@ def train_one_epoch(
             train_loss_vars["pred"].d, train_vars["label"].d)
         train_monitors["loss"].add(
             total_steps, train_loss_vars["loss"].d.copy())
-        train_monitors["loss/mat_loss"].add(total_steps,
-                                            train_loss_vars["mat_loss"].d.copy())
-        train_monitors["loss/classify_loss"].add(
-            total_steps, train_loss_vars["classify_loss"].d.copy())
         train_monitors["accuracy"].add(total_steps, accuracy)
         total_steps += 1
 
@@ -111,8 +107,7 @@ def eval_one_epoch(
 
 def train(args):
     # Create out dir
-    outdir = os.path.abspath(os.path.join(
-        args.result_dir, f"seed_{args.seed}"))
+    outdir = os.path.join(args.result_dir, f"seed_{args.seed}")
     os.makedirs(outdir, exist_ok=True)
 
     # Set context
@@ -123,40 +118,47 @@ def train(args):
     # Set seed
     set_global_seed(args.seed)
 
+    # Feature dim, with normal vector or not
+    feature_dim = 6 if args.with_normal else 3
+
     # Create training graphs
-    point_cloud_train = nn.Variable((args.batch_size, args.num_points, 3))
+    point_cloud_train = nn.Variable(
+        (args.batch_size, args.num_points, feature_dim))
     label_train = nn.Variable((args.batch_size, 1))
-    pred_train, internal_train_variables = pointnet_classification(
-        point_cloud_train, train=True, num_classes=args.num_classes
-    )
+
+    if args.model_type == "ssg":
+        pred_train = pointnet2_classification_ssg(
+            point_cloud_train, train=True, num_classes=args.num_classes)
+    elif args.model_type == "msg":
+        pred_train = pointnet2_classification_msg(
+            point_cloud_train, train=True, num_classes=args.num_classes)
+    else:
+        raise ValueError
+
     pred_train.persistent = True
-    loss_train, internal_losses_train = classification_loss_with_orthogonal_loss(
-        pred_train,
-        label_train,
-        internal_train_variables["pointnet_feature_internal_variables"]["feature_transformation_mat"],
-    )
-    internal_losses_train["mat_loss"].persistent = True
-    internal_losses_train["classify_loss"].persistent = True
+    loss_train = classification_loss(pred_train, label_train)
     train_vars = {"point_cloud": point_cloud_train, "label": label_train}
-    train_loss_vars = {"loss": loss_train,
-                       "pred": pred_train, **internal_losses_train}
+    train_loss_vars = {"loss": loss_train, "pred": pred_train}
 
     # Create validation graph
     valid_batch_size = 4  # Setting 4 is for using all data of valid dataset
-    point_cloud_valid = nn.Variable((valid_batch_size, args.num_points, 3))
+    point_cloud_valid = nn.Variable(
+        (valid_batch_size, args.num_points, feature_dim))
     label_valid = nn.Variable((valid_batch_size, 1))
-    pred_valid, internal_valid_variables = pointnet_classification(
-        point_cloud_valid, train=False, num_classes=args.num_classes
-    )
+
+    if args.model_type == "ssg":
+        pred_valid = pointnet2_classification_ssg(
+            point_cloud_valid, train=False, num_classes=args.num_classes)
+    elif args.model_type == "msg":
+        pred_valid = pointnet2_classification_msg(
+            point_cloud_valid, train=False, num_classes=args.num_classes)
+    else:
+        raise ValueError
+
     pred_valid.persistent = True
-    loss_valid, internal_losses_valid = classification_loss_with_orthogonal_loss(
-        pred_valid,
-        label_valid,
-        internal_valid_variables["pointnet_feature_internal_variables"]["feature_transformation_mat"],
-    )
+    loss_valid = classification_loss(pred_valid, label_valid)
     valid_vars = {"point_cloud": point_cloud_valid, "label": label_valid}
-    valid_loss_vars = {"loss": loss_valid,
-                       "pred": pred_valid, **internal_losses_valid}
+    valid_loss_vars = {"loss": loss_valid, "pred": pred_valid}
 
     # Solvers
     solver = S.Adam(args.learning_rate)
@@ -168,10 +170,6 @@ def train(args):
     train_monitors = {}
     train_monitors["loss"] = MonitorSeries(
         "training loss", monitor, interval=10)
-    train_monitors["loss/mat_loss"] = MonitorSeries(
-        "training matrix loss", monitor, interval=10)
-    train_monitors["loss/classify_loss"] = MonitorSeries(
-        "training classification loss", monitor, interval=10)
     train_monitors["accuracy"] = MonitorSeries(
         "training accuracy", monitor, interval=10)
 
@@ -188,7 +186,7 @@ def train(args):
         True,
         args.num_points,
         normalize=True,
-        with_normal=False,
+        with_normal=args.with_normal,
         rng=args.seed,
     )
     logger.info(f"Training dataset size: {train_data_iter.size}")
@@ -199,7 +197,7 @@ def train(args):
         False,
         args.num_points,
         normalize=True,
-        with_normal=False,
+        with_normal=args.with_normal,
         rng=args.seed,
     )
     logger.info(f"Validation dataset size: {valid_data_iter.size}")
@@ -221,7 +219,7 @@ def train(args):
     for i in range(1, args.max_epoch + 1):
         logger.info(f"Training {i} th epoch...")
         decayed_learning_rate = learning_rate_scheduler.get_lr_and_update()
-        logger.info(f"Learning rate {decayed_learning_rate}")
+
         global_steps = train_one_epoch(
             train_data_iter,
             train_vars,
@@ -256,8 +254,11 @@ def main():
     parser.add_argument(
         "--data_dir", type=str, default=os.path.join(os.path.dirname(__file__), "data", "modelnet40_normal_resampled")
     )
+    parser.add_argument("--model_type", type=str,
+                        default="msg", choices=["msg", "ssg"])
     parser.add_argument("--num_classes", type=int, default=40)
     parser.add_argument("--num_points", type=int, default=1024)
+    parser.add_argument("--with_normal", action="store_true")
 
     parser.add_argument("--batch_size", type=int, default=24)
     parser.add_argument("--max_epoch", type=int, default=250)
@@ -267,7 +268,7 @@ def main():
     parser.add_argument("--device_id", type=int, default=0)
     parser.add_argument("--context", type=str, default="cudnn")
     parser.add_argument("--result_dir", type=str,
-                        default="pointnet_classification_result")
+                        default="pointnet2_classification_result")
     parser.add_argument("--seed", type=int, default=100)
 
     parser.add_argument("--eval_interval", type=int, default=2)
