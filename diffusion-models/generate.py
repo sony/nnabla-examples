@@ -119,7 +119,7 @@ def main(**kwargs):
     # setup output dir
     if comm.rank == 0:
         os.makedirs(args.output_dir, exist_ok=True)
-    
+
     comm.barrier()
 
     for i in range(num_iter):

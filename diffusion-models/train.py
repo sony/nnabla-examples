@@ -50,7 +50,8 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
             os.listdir(latest_dir), "checkpoint_*.json"))
 
         # extract iteration count and use it as key
-        iter_cp = [(int(x.split(".")[0].split("_")[-1]), x) for x in checkpoints]
+        iter_cp = [(int(x.split(".")[0].split("_")[-1]), x)
+                   for x in checkpoints]
 
         for iter, checkpoint in reversed(sorted(iter_cp)):
             try:
@@ -71,7 +72,8 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
 
                 break
             except:
-                logger.warning(f"{checkpoint} is broken. Try to load previous checkpoints.")
+                logger.warning(
+                    f"{checkpoint} is broken. Try to load previous checkpoints.")
         else:
             logger.warning("No valid checkpoint. Train from scratch")
 
@@ -216,7 +218,8 @@ def main(**kwargs):
 
     start_iter = 0  # exclusive
     if args.resume:
-        start_iter = setup_resume(args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
+        start_iter = setup_resume(
+            args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
 
     image_dir = os.path.join(args.output_dir, "image")
     if comm.rank == 0:
@@ -247,7 +250,8 @@ def main(**kwargs):
 
     comm.barrier()
 
-    mpm = MixedPrecisionManager(use_fp16=args.type_config == "half", initial_log_loss_scale=15)
+    mpm = MixedPrecisionManager(
+        use_fp16=args.type_config == "half", initial_log_loss_scale=15)
 
     for i in piter:
         # update solver's lr

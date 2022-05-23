@@ -3,6 +3,9 @@
 This is a reproduction of [Improved Denoising Diffusion Probabilistic Models](http://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf) implemented by nnabla.
 The code structure is inspired by the [original author's implementation](https://github.com/openai/improved-diffusion).
 
+※ 2022/05/25
+We also support ADM architecture proposed in [Diffusion Models Beat GANs on Image Synthesis](https://papers.nips.cc/paper/2021/file/49ad23d1ec9fa4bd8d77d02681df5cfa-Paper.pdf).
+
 <p align="center">
 <img src='imgs/cifar10.png', width="200">
 <img src='imgs/imagenet64x64.png', width="200">
@@ -12,9 +15,6 @@ The code structure is inspired by the [original author's implementation](https:/
 </p>
 Figure: Generated image samples by models trained on cifar10 (32x32), imagenet_64x64, and CelebA-HQ(256x256). Note that all samples are resized for visualization.
 </p>
-
-## Quick demo on Colab
-TODO
 
 ## Instalation
 To install dependencies, run as below:
@@ -31,13 +31,15 @@ pip install -e .
 To generate images by pre-trained weights, you should download a yaml file for model config and a h5 file.
 Please munualy download them from the following list.
 
-| Dataset | Resolution | download link | FID |
-| :---: | :---: | :---: | :---: |
-| Cifar10 | 32 x 32 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/config_cifar10.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/params_cifar10.h5)| 3.49 |
-| Imagenet | 64 x 64 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/config_imagenet64.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/params_imagenet64.h5) | 21.79 |
-| CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/config_celebahq.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/params_celebahq.h5) | todo |
+| Model | Dataset | Resolution | download link | FID | Iterations |
+| :---: | :---: | :---: | :---: | :---: |  :---: |
+| Improved DDPM | Cifar10 | 32 x 32 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/cifar10_32/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/cifar10_32/params.h5)| 3.49 | 500K |
+| Improved DDPM | Imagenet | 64 x 64 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/params.h5) | 19.80 | 500K |
+| Improved DDPM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/params.h5) | 30.73 | 300K |
+| ADM | Imagenet | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/params.h5) | 43.80 | 300K |
+| ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
 
-Note that the FID scores shown on the list are computed by 50K generated images against training data for all datasets except 10K generated images for imagenet.
+Note that the FID scores shown on the list are computed by 10K generated images against training data for all datasets except 50K generated images for cifar10.
 
 After downloading them, you can generate images as follows:
 ```bash
@@ -47,7 +49,7 @@ You can see generated results in `./outs` directory as default.
 Running inference with above pretrained models on a single nvidia A100 GPU takes about 1 min for cifar10, 3 min for Imagenet 64x64, and 30 min for CelebA-HQ, respectively. 
 You can also specify the sampling interval for generation by `--sampling-interval (or -s) x`. In this case, only T / x sampling steps are performed and inference time will be x times faster.
 
-We also support DDIM samplers that enabls deterministic sampling. If you would like to use it, try `--ddim` option.
+We also support DDIM sampler that enabls deterministic sampling. If you would like to use it, try `--ddim` option.
 For more details about DDIM, please see the [original paper](http://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf).
 
 ## Download data for training
