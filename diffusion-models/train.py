@@ -105,7 +105,7 @@ def str_as_integer_list(ctx, param, value):
               type=click.Choice(["linear", "cosine"], case_sensitive=False), show_choices=True)
 @click.option("--num-diffusion-timesteps", default=1000, help="Number of diffusion timesteps.", show_default=True)
 @click.option("--ssn/--no-ssn", default=True, type=bool, help="use scale shift norm or not.")
-@click.option("--resblock-resample/--no-resblock-resample", default=True, type=bool, help="Use resblock for down/up sampling.")
+@click.option("--resblock-resample/--no-resblock-resample", default=False, type=bool, help="Use resblock for down/up sampling.")
 @click.option("--num-attention-heads", default=4, type=int, help="Number of multihead attention heads", show_default=True)
 @click.option("--attention-resolutions", default="16,8", type=str, callback=str_as_integer_list,
               help="Resolutions which attention is applied. Comma separated string should be passed. If None, use default for dataset.")
@@ -218,8 +218,8 @@ def main(**kwargs):
     if args.resume:
         start_iter = setup_resume(args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
 
+    image_dir = os.path.join(args.output_dir, "image")
     if comm.rank == 0:
-        image_dir = os.path.join(args.output_dir, "image")
         os.makedirs(image_dir, exist_ok=True)
 
     comm.barrier()
