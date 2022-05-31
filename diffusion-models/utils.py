@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import contextmanager
 
 import nnabla as nn
 import nnabla.functions as F
@@ -65,6 +66,29 @@ class Shape4D(object):
                 self.h == __o.h and self.w == __o.w
 
         return False
+
+
+@contextmanager
+def float_context_scope():
+    from nnabla.ext_utils import get_extension_context
+    current_ctx = nn.get_current_context()
+    float_ctx = get_extension_context(ext_name=current_ctx.backend[0].split(":")[0],
+                                      device_id=current_ctx.device_id,
+                                      type_config="float")
+
+    nn.set_default_context(float_ctx)
+
+    yield
+
+    nn.set_default_context(current_ctx)
+
+
+def force_float(func):
+    def wrapped_func(*args, **kwargs):
+        with float_context_scope():
+            return func(*args, **kwargs)
+
+    return wrapped_func
 
 
 def get_warmup_lr(max_lr, warmup_epoch, step):

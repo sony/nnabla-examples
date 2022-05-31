@@ -23,7 +23,7 @@ from neu.losses import gaussian_log_likelihood, kl_normal
 from neu.misc import AttrDict
 
 from layers import chunk
-from utils import Shape4D
+from utils import Shape4D, float_context_scope, force_float
 
 # Better to implement ModelVarType as a module?
 
@@ -200,6 +200,7 @@ class GaussianDiffusion(object):
         self.log_betas_clipped = const_var(np.log(np_betas_clipped))
 
     @staticmethod
+    @force_float
     def _extract(a, t, x_shape=None):
         """
         Extract some coefficients at specified timesteps.
@@ -208,6 +209,7 @@ class GaussianDiffusion(object):
         """
 
         B, = t.shape
+
         out = F.gather(a, t, axis=0)
 
         if x_shape is None:
@@ -219,6 +221,7 @@ class GaussianDiffusion(object):
         out_shape[1:] = 1
         return F.reshape(out, out_shape)
 
+    @force_float
     def q_sample(self, x_start, t, noise=None):
         """
         Diffuse the data (t == 0 means diffused for 1 step), which samples from q(x_t | x_0).
@@ -242,6 +245,7 @@ class GaussianDiffusion(object):
                           t, x_start.shape) * noise
         )
 
+    @force_float
     def predict_xstart_from_noise(self, x_t, t, noise):
         """
         Predict x_0 from x_t.
@@ -262,6 +266,7 @@ class GaussianDiffusion(object):
                           t, x_t.shape) * noise
         )
 
+    @force_float
     def predict_noise_from_xstart(self, x_t, t, pred_xstart):
         """
         Predict epsilon from x_t and predicted x_0.
@@ -282,6 +287,7 @@ class GaussianDiffusion(object):
             - pred_xstart
         ) / self._extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
 
+    @force_float
     def q_posterior(self, x_start, x_t, t):
         """
         Compute the mean and variance of the diffusion posterior q(x_{t-1} | x_t, x_0).
@@ -536,6 +542,7 @@ class GaussianDiffusion(object):
         sample x_{t-1} from x_{t} by the model using DDIM sampler.
         Also return predicted x_start.
         """
+
         preds = self.p_mean_var(
             model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
 
@@ -544,22 +551,24 @@ class GaussianDiffusion(object):
         from layers import sqrt
         alpha_bar = self._extract(self.alphas_cumprod, t, x_t.shape)
         alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
-        sigma = (
-            eta
-            * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
-            * sqrt(1 - alpha_bar / alpha_bar_prev)
-        )
 
-        mean_pred = (
-            preds.xstart * sqrt(alpha_bar_prev)
-            + sqrt(1 - alpha_bar_prev - sigma ** 2) * pred_noise
-        )
+        with float_context_scope():
+            sigma = (
+                eta
+                * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
+                * sqrt(1 - alpha_bar / alpha_bar_prev)
+            )
 
-        if no_noise:
-            return mean_pred, preds.xstart
+            mean_pred = (
+                preds.xstart * sqrt(alpha_bar_prev)
+                + sqrt(1 - alpha_bar_prev - sigma ** 2) * pred_noise
+            )
 
-        noise = noise_like(x_t.shape, noise_function, repeat_noise)
-        return mean_pred + sigma * noise, preds.xstart
+            if no_noise:
+                return mean_pred, preds.xstart
+
+            noise = noise_like(x_t.shape, noise_function, repeat_noise)
+            return mean_pred + sigma * noise, preds.xstart
 
     def ddim_rev_sample(self, model, x_t, t, clip_denoised=True, eta=0.0, channel_last=False):
         """
@@ -573,10 +582,11 @@ class GaussianDiffusion(object):
         alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
 
         from layers import sqrt
-        return (
-            preds.xstart * sqrt(alpha_bar_next)
-            + sqrt(1 - alpha_bar_next) * pred_noise
-        )
+        with float_context_scope():
+            return (
+                preds.xstart * sqrt(alpha_bar_next)
+                + sqrt(1 - alpha_bar_next) * pred_noise
+            )
 
     def sample_loop(self, model, shape, sampler, *,
                     noise=None,
@@ -668,6 +678,7 @@ class GaussianDiffusion(object):
                     t = F.constant(step, shape=(shape[0], ))
                     x_t, pred_x_start = sampler(
                         model, x_t, t, no_noise=step == 0)
+
                     cnt += 1
                     if dump_interval > 0 and cnt % dump_interval == 0:
                         samples.append((step, x_t.d.copy()))
