@@ -20,8 +20,16 @@ These two regularizers are added to the objective function for minimization.
 <p align="center">
 Figure: Objective function of Prejudice Remover Regularizer
 </p>
+
+
+# Interactive demo
+
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [Prejudice Remover Regularizer](https://doi.org/10.1007/978-3-642-33486-3_3) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/prejudice_remover_regularizer.ipynb) | Mitigate the model bias with Prejudice Removal Technique |<a href="url"><img src="images/Prejudice_Remover_Regularizer_workflow_diagram.png" align="center" height="90" ></a>|
  
  
+
 # Citation
 This is based on Kamishima, Toshihiro, et al. "Fairness-aware classifier with prejudice remover regularizer." Joint European conference on machine learning and knowledge discovery in databases. Springer, Berlin, Heidelberg, 2012.
 
