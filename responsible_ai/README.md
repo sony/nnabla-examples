@@ -109,7 +109,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 ### PRR: Prejudice Remover Regularizer [code](./prejudice_remover_regularizer/)
 > **Fairness-aware classifier with prejudice remover regularizer.**
 > Toshihiro Kamishima, Shotaro Akaho, Hideki Asoh & Jun Sakuma.
-> *[Lecture Notes in Computer Science(), vol 7524. Springer, Berlin, Heidelberg, 2012](https://doi.org/10.1007/978-3-642-33486-3_3)*
+> *[Joint European Conference on Machine Learning and Knowledge Discovery in Databases ECML PKDD 2012: Machine Learning and Knowledge Discovery in Databases pp 35–50](https://doi.org/10.1007/978-3-642-33486-3_3)*
 
 <p align="center">
 <img src="./prejudice_remover_regularizer/images/Prejudice_Remover_Regularizer_workflow_diagram.png" width="80%">
