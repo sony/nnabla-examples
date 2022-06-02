@@ -14,13 +14,16 @@
 
 import enum
 import math
-import numpy as np
+from functools import partial
+
 import nnabla as nn
 import nnabla.functions as F
+import numpy as np
+from neu.losses import gaussian_log_likelihood, kl_normal
+from neu.misc import AttrDict
 
 from layers import chunk
-from neu.losses import kl_normal, gaussian_log_likelihood
-from neu.misc import AttrDict
+from utils import Shape4D, float_context_scope, force_float
 
 # Better to implement ModelVarType as a module?
 
@@ -197,6 +200,7 @@ class GaussianDiffusion(object):
         self.log_betas_clipped = const_var(np.log(np_betas_clipped))
 
     @staticmethod
+    @force_float
     def _extract(a, t, x_shape=None):
         """
         Extract some coefficients at specified timesteps.
@@ -205,6 +209,7 @@ class GaussianDiffusion(object):
         """
 
         B, = t.shape
+
         out = F.gather(a, t, axis=0)
 
         if x_shape is None:
@@ -216,6 +221,7 @@ class GaussianDiffusion(object):
         out_shape[1:] = 1
         return F.reshape(out, out_shape)
 
+    @force_float
     def q_sample(self, x_start, t, noise=None):
         """
         Diffuse the data (t == 0 means diffused for 1 step), which samples from q(x_t | x_0).
@@ -239,6 +245,7 @@ class GaussianDiffusion(object):
                           t, x_start.shape) * noise
         )
 
+    @force_float
     def predict_xstart_from_noise(self, x_t, t, noise):
         """
         Predict x_0 from x_t.
@@ -259,6 +266,7 @@ class GaussianDiffusion(object):
                           t, x_t.shape) * noise
         )
 
+    @force_float
     def predict_noise_from_xstart(self, x_t, t, pred_xstart):
         """
         Predict epsilon from x_t and predicted x_0.
@@ -279,6 +287,7 @@ class GaussianDiffusion(object):
             - pred_xstart
         ) / self._extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
 
+    @force_float
     def q_posterior(self, x_start, x_t, t):
         """
         Compute the mean and variance of the diffusion posterior q(x_{t-1} | x_t, x_0).
@@ -295,12 +304,12 @@ class GaussianDiffusion(object):
                 x_start.shape[0])
         return posterior_mean, posterior_var, posterior_log_var_clipped
 
-    def _vlb_in_bits_per_dims(self, model, x_start, x_t, t,
-                              clip_denoised=True):
+    def _vlb_in_bits_per_dims(self, model, x_start, x_t, t, *,
+                              clip_denoised=True, channel_last=False):
         """
         Calculate variational lower bound in bits/dims.
         """
-        B, C, H, W = x_start.shape
+        B = x_start.shape[0]
         assert x_start.shape == x_t.shape
         assert t.shape == (B, )
 
@@ -308,25 +317,34 @@ class GaussianDiffusion(object):
         mean, _, log_var_clipped = self.q_posterior(x_start, x_t, t)
 
         # pred parameters
-        preds = self.p_mean_var(model, x_t, t, clip_denoised=clip_denoised)
+        preds = self.p_mean_var(
+            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
+
+        from nnabla.ext_utils import get_extension_context
+        cur_ctx = nn.get_current_context()
+        float_ctx = get_extension_context(ext_name=cur_ctx.backend[0].split(":")[0],
+                                          device_id=cur_ctx.device_id,
+                                          type_config="float")
 
         # Negative log-likelihood
-        nll = -gaussian_log_likelihood(x_start,
-                                       mean=preds.mean, logstd=0.5 * preds.log_var)
-        nll_bits = mean_along_except_batch(nll) / np.log(2.0)
+        with nn.context_scope(float_ctx):
+            nll = -gaussian_log_likelihood(x_start,
+                                           mean=preds.mean, logstd=0.5 * preds.log_var)
+            nll_bits = mean_along_except_batch(nll) / np.log(2.0)
         assert nll.shape == x_start.shape
         assert nll_bits.shape == (B, )
 
         # kl between true and pred in bits
-        kl = kl_normal(mean, log_var_clipped, preds.mean, preds.log_var)
-        kl_bits = mean_along_except_batch(kl) / np.log(2.0)
+        with nn.context_scope(float_ctx):
+            kl = kl_normal(mean, log_var_clipped, preds.mean, preds.log_var)
+            kl_bits = mean_along_except_batch(kl) / np.log(2.0)
         assert kl.shape == x_start.shape
         assert kl_bits.shape == (B, )
 
         # Return nll at t = 0, otherwise KL(q(x_{t-1}|x_t,x_0)||p(x_{t-1}|x_t))
         return F.where(F.equal_scalar(t, 0), nll_bits, kl_bits)
 
-    def train_loss(self, model, x_start, t, noise=None):
+    def train_loss(self, model, x_start, t, *, noise=None, channel_last=False):
         """
         Calculate training loss for given data and model.
 
@@ -338,6 +356,7 @@ class GaussianDiffusion(object):
             x_start (nn.Variable): The (B, C, ...) tensor of x_0.
             t (nn.Variable): A 1-D tensor of timesteps.
             noise (callable or None): A noise generator. If None, F.randn(shape=x_start.shape) will be used.
+            channel_last (boolean): Whether channel axis is the last axis of an array or not.
 
         Return:
             loss (dict of {string: nn.Variable}): 
@@ -351,7 +370,7 @@ class GaussianDiffusion(object):
                 in order to make it easy to trace the loss value at each timestep.
                 Therefore, you should take average for returned Variable over batch dim to train the model.
         """
-        B, C, H, W = x_start.shape
+        B = x_start.shape[0]
         assert t.shape == (B, )
 
         if noise is None:
@@ -370,21 +389,26 @@ class GaussianDiffusion(object):
         # Calculate losses
         ret = AttrDict()
 
+        c_axis = 3 if channel_last else 1
         if is_learn_sigma(self.model_var_type):
+            assert pred.shape[c_axis] == x_start.shape[c_axis] * 2
+
             # split pred into 2 variables along channel axis.
-            pred_noise, pred_sigma = chunk(pred, num_chunk=2, axis=1)
+            pred_noise, pred_sigma = chunk(pred, num_chunk=2, axis=c_axis)
             assert pred_sigma.shape == x_start.shape, \
                 f"Shape mismutch between pred_sigma {pred_sigma.shape} and x_start {x_start.shape}"
 
             # Variational lower bound for sigma
             # Use dummy function as model, since we already got prediction from model.
             var = F.concatenate(pred_noise.get_unlinked_variable(
-                need_grad=False), pred_sigma, axis=1)
+                need_grad=False), pred_sigma, axis=3 if channel_last else 1)
             ret.vlb = self._vlb_in_bits_per_dims(model=lambda x_t, t: var,
                                                  x_start=x_start,
                                                  x_t=x_noisy,
-                                                 t=t)
+                                                 t=t,
+                                                 channel_last=channel_last)
         else:
+            assert pred.shape[c_axis] == x_start.shape[c_axis]
             pred_noise = pred
 
         assert pred_noise.shape == x_start.shape, \
@@ -399,7 +423,7 @@ class GaussianDiffusion(object):
 
         return ret
 
-    def p_mean_var(self, model, x_t, t, clip_denoised=True):
+    def p_mean_var(self, model, x_t, t, clip_denoised=True, channel_last=False):
         """
         Compute mean and var of p(x_{t-1}|x_t) from model.
 
@@ -407,7 +431,8 @@ class GaussianDiffusion(object):
             model (Callable): A callbale that takes x_t and t and predict noise (and more).
             x_t (nn.Variable): The (B, C, ...) tensor at timestep t (x_t).
             t (nn.Variable): A 1-D tensor of timesteps. The first axis represents batchsize.
-            clip_denoised (bool): If True, clip the denoised signal into [-1, 1].
+            clip_denoised (boolean): If True, clip the denoised signal into [-1, 1].
+            channel_last (boolean): Whether the channel axis is the last axis of an Array or not.
 
         Returns:
             An AttrDict containing the following items:
@@ -416,20 +441,23 @@ class GaussianDiffusion(object):
                 "log_var": the log of "var".
                 "xstart": the x_0 predicted from x_t and t by model.
         """
-        B, C, H, W = x_t.shape
+        B, C, H, W = Shape4D(
+            x_t.shape, channel_last=channel_last).get_as_tuple("bchw")
         assert t.shape == (B, )
         pred = model(x_t, t)
 
         if self.model_var_type == ModelVarType.LEARNED_RANGE:
-            assert pred.shape == (B, 2 * C, H, W)
-            pred_noise, pred_var_coeff = chunk(pred, num_chunk=2, axis=1)
+            assert pred.shape == (
+                B, H, W, 2 * C) if channel_last else (B, 2 * C, H, W)
+            pred_noise, pred_var_coeff = chunk(
+                pred, num_chunk=2, axis=3 if channel_last else 1)
 
             min_log = self._extract(
                 self.posterior_log_var_clipped, t, x_t.shape)
             max_log = F.log(self._extract(self.betas, t, x_t.shape))
 
-            # pred_var_coeff should be [0, 1]
-            v = F.sigmoid(pred_var_coeff)
+            # No need to constrain v, according to the "improved DDPM" paper.
+            v = pred_var_coeff
             model_log_var = v * max_log + (1 - v) * min_log
             model_var = F.exp(model_log_var)
         else:
@@ -475,16 +503,18 @@ class GaussianDiffusion(object):
                  model,
                  x_t,
                  t,
+                 *,
                  clip_denoised=True,
                  noise_function=F.randn,
                  repeat_noise=False,
-                 no_noise=False):
+                 no_noise=False,
+                 channel_last=False):
         """
         Sample from the model for one step.
         Also return predicted x_start.
         """
         preds = self.p_mean_var(model=model, x_t=x_t,
-                                t=t, clip_denoised=clip_denoised)
+                                t=t, clip_denoised=clip_denoised, channel_last=channel_last)
 
         # no noise when t == 0
         if no_noise:
@@ -493,7 +523,7 @@ class GaussianDiffusion(object):
         noise = noise_like(x_t.shape, noise_function, repeat_noise)
         assert noise.shape == x_t.shape
 
-        # sample from gaussian N(model_mean, )
+        # sample from gaussian N(model_mean, model_var)
         return preds.mean + F.exp(0.5 * preds.log_var) * noise, preds.xstart
 
     # DDIM sampler
@@ -501,62 +531,71 @@ class GaussianDiffusion(object):
                     model,
                     x_t,
                     t,
+                    *,
                     clip_denoised=True,
                     noise_function=F.randn,
                     repeat_noise=False,
                     no_noise=False,
-                    eta=0.):
+                    eta=0.,
+                    channel_last=False):
         """
         sample x_{t-1} from x_{t} by the model using DDIM sampler.
         Also return predicted x_start.
         """
-        preds = self.p_mean_var(model, x_t, t, clip_denoised=clip_denoised)
+
+        preds = self.p_mean_var(
+            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
 
         from layers import sqrt
         alpha_bar = self._extract(self.alphas_cumprod, t, x_t.shape)
         alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
-        sigma = (
-            eta
-            * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
-            * sqrt(1 - alpha_bar / alpha_bar_prev)
-        )
 
-        mean_pred = (
-            preds.xstart * sqrt(alpha_bar_prev)
-            + sqrt(1 - alpha_bar_prev - sigma ** 2) * pred_noise
-        )
+        with float_context_scope():
+            sigma = (
+                eta
+                * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
+                * sqrt(1 - alpha_bar / alpha_bar_prev)
+            )
 
-        if no_noise:
-            return mean_pred, preds.xstart
+            mean_pred = (
+                preds.xstart * sqrt(alpha_bar_prev)
+                + sqrt(1 - alpha_bar_prev - sigma ** 2) * pred_noise
+            )
 
-        noise = noise_like(x_t.shape, noise_function, repeat_noise)
-        return mean_pred + sigma * noise, preds.xstart
+            if no_noise:
+                return mean_pred, preds.xstart
 
-    def ddim_rev_sample(self, model, x_t, t, clip_denoised=True, eta=0.0):
+            noise = noise_like(x_t.shape, noise_function, repeat_noise)
+            return mean_pred + sigma * noise, preds.xstart
+
+    def ddim_rev_sample(self, model, x_t, t, clip_denoised=True, eta=0.0, channel_last=False):
         """
         sample x_{t+1} from x_{t} by the model using DDIM reverse ODE.
         """
         assert eta == 0.0, "ReverseODE only for deterministic path"
-        preds = self.p_mean_var(model, x_t, t, clip_denoised=clip_denoised)
+        preds = self.p_mean_var(
+            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
         alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
 
         from layers import sqrt
-        return (
-            preds.xstart * sqrt(alpha_bar_next)
-            + sqrt(1 - alpha_bar_next) * pred_noise
-        )
+        with float_context_scope():
+            return (
+                preds.xstart * sqrt(alpha_bar_next)
+                + sqrt(1 - alpha_bar_next) * pred_noise
+            )
 
-    def sample_loop(self, model, shape, sampler,
+    def sample_loop(self, model, shape, sampler, *,
                     noise=None,
+                    x_start=None,
                     dump_interval=-1,
                     progress=False,
                     without_auto_forward=False):
         """
-        Iteratively Sample data from model from t=T to t=0.
+        Iteratively sample data from model from t=T to t=0.
         T is specified as the length of betas given to __init__().
 
         Args:
@@ -565,10 +604,12 @@ class GaussianDiffusion(object):
             shape (list like object): A data shape.
             sampler (callable): A function to sample x_{t-1} given x_{t} and t. Typically, self.p_sample or self.ddim_sample.
             noise (collable): A noise generator. If None, F.randn(shape) will be used.
+            x_start (nn.Variable): 
+                A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
             interval (int): 
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
-            progress (bool): If True, tqdm will be used to show the sampling progress.
+            progress (boolean): If True, tqdm will be used to show the sampling progress.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -592,7 +633,14 @@ class GaussianDiffusion(object):
                 assert isinstance(noise, np.ndarray)
                 assert noise.shape == shape
 
-            x_t = nn.Variable.from_numpy_array(noise)
+            if x_start is not None:
+                # SDEdit
+                x_t = self.q_sample(x_start,
+                                    F.constant(T - 1, shape=(shape[0], )),
+                                    noise=nn.Variable.from_numpy_array(noise))
+            else:
+                x_t = nn.Variable.from_numpy_array(noise)
+
             t = nn.Variable.from_numpy_array([T - 1 for _ in range(shape[0])])
 
             # build graph
@@ -613,16 +661,24 @@ class GaussianDiffusion(object):
         else:
             with nn.auto_forward():
                 if noise is None:
-                    x_t = F.randn(shape=shape)
+                    noise = np.random.randn(*shape)
                 else:
                     assert isinstance(noise, np.ndarray)
                     assert noise.shape == shape
+
+                if x_start is not None:
+                    # SDEdit
+                    x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
+                                        noise=nn.Variable.from_numpy_array(noise))
+                else:
                     x_t = nn.Variable.from_numpy_array(noise)
+
                 cnt = 0
                 for step in indices:
                     t = F.constant(step, shape=(shape[0], ))
                     x_t, pred_x_start = sampler(
                         model, x_t, t, no_noise=step == 0)
+
                     cnt += 1
                     if dump_interval > 0 and cnt % dump_interval == 0:
                         samples.append((step, x_t.d.copy()))
@@ -631,23 +687,26 @@ class GaussianDiffusion(object):
         assert x_t.shape == shape
         return x_t.d.copy(), samples, pred_x_starts
 
-    def p_sample_loop(self, *args, **kwargs):
+    def p_sample_loop(self, *args, channel_last=False, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}) proposed by "Denoising Diffusion Probabilistic Models".
         See self.sample_loop for more details about sampling process.
 
         """
 
-        return self.sample_loop(*args, sampler=self.p_sample, **kwargs)
+        return self.sample_loop(*args,
+                                sampler=partial(
+                                    self.p_sample, channel_last=channel_last),
+                                **kwargs)
 
-    def ddim_sample_loop(self, *args, **kwargs):
+    def ddim_sample_loop(self, *args, channel_last=False, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}, x_{0}) proposed by "Denoising Diffusion Implicit Models".
         See self.sample_loop for more details about sampling process.
 
         """
-        from functools import partial
 
         return self.sample_loop(*args,
-                                sampler=partial(self.ddim_sample, eta=0.),
+                                sampler=partial(
+                                    self.ddim_sample, eta=0., channel_last=channel_last),
                                 **kwargs)

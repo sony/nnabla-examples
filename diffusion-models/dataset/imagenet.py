@@ -14,6 +14,7 @@
 
 import os
 import pathlib
+from random import random
 import sys
 
 import click
@@ -38,8 +39,11 @@ def _info(msg):
     logger.info(f"{prefix} {msg}")
 
 
-def ImagenetDataIterator(batch_size, root_dir, image_size=(256, 256), fix_aspect_ratio=True,
-                         comm=None, shuffle=True, rng=None, train=True,
+def ImagenetDataIterator(batch_size, root_dir, *,
+                         image_size=(256, 256),
+                         fix_aspect_ratio=True,
+                         random_crop=False,
+                         comm=None, shuffle=True, rng=None, train=True, channel_last=False,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils
 
@@ -83,7 +87,10 @@ def ImagenetDataIterator(batch_size, root_dir, image_size=(256, 256), fix_aspect
         raise NotImplementedError("val is not supported now.")
 
     ds = SimpleDatasource(img_paths=paths, img_size=image_size, labels=labels,
-                          rng=rng, on_memory=False, fix_aspect_ratio=fix_aspect_ratio)
+                          rng=rng, on_memory=False,
+                          fix_aspect_ratio=fix_aspect_ratio,
+                          random_crop=random_crop,
+                          channel_last=channel_last)
 
     _info(f"Loaded imagenet dataset. # of images: {ds.size}.")
 
@@ -119,8 +126,7 @@ def test_data_iterator(di, output_dir, comm=None, num_iters=100):
 
 @click.command()
 @click.option("--imagenet_base_dir", default=None)
-@click.option("--imagenet64_base_dir", default=None)
-def main(imagenet_base_dir, imagenet64_base_dir):
+def main(imagenet_base_dir):
     from neu.misc import init_nnabla
     comm = init_nnabla(ext_name="cpu", device_id=0, type_config="float")
 

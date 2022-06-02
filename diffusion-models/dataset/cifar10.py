@@ -42,7 +42,7 @@ class Cifar10DataSource(DataSource):
 
         return (image, label)
 
-    def __init__(self, train=True, shuffle=False, rng=None):
+    def __init__(self, train=True, shuffle=False, rng=None, channel_last=False):
         super(Cifar10DataSource, self).__init__(shuffle=shuffle, rng=rng)
 
         self._train = train
@@ -64,6 +64,8 @@ class Cifar10DataSource(DataSource):
                 self._size = 50000
                 self._images = np.concatenate(
                     images).reshape(self._size, 3, 32, 32)
+                if channel_last:
+                    self._images = np.transpose(self._images, (0, 2, 3, 1))
                 self._labels = np.concatenate(labels).reshape(-1, 1)
             # Validation data
             else:
@@ -76,6 +78,8 @@ class Cifar10DataSource(DataSource):
                     labels = data[b"labels"]
                 self._size = 10000
                 self._images = images.reshape(self._size, 3, 32, 32)
+                if channel_last:
+                    self._images = np.transpose(self._images, (0, 2, 3, 1))
                 self._labels = np.array(labels).reshape(-1, 1)
         r.close()
         logger.info('Getting labeled data from {}.'.format(data_uri))
@@ -116,8 +120,10 @@ class Cifar10DataSource(DataSource):
         return self._labels.copy()
 
 
-def Cifar10DataIterator(batch_size, image_size=(32, 32), comm=None, shuffle=True, rng=None, train=True):
-    ds = Cifar10DataSource(train=train, shuffle=shuffle, rng=rng)
+def Cifar10DataIterator(batch_size, *, image_size=(32, 32),
+                        comm=None, shuffle=True, rng=None, train=True, channel_last=False):
+    ds = Cifar10DataSource(train=train, shuffle=shuffle,
+                           rng=rng, channel_last=channel_last)
 
     ds = _get_sliced_data_source(ds, comm, shuffle)
 

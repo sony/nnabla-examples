@@ -20,6 +20,7 @@ from functools import partial
 
 from diffusion import ModelVarType, is_learn_sigma, get_beta_schedule, const_var, GaussianDiffusion
 from unet import UNet
+from utils import Shape4D
 
 from neu.misc import AttrDict
 
@@ -52,9 +53,14 @@ def respace_betas(betas, use_timesteps):
     prev_alphas_cumprod = 1.
     alphas_cumprod = 1.
     timestep_map = []
+    first = True
     for t in range(T):
         alphas_cumprod *= 1. - betas[t]
         if t in use_timesteps:
+            if first:
+                alphas_cumprod = 1. - betas[t]
+                first = False
+
             new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
             new_betas.append(new_beta)
             timestep_map.append(t)
@@ -67,16 +73,20 @@ class Model(object):
     def __init__(self,
                  beta_strategy,
                  num_diffusion_timesteps,
+                 *,
                  use_timesteps=None,
                  num_classes=1,
                  model_var_type: ModelVarType = ModelVarType.FIXED_SMALL,
                  randflip=True,
                  attention_num_heads=1,
+                 attention_head_channels=None,
                  attention_resolutions=(16, 8),
                  base_channels=None,
                  channel_mult=None,
                  num_res_blocks=None,
-                 scale_shift_norm=True):
+                 scale_shift_norm=True,
+                 resblock_resample=False,
+                 channel_last=False):
 
         betas = get_beta_schedule(
             beta_strategy, num_timesteps=num_diffusion_timesteps)
@@ -93,17 +103,21 @@ class Model(object):
         self.num_classes = num_classes
         self.randflip = randflip
         self.attention_num_heads = attention_num_heads
+        self.attention_head_channels = attention_head_channels
         self.attention_resolutions = attention_resolutions
         self.base_channels = base_channels
         self.channel_mult = channel_mult
         self.num_res_blocks = num_res_blocks
         self.scale_shift_norm = scale_shift_norm
+        self.resblock_resample = resblock_resample
+        self.channel_last = channel_last
 
     def _define_model(self, input_shape, dropout):
         assert isinstance(input_shape, (tuple, list))
         assert len(input_shape) == 4
 
-        B, C, H, W = input_shape
+        B, C, H, W = Shape4D(
+            input_shape, channel_last=self.channel_last).get_as_tuple("bchw")
 
         output_channels = C
         if is_learn_sigma(self.model_var_type):
@@ -114,11 +128,14 @@ class Model(object):
                     output_channels=output_channels,
                     num_res_blocks=self.num_res_blocks,
                     attention_resolutions=self.attention_resolutions,
+                    attention_head_channels=self.attention_head_channels,
                     attention_num_heads=self.attention_num_heads,
                     channel_mult=self.channel_mult,
                     dropout=dropout,
                     scale_shift_norm=self.scale_shift_norm,
-                    conv_resample=True)
+                    conv_resample=True,
+                    resblock_resample=self.resblock_resample,
+                    channel_last=self.channel_last)
 
         return unet
 
@@ -139,8 +156,10 @@ class Model(object):
         out = unet(x, self.rescale_timestep(t))
 
         if is_learn_sigma(self.model_var_type):
-            B, C, H, W = x.shape
-            assert out.shape == (B, 2 * C, H, W)
+            B, C, H, W = Shape4D(
+                x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
+            assert out.shape == (
+                B, H, W, 2 * C) if self.channel_last else (B, 2 * C, H, W)
         else:
             assert out.shape == x.shape
         return out
@@ -163,10 +182,12 @@ class Model(object):
         return out
 
     def build_train_graph(self, x, t=None, dropout=0, noise=None, loss_scaling=None):
-        B, C, H, W = x.shape
+        B, C, H, W = Shape4D(
+            x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
         if self.randflip:
-            x = F.random_flip(x)
-            assert x.shape == (B, C, H, W)
+            x = F.random_flip(x, axes=[2, ] if self.channel_last else None)
+            assert Shape4D((B, C, H, W)) == Shape4D(
+                x.shape, channel_last=self.channel_last)
 
         if t is None:
             t = F.randint(
@@ -175,7 +196,7 @@ class Model(object):
             t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
 
         loss_dict = self.diffusion.train_loss(model=partial(self._denoise, dropout=dropout),
-                                              x_start=x, t=t, noise=noise)
+                                              x_start=x, t=t, noise=noise, channel_last=self.channel_last)
         assert isinstance(loss_dict, AttrDict)
 
         # setup training loss
@@ -199,12 +220,13 @@ class Model(object):
 
         return loss_dict, t
 
-    def sample(self, shape, dump_interval=-1, noise=None, use_ema=True, progress=False, use_ddim=False):
+    def sample(self, shape, dump_interval=-1, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,
                                    dump_interval=dump_interval,
                                    noise=noise,
+                                   x_start=x_start,
                                    use_ema=False,
                                    progress=progress,
                                    use_ddim=use_ddim)
@@ -214,16 +236,19 @@ class Model(object):
         with nn.no_grad():
             return loop_func(
                 model=partial(self._denoise, dropout=0),
+                channel_last=self.channel_last,
                 shape=shape,
                 noise=noise,
+                x_start=x_start,
                 dump_interval=dump_interval,
                 progress=progress
             )
 
-    def sample_trajectory(self, shape, noise=None, use_ema=True, progress=False, use_ddim=False):
+    def sample_trajectory(self, shape, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
         return self.sample(shape,
                            dump_interval=100,
                            noise=noise,
+                           x_start=x_start,
                            use_ema=use_ema,
                            progress=progress,
                            use_ddim=use_ddim)

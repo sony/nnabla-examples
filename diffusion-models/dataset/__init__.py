@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from random import random
 from .cifar10 import Cifar10DataIterator
 from .imagenet import ImagenetDataIterator
 from .common import SimpleDataIterator
@@ -29,22 +30,38 @@ def get_dataset(args, comm):
     assert hasattr(args, "image_shape")
     assert len(args.image_shape) == 4
     assert hasattr(args, "data_dir")
+    assert hasattr(args, "channel_last")
+
+    # refine
+    if not hasattr(args, "fix_aspect_ratio"):
+        args.fix_aspect_ratio = True
+
+    if not hasattr(args, "random_crop"):
+        args.random_crop = False
+
+    if not hasattr(args, "shuffle_dataset"):
+        args.shuffle_dataset = True
 
     if args.dataset == "cifar10":
         data_iterator = Cifar10DataIterator(
-            args.batch_size, comm=comm, train=True)
-    elif args.dataset.startswith("imagenet") and max(*args.image_shape[-2:]) > 64:
+            args.batch_size, comm=comm, channel_last=args.channel_last)
+    elif args.dataset.startswith("imagenet"):
         data_iterator = ImagenetDataIterator(args.batch_size,
                                              args.dataset_root_dir,
                                              image_size=args.image_shape[-2:],
                                              fix_aspect_ratio=args.fix_aspect_ratio,
+                                             random_crop=args.random_crop,
                                              comm=comm,
-                                             train=True)
+                                             channel_last=args.channel_last,
+                                             shuffle=args.shuffle_dataset)
     else:
         data_iterator = SimpleDataIterator(args.batch_size,
                                            args.dataset_root_dir,
                                            image_size=args.image_shape[-2:],
                                            comm=comm, on_memory=args.dataset_on_memory,
-                                           fix_aspect_ratio=args.fix_aspect_ratio)
+                                           fix_aspect_ratio=args.fix_aspect_ratio,
+                                           random_crop=args.random_crop,
+                                           channel_last=args.channel_last,
+                                           shuffle=args.shuffle_dataset)
 
     return data_iterator

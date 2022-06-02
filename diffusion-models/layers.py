@@ -19,6 +19,29 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.initializer as I
 
+from utils import Shape4D
+
+
+def pad_for_faster_conv(x, *, channel_last=False):
+    """
+    Pad channel to meet the condition that tensor core is available to accelerate computation.
+    """
+    x_shape = Shape4D(x.shape, channel_last=channel_last)
+    C = x_shape.c
+    if C == 4 or C % 8 == 0:
+        # no need to pad
+        return x
+
+    pad_width = 0
+    # increment pad_width until the condition is satisfied.
+    while C + pad_width != 4 and (C + pad_width) % 8 > 0:
+        pad_width += 1
+
+    if channel_last:
+        return F.pad(x, (0, pad_width))
+    else:
+        return F.pad(x, (0, pad_width, 0, 0, 0, 0))
+
 
 def sinusoidal_embedding(timesteps, embedding_dim):
     """
@@ -40,18 +63,23 @@ def sinusoidal_embedding(timesteps, embedding_dim):
     return emb
 
 
-def nonlinearity(x):
-    return F.swish(x)
+def nonlinearity(x, *, recompute=False):
+    with nn.recompute(recompute):
+        return F.swish(x)
 
 
-def normalize(x, name):
-    with nn.parameter_scope(name):
-        return PF.group_normalization(x, num_groups=32)
+def normalize(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
+    with nn.parameter_scope(name), nn.recompute(recompute):
+        return PF.group_normalization(x,
+                                      num_groups=32,
+                                      channel_axis=channel_axis,
+                                      batch_axis=batch_axis)
 
 
-def conv(x, c, name, kernel=(3, 3), pad=(1, 1), stride=(1, 1), zeroing_w=False):
+def conv(x, c, name, *, kernel=(3, 3), pad=(1, 1), stride=(1, 1), zeroing_w=False, channel_last=False):
     # init weight and bias with uniform, which is the same as pytorch
-    lim = I.calc_normal_std_he_forward(x.shape[1] * 2, c, tuple(kernel))
+    c_axis = x.ndim - 1 if channel_last else 1
+    lim = I.calc_normal_std_he_forward(x.shape[c_axis] * 2, c, tuple(kernel))
     w_init = I.UniformInitializer(lim=(-lim, lim), rng=None)
     b_init = I.UniformInitializer(lim=(-lim, lim), rng=None)
 
@@ -61,11 +89,13 @@ def conv(x, c, name, kernel=(3, 3), pad=(1, 1), stride=(1, 1), zeroing_w=False):
 
     return PF.convolution(x, c, kernel,
                           pad=pad, stride=stride, name=name,
-                          w_init=w_init, b_init=b_init)
+                          w_init=w_init, b_init=b_init,
+                          channel_last=channel_last)
 
 
-def nin(x, c, name, zeroing_w=False):
-    lim = np.sqrt(x.shape[1]) ** -1
+def nin(x, c, name, *, zeroing_w=False, channel_last=False, recompute=False):
+    c_axis = x.ndim - 1 if channel_last else 1
+    lim = np.sqrt(x.shape[c_axis]) ** -1
     w_init = I.UniformInitializer(lim=(-lim, lim))  # same as pytorch's default
     b_init = I.UniformInitializer(lim=(-lim, lim))  # same as pytorch's default
 
@@ -73,58 +103,70 @@ def nin(x, c, name, zeroing_w=False):
         w_init = I.ConstantInitializer(0)
         b_init = I.ConstantInitializer(0)
 
-    return PF.convolution(x, c,
-                          kernel=(1, 1),
-                          pad=(0, 0), stride=(1, 1), name=name,
-                          w_init=w_init, b_init=b_init)
+    with nn.recompute(recompute):
+        return PF.convolution(x, c,
+                              kernel=(1, 1),
+                              pad=(0, 0), stride=(1, 1), name=name,
+                              w_init=w_init, b_init=b_init,
+                              channel_last=channel_last)
 
 
-def upsample(x, name, with_conv):
-    with nn.parameter_scope(name):
-        B, C, H, W = x.shape
-        x = F.interpolate(x, scale=(2, 2), mode="nearest", align_corners=True)
-        assert x.shape == (B, C, H * 2, W * 2)
+def upsample(x, name, with_conv, *, channel_last=False, recompute=False):
+    with nn.parameter_scope(name), nn.recompute(recompute):
+        B, C, H, W = Shape4D(
+            x.shape, channel_last=channel_last).get_as_tuple("bchw")
+        x = F.interpolate(x, scale=(2, 2), mode="nearest",
+                          align_corners=True, channel_last=channel_last)
+
         if with_conv:
-            x = conv(x, C, "upsample_conv")
-            assert x.shape == (B, C, H * 2, W * 2)
+            x = conv(x, C, "upsample_conv", channel_last=channel_last)
+
+        assert Shape4D(x.shape, channel_last=channel_last) == Shape4D(
+            (B, C, H * 2, W * 2))
+
         return x
 
 
-def downsample(x, name, with_conv):
-    with nn.parameter_scope(name):
-        B, C, H, W = x.shape
+def downsample(x, name, with_conv, *, channel_last=False, recompute=False):
+    with nn.parameter_scope(name), nn.recompute(recompute):
+        B, C, H, W = Shape4D(
+            x.shape, channel_last=channel_last).get_as_tuple("bchw")
         if with_conv:
             x = conv(x, C, "downsample_conv",
-                     kernel=(3, 3), pad=(1, 1), stride=(2, 2))
+                     kernel=(3, 3), pad=(1, 1), stride=(2, 2), channel_last=channel_last)
         else:
-            x = F.average_pooling(x, (2, 2), stride=(2, 2))
+            x = F.average_pooling(x, (2, 2), stride=(
+                2, 2), channel_last=channel_last)
 
-        assert x.shape == (B, C, H // 2, W // 2)
+        assert Shape4D(x.shape, channel_last=channel_last) == \
+            Shape4D((B, C, H // 2, W // 2))
         return x
 
 
-def chunk(x, num_chunk, axis):
+def chunk(x, num_chunk, axis, recompute=False):
     """
     Split `x` to `num_chunk` arrays along specified axis.
     """
-    shape = x.shape
-    C = shape[axis]
-    num_elems = (C + num_chunk - 1) // num_chunk
+    with nn.recompute(recompute):
+        shape = x.shape
+        C = shape[axis]
+        num_elems = (C + num_chunk - 1) // num_chunk
 
-    ret = []
-    for i in range(num_chunk):
-        start = [0 for _ in shape]
-        stop = [s for s in shape]
-        start[axis] = i * num_elems
-        stop[axis] = start[axis] + num_elems
+        ret = []
+        for i in range(num_chunk):
+            start = [0 for _ in shape]
+            stop = [s for s in shape]
+            start[axis] = i * num_elems
+            stop[axis] = start[axis] + num_elems
 
-        segment = F.slice(x, start=start, stop=stop)
-        assert len(segment.shape) == len(x.shape)
-        ret.append(segment)
+            segment = F.slice(x, start=start, stop=stop)
+            assert len(segment.shape) == len(x.shape)
+            ret.append(segment)
 
     return ret
 
 
-def sqrt(x):
+def sqrt(x, recompute=False):
     assert isinstance(x, (nn.Variable, nn.NdArray))
-    return x ** 0.5
+    with nn.recompute(recompute):
+        return x ** 0.5

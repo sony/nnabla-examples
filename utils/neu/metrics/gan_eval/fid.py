@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import os
 import glob
 import numpy as np
@@ -21,9 +22,10 @@ import nnabla.logger as logger
 
 from tqdm import tqdm
 from scipy import linalg
-from .im2ndarray import im2ndarray
+from .im2ndarray import npy2ndarray
 from .inceptionv3 import construct_inceptionv3
 from nnabla.ext_utils import get_extension_context
+from .common import get_data_iterator
 
 
 def get_parser():
@@ -49,6 +51,8 @@ def get_parser():
                         help='Backend name.')
     parser.add_argument('--batch-size', '-b', default=16, type=int,
                         help='batch-size. automatically adjusted. see the code.')
+    parser.add_argument('--faster-resize', action="store_true",
+                        help='If specified, nnabla.interpolate is used to perform resize on GPU.')
 
     return parser
 
@@ -141,11 +145,13 @@ def get_features(input_images: nn.NdArray):
     return feature
 
 
-def get_all_features_on_imagepaths(image_paths: list, batch_size: int):
+def get_all_features_on_imagepaths(image_paths: list, batch_size: int, faster_resize=False):
     """Extract all the given images' feature.
         Args:
             image_paths (list): list of image file's paths.
             batch_size (int): batch size.
+            faster_resize (bool): If true, resize is performed on GPU by nnabla.interpolate.
+                                  Otherwise, slower but the same resize implementation with tensorflow by numpy will be used.
 
         Returns:
             all_feat (np.ndarray): extracted (N) images' feature. shape: (N, 2048)
@@ -155,37 +161,37 @@ def get_all_features_on_imagepaths(image_paths: list, batch_size: int):
     if num_images < 9999:
         logger.warning(
             f"only {num_images} images found. It may produce inaccurate FID score.")
-    num_loop, num_remainder = divmod(num_images, batch_size)
-    batched_images = image_paths[:-num_remainder]
-    rest_image_paths = image_paths[-num_remainder:]
 
     pbar = tqdm(total=num_images)
-    if batch_size > 1 and num_remainder != 0:
-        images = im2ndarray(rest_image_paths, imsize=(299, 299))
+    data_iter = get_data_iterator(image_paths, batch_size,
+                                  shuffle=False, stop_exhausted=False, channel_first=True, num_channels=3)
+    samples = 0
+    all_feat = []
+    while samples < num_images:
+        d_npy = data_iter.next()[0]
+        if samples + len(d_npy) > num_images:
+            d_npy = d_npy[:num_images]
+
+        images = npy2ndarray(d_npy, imsize=(299, 299),
+                             normalize=True, use_tf_resize=not faster_resize)
         feature = get_features(images)
-        all_feat = feature.data
-        pbar.update(num_remainder)
-    else:
-        # when batch_size = 1
-        all_feat = np.zeros((0, 2048))
-        batched_images = rest_image_paths
 
-    for i in range(num_loop):
-        image_paths = batched_images[i*batch_size:(i+1)*batch_size]
-        images = im2ndarray(image_paths, imsize=(299, 299))
-        feature = get_features(images)
-        all_feat = np.concatenate([all_feat, feature.data], axis=0)
-        pbar.update(batch_size)
+        all_feat.append(feature.data)
 
-    return all_feat
+        pbar.update(len(d_npy))
+        samples += len(d_npy)
+
+    return np.concatenate(all_feat, axis=0)
 
 
-def get_statistics_from_given_path(path, batch_size):
+def get_statistics_from_given_path(path, batch_size, faster_resize=False):
     """Handling the path and get the statistics required for FID calculation. 
         Args:
             path (str): path to the directory containing images,
                         or the text file listing the image files. 
             batch_size (int): batch size.
+            faster_resize (bool): If true, resize is performed on GPU by nnabla.interpolate.
+                                  Otherwise, slower but the same resize implementation with tensorflow by numpy will be used.
 
         Returns:
             mu (np.ndarray): mean feature. shape: (2048,)
@@ -203,8 +209,14 @@ def get_statistics_from_given_path(path, batch_size):
     elif ext == "":
         # path points to a directory
         assert os.path.isdir(path), "specified directory is not found."
-        image_paths = glob.glob(f"{path}/*.png") + glob.glob(f"{path}/*.jpg")
+        # image_paths = glob.glob(f"{path}/**/*.png", recursive=True) + glob.glob(f"{path}/**/*.jpg", recursive=True)
         # of simply glob.glob(f"{path}/*")?
+        image_paths = []
+        for p in np.random.permutation(glob.glob(f"{path}/**/*") + glob.glob(f"{path}/*")):
+            if re.search("/*\.(jpg|jpeg|png)", str(p).lower()):
+                image_paths.append(p)
+
+        #image_paths = [p for p in glob.glob(f"{path}/**/*") if re.search("/*\.(jpg|jpeg|png)", str(p).lower())]
     elif ext == ".txt":
         assert os.path.isfile(path), "specified file is not found."
         with open(path, "r") as f:
@@ -212,7 +224,8 @@ def get_statistics_from_given_path(path, batch_size):
     else:
         raise RuntimeError(f"Invalid path: {path}")
 
-    feature = get_all_features_on_imagepaths(image_paths, batch_size)
+    feature = get_all_features_on_imagepaths(
+        image_paths, batch_size, faster_resize)
     mu, sigma = get_stats(feature)
 
     return mu, sigma
@@ -250,17 +263,20 @@ def main(args):
     nn.set_default_context(ctx)
     batch_size = args.batch_size
     save_stats = args.save_stats
+    faster_resize = args.faster_resize
 
     paths = args.path
 
     load_parameters(args.params_path)  # overwrite
 
     print("Computing statistics...")
-    mu1, sigma1 = get_statistics_from_given_path(paths[0], batch_size)
+    mu1, sigma1 = get_statistics_from_given_path(
+        paths[0], batch_size, faster_resize)
     if save_stats:
         save_statistics(args.saved_filenames[0], paths[0], mu1, sigma1)
 
-    mu2, sigma2 = get_statistics_from_given_path(paths[1], batch_size)
+    mu2, sigma2 = get_statistics_from_given_path(
+        paths[1], batch_size, faster_resize)
     if save_stats:
         save_statistics(args.saved_filenames[1], paths[1], mu2, sigma2)
 

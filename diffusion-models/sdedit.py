@@ -53,14 +53,16 @@ def refine_obsolete_conf(conf: AttrDict):
 @click.command()
 # configs for generating process
 @click.option("--device-id", default='0', help="Device id.", show_default=True)
-@click.option("--samples", default=16, help="# of generating samples on each device.", show_default=True)
-@click.option("--batch-size", default=32, help="# of generating samples for each inference.", show_default=True)
+@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
+@click.option("--samples", default=32, help="# of samples", show_default=True)
+@click.option("--batch-size", default=16, help="# of generating samples for each inference.", show_default=True)
 # model configs
 @click.option("--config", required=True, type=str, help="A path for config file.")
 @click.option("--h5", required=True, type=str, help="A path for parameter to load.")
 @click.option("--ema/--no-ema", default=True, help="Use ema params or not.")
 @click.option("--ddim/--no-ddim", default=False, help="Use ddim sampler to generate data.", show_default=True)
 @click.option("--sampling-interval", "-s", default=None, type=int, help="A timestep interval for sampling.")
+@click.option("--t-start", "-t", default=None, type=int, help="A start timestep for SDEdit.")
 # configs for dumping
 @click.option("--output-dir", default="./outs", help="output dir", show_default=True)
 @click.option("--tiled/--no-tiled", default=True, help="If true, generated images will be saved as tiled image.")
@@ -74,16 +76,17 @@ def main(**kwargs):
     conf = read_yaml(args.config)
 
     comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config=conf.type_config, random_pseed=True)
+                       type_config="float", random_pseed=True)
+
     if args.sampling_interval is None:
         args.sampling_interval = 1
 
-    use_timesteps = list(
-        range(0, conf.num_diffusion_timesteps, args.sampling_interval))
-    if use_timesteps[-1] != conf.num_diffusion_timesteps - 1:
-        # The last step should be included always.
-        use_timesteps.append(conf.num_diffusion_timesteps - 1)
+    # Note that t = 0 is data and t = T - 1 is noise.
+    # So, t = 0 is included always.
+    use_timesteps = list(range(0, args.t_start, args.sampling_interval))
+    use_timesteps.append(args.t_start)
 
+    # setup model variance type
     refine_obsolete_conf(conf)
     if comm.rank == 0:
         conf.dump()
@@ -107,29 +110,30 @@ def main(**kwargs):
         args.h5), f"{args.h5} is not found. Please make sure the h5 file exists."
     nn.parameter.load_parameters(args.h5)
 
+    # data iterator
+    from dataset import get_dataset
+    conf.dataset = "imagenet"  # just fixed ever
+    conf.dataset_root_dir = os.path.join(
+        os.environ["SGE_LOCALDIR"], "ilsvrc2012")  # just fixed ever
+    conf.batch_size = args.batch_size
+    conf.shuffle_dataset = False  # fixed samples
+    imagenet_di = get_dataset(conf, comm)
+
+    num_iter = (args.samples + args.batch_size - 1) // args.batch_size
+
     # Generate
-    # sampling
-    B = args.batch_size
-    num_samples_per_iter = B * comm.n_procs
-    num_iter = (args.samples + num_samples_per_iter -
-                1) // num_samples_per_iter
-
+    B = conf.batch_size
     local_saved_cnt = 0
-
-    # setup output dir
-    if comm.rank == 0:
-        os.makedirs(args.output_dir, exist_ok=True)
-
-    comm.barrier()
-
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
-        sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
-                                                        noise=None,
-                                                        dump_interval=-1,
-                                                        use_ema=args.ema,
-                                                        progress=comm.rank == 0,
-                                                        use_ddim=args.ddim)
+        d, _ = imagenet_di.next()
+        sample_out, xts, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
+                                                 x_start=nn.Variable.from_numpy_array(
+                                                     d / 127.5 - 1),
+                                                 dump_interval=1,
+                                                 use_ema=args.ema,
+                                                 progress=comm.rank == 0,
+                                                 use_ddim=args.ddim)
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
@@ -139,6 +143,12 @@ def main(**kwargs):
                 args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
             save_tiled_image(sample_out.astype(np.uint8),
                              save_path, channel_last=conf.channel_last)
+
+            org_save_path = os.path.join(
+                args.output_dir, f"org_{local_saved_cnt}_{comm.rank}.png")
+            save_tiled_image(d.astype(np.uint8), org_save_path,
+                             channel_last=conf.channel_last)
+
             local_saved_cnt += 1
         else:
             for b in range(B):
@@ -146,6 +156,12 @@ def main(**kwargs):
                     args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
                     np.uint8), channel_first=not conf.channel_last)
+
+                org_save_path = os.path.join(
+                    args.output_dir, f"org_{local_saved_cnt}_{comm.rank}.png")
+                imsave(d[b].astype(np.uint8), org_save_path,
+                       channel_first=not conf.channel_last)
+
                 local_saved_cnt += 1
 
         # create video for x_starts
@@ -155,7 +171,7 @@ def main(**kwargs):
                 xstart = x_starts[i][1]
                 assert isinstance(xstart, np.ndarray)
                 im = get_tiled_image(
-                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=conf.channel_last).astype(np.uint8)
+                    np.clip((xstart + 1) * 127.5, 0, 255), channel_last=False).astype(np.uint8)
                 clips.append(im)
 
             clip = mp.ImageSequenceClip(clips, fps=5)
