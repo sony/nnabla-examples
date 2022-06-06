@@ -26,19 +26,16 @@ import numpy as np
 
 def _nms(heat, kernel=3):
     pad = (kernel - 1) // 2
-    hmax = F.max_pooling(
-        heat, (kernel, kernel), stride=(1, 1), pad=(pad, pad))
+    hmax = F.max_pooling(heat, (kernel, kernel), stride=(1, 1), pad=(pad, pad))
     keep = F.equal(hmax, heat)
-    return heat*keep
+    return heat * keep
 
 
 def _topk(scores, K=40):
     batch, cat, height, width = scores.shape
     # Gather topk inds and scores using argpartition
-    topk_inds = np.argsort(scores.d.reshape(
-        batch, cat, -1))[:, :, ::-1][:, :, :K]
-    topk_scores = np.sort(scores.d.reshape(
-        batch, cat, -1))[:, :, ::-1][:, :, :K]
+    topk_inds = np.argsort(scores.d.reshape(batch, cat, -1))[:, :, ::-1][:, :, :K]
+    topk_scores = np.sort(scores.d.reshape(batch, cat, -1))[:, :, ::-1][:, :, :K]
     topk_inds = topk_inds % (height * width)
     topk_ys = (topk_inds / width).astype(int).astype(np.float32)
     topk_xs = (topk_inds % width).astype(int).astype(np.float32)
@@ -46,12 +43,9 @@ def _topk(scores, K=40):
     topk_ind = np.argsort(topk_scores.reshape(batch, -1))[:, ::-1][:, :K]
     topk_score = np.sort(topk_scores.reshape(batch, -1))[:, ::-1][:, :K]
     topk_clses = (topk_ind / K).astype(int).astype(np.float32)
-    topk_inds = _gather_feat(topk_inds.reshape(
-        (batch, -1, 1)), topk_ind).reshape((batch, K))
-    topk_xs = _gather_feat(topk_xs.reshape(
-        (batch, -1, 1)), topk_ind).reshape((batch, K))
-    topk_ys = _gather_feat(topk_ys.reshape(
-        (batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_inds = _gather_feat(topk_inds.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_xs = _gather_feat(topk_xs.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_ys = _gather_feat(topk_ys.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
 
     return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 
@@ -74,17 +68,14 @@ def ctdet_decode(heat, wh, reg=None, K=128):
 
     clses = clses.reshape((batch, K, 1))
     scores = scores.reshape((batch, K, 1))
-    bboxes = np.concatenate([xs - wh[..., 0:1] / 2,
-                             ys -
-                             wh[..., 1:2] / 2,
-                             xs +
-                             wh[..., 0:1] / 2,
-                             ys +
-                             wh[..., 1:2] / 2],
-                            axis=2)
-    detections = np.concatenate([
-            bboxes,
-            scores,
-            clses],
-            axis=2)
+    bboxes = np.concatenate(
+        [
+            xs - wh[..., 0:1] / 2,
+            ys - wh[..., 1:2] / 2,
+            xs + wh[..., 0:1] / 2,
+            ys + wh[..., 1:2] / 2,
+        ],
+        axis=2,
+    )
+    detections = np.concatenate([bboxes, scores, clses], axis=2)
     return detections
