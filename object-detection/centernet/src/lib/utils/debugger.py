@@ -97,8 +97,7 @@ class Debugger(object):
 
     def add_mask(self, mask, bg, imgId='default', trans=0.8):
         self.imgs[imgId] = (mask.reshape(
-            mask.shape[0], mask.shape[1], 1) * 255 * trans +
-                            bg * (1 - trans)).astype(np.uint8)
+            mask.shape[0], mask.shape[1], 1) * 255 * trans + bg * (1 - trans)).astype(np.uint8)
 
     def show_img(self, pause=False, imgId='default'):
         cv2.imshow('{}'.format(imgId), self.imgs[imgId])
@@ -288,10 +287,8 @@ class Debugger(object):
                     ct = dets[i, :2].astype(np.int32) * self.down_ratio
                     cv2.circle(self.imgs[img_id], (ct[0], ct[1]), 3, cl, -1)
                     if show_box:
-                        w, h = dets[i, -3] * \
-                               self.down_ratio, dets[i, -2] * self.down_ratio
-                        x, y = dets[i, 0] * \
-                            self.down_ratio, dets[i, 1] * self.down_ratio
+                        w, h = dets[i, -3] * self.down_ratio, dets[i, -2] * self.down_ratio
+                        x, y = dets[i, 0] * self.down_ratio, dets[i, 1] * self.down_ratio
                         bbox = np.array([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
                                         dtype=np.float32)
                         self.add_coco_bbox(
