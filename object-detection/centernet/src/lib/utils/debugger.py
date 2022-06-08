@@ -32,7 +32,8 @@ class Debugger(object):
         self.ipynb = ipynb
         if self.ipynb:
             import matplotlib.pyplot as plt
-
+            from IPython import get_ipython
+            get_ipython().run_line_magic('matplotlib', 'inline')
             self.plt = plt
         self.imgs = {}
         self.theme = theme
