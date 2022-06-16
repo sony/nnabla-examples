@@ -103,13 +103,17 @@ def preprocess(image):
     image_resolution = vision_patch_size * grid_size
 
     i_w, i_h = image.size
-    res_w = image_resolution * i_w // i_h
+    if i_w >= i_h:
+        res_w = image_resolution * i_w // i_h
+        res_h = image_resolution
+    else:
+        res_w = image_resolution
+        res_h = image_resolution * i_h // i_w
 
-    image = image.resize((res_w, image_resolution), BICUBIC)
+    image = image.resize((res_w, res_h), BICUBIC)
 
     crop_left = int(round((res_w - image_resolution) / 2.))
-    # const 0 in this case
-    crop_top = int(round((image_resolution - image_resolution) / 2.))
+    crop_top = int(round((res_h - image_resolution) / 2.))
     image = image.crop((crop_left,
                        crop_top,
                        crop_left + image_resolution,
@@ -122,7 +126,7 @@ def preprocess(image):
     image = _normalize(image, mean, std)
     image = image.transpose((2, 0, 1))
 
-    return nn.Variable.from_numpy_array(image)
+    return image
 
 
 def encode_text(x):
@@ -171,4 +175,4 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
                     f"Input {texts[i]} is too long for context length {context_length}")
         result[i, :len(tokens)] = np.array(tokens)
 
-    return nn.Variable.from_numpy_array(result)
+    return result

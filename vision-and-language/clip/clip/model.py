@@ -176,12 +176,12 @@ def vision_transformer(x, input_res, patch_size, v_width, v_layers, v_heads, emb
         z = np.zeros((x.shape[0], 1, x.shape[-1]))
         zeros = nn.Variable.from_numpy_array(z)
         class_embed = nn.parameter.get_parameter_or_create(
-            name="class_embedding", shape=(v_width,)).reshape((x.shape[0], 1, v_width))
+            name="class_embedding", shape=(v_width,)).reshape((1, 1, v_width))
         # shape = [*, grid ** 2 + 1, width]
         x = F.concatenate(class_embed + zeros, x, axis=1)
 
         positional_embedding = nn.parameter.get_parameter_or_create(
-            name='positional_embedding', shape=((input_res // patch_size) ** 2 + 1, v_width)).reshape((x.shape[0], x.shape[1], v_width))
+            name='positional_embedding', shape=((input_res // patch_size) ** 2 + 1, v_width)).reshape((1, x.shape[1], v_width))
         x = x + positional_embedding
 
         ln_pre_w = nn.parameter.get_parameter_or_create(
@@ -270,9 +270,10 @@ def encode_text(text):
         name='ln_final/b', shape=(transformer_width,)).reshape((1, 1, transformer_width))
     x = F.layer_normalization(x, ln_final_b, ln_final_W, batch_axis=(0, 1))
 
-    idx = F.max(text, axis=-1, only_index=True)
-    idx.forward()
-    x = x[list(range(x.shape[0])), idx.d].reshape((1, x.shape[0], -1))
+    idx = F.max(text, axis=-1, keepdims=True, only_index=True)
+    idx_mask = F.one_hot(idx, shape=(x.shape[1],)).reshape(
+        (x.shape[0], x.shape[1], 1))
+    x = F.sum(x * idx_mask, axis=1).reshape((1, x.shape[0], -1))
     text_projection = nn.parameter.get_parameter_or_create(
         name='text_projection', shape=(transformer_width, embed_dim)).reshape((1, transformer_width, embed_dim))
     x = F.batch_matmul(x, text_projection)

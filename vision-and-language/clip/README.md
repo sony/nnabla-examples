@@ -24,9 +24,9 @@ import clip
 with nn.auto_forward():
     clip.load('data/ViT-B-32.h5')
 
-    image = clip.preprocess(Image.open("CLIP.png"))
+    image = nn.Variable.from_numpy_array(clip.preprocess(Image.open("CLIP.png")))
     image = F.reshape(image, (1, image.shape[0], image.shape[1], image.shape[2]))
-    text = clip.tokenize(["a diagram", "a dog", "a cat"])
+    text = nn.Variable.from_numpy_array(clip.tokenize(["a diagram", "a dog", "a cat"]))
 
     image_features = clip.encode_image(image)
     text_features = clip.encode_text(text)
@@ -52,14 +52,14 @@ The CLIP module `clip` provides the following methods:
 
 #### `clip.load(path)`
 
- Loads the model specified by the path to the trained model file.
+Loads the model specified by the path to the trained model file.
 
- #### `clip.preprocess(image: PIL Image)`
- Returns a Variable pre-processed for input to the image encoder.
+#### `clip.preprocess(image: PIL Image)`
+Returns a numpy.ndarray pre-processed for input to the image encoder.
 
 #### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
 
-Returns a Variable containing tokenized sequences of given text input(s). This can be used as the input to the model.
+Returns a numpy.ndarray containing tokenized sequences of given text input(s). This can be used as the input to the model.
 
 #### `clip.encode_image(image: Variable)`
 
@@ -74,5 +74,36 @@ Given a batch of text tokens, returns the text features encoded by the language 
 
 Given a batch of images and a batch of text tokens, returns two ndarrays, containing the logit scores corresponding to each image and text input. The values are cosine similarities between the corresponding image and text features, times 100.
 
+## Training 
+
+
+### Prepare 
+- CLIP weight(model)
+    - CLIP params (Set to `asset/ViT-B-32.h5`. Converted the official pytorch params to nnabla version) for finetuing
+    - CLIP initialized params (Set to `asset/ViT-B-32-initialized.h5`. Converted the clip params initialized with open_clip scripts) for scratch training
+- Create an environment of nnabla-ext-cuda-multi-gpu. This code was developed with `nnabla/nnabla-ext-cuda-multi-gpu:py39-cuda110-mpi3.1.6-v1.28.0` on Docker Hub ([Link](https://hub.docker.com/layers/nnabla-ext-cuda-multi-gpu/nnabla/nnabla-ext-cuda-multi-gpu/py39-cuda110-mpi3.1.6-v1.28.0/images/sha256-aa307180e2ea3915a88a7f036b4a6a077c999aaf5a129b9b91a43258884f394d?context=explore))
+- Mount the directory containing conceptual captions as `/conceptual_captions/` on the Docker env. If you want to download Conceptual Captions, see [here](https://github.com/mlfoundations/open_clip#conceptual-captions) for an instruction.
+
+
+### Example
+- Fine-tuning with Conceptual Captions 3M:
+```
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0,1 mpirun -n 2 python train.py -ft -b 64 -ag -ep 30 -wi 10000 --train-txt-path /conceptual_captions/cc_3m/Train_GCC-training_output.csv --val-txt-path /conceptual_captions/cc_3m/Validation_GCC-1.1.0-Validation_output.csv --lr 5.0e-4 --beta1 0.9 --beta2 0.98 --eps 1.0e-6 --wd 1.0e-4 --solver AdamW
+```
+
+- Scratch training with CC3M:  
+(not using `-ft`)  
+```
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0,1 mpirun -n 2 python train.py -b 64 -ag -ep 30 -wi 10000 --train-txt-path /conceptual_captions/Train_GCC-training_output.csv --val-txt-path /conceptual_captions/Validation_GCC-1.1.0-Validation_output.csv --lr 5.0e-4 --beta1 0.9 --beta2 0.98 --eps 1.0e-6 --wd 1.0e-4 --solver AdamW
+```
+
+- Scratch training *on 1GPU* with CC3M:  
+(not using `-ag`)
+```
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python train.py -b 128 -ep 30 -wi 10000 --train-txt-path /conceptual_captions/Train_GCC-training_output.csv --val-txt-path /conceptual_captions/Validation_GCC-1.1.0-Validation_output.csv --lr 5.0e-4 --beta1 0.9 --beta2 0.98 --eps 1.0e-6 --wd 1.0e-4 --solver AdamW
+```
+
+Note that the defenition of `weight decay rate` for AdamW is different between nnabla and PyTorch. Set `--wd` on nnabla as `weight_decay * alpha` on PyTorch for the same setting. 
+
 #### Contributor
-This work was done during [Soma Kanazawa's](https://github.com/soma-knzw) internship at Sony.
+A part of this work was done during [Soma Kanazawa's](https://github.com/soma-knzw) internship at Sony.
