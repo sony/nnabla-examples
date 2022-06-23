@@ -17,8 +17,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import cv2
-import nnabla as nn
 import nnabla.functions as F
 from .utils import _gather_feat, _tranpose_and_gather_feat
 import numpy as np

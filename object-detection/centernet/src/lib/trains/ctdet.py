@@ -80,7 +80,7 @@ class Trainer(object):
         max_objs = 128
         batch_size = opt.batch_size
         self.iterations_per_epoch = int(
-                np.ceil(train_size / (comm.n_procs*batch_size)))
+            np.ceil(train_size / (comm.n_procs * batch_size)))
         self.weight_decay = opt.weight_decay
 
         # Mixed Precision parameters
@@ -152,7 +152,7 @@ class Trainer(object):
                 del loss, total_loss, hm_loss, wh_loss, off_loss
                 return self.compute_gradient(data)
             self._recursive_count = 0
-            self.solver.scale_grad(1./self.scale)
+            self.solver.scale_grad(1. / self.scale)
         return total_loss, hm_loss, wh_loss, off_loss
 
     def update(self, epoch):
@@ -174,7 +174,7 @@ class Trainer(object):
                     self._counter = 0
                 self._counter += 1
 
-            if self.logger[0] != None:
+            if self.logger[0] is not None:
                 if self.comm.rank == 0:
                     m_total_loss += total_loss.d.item() / self.iterations_per_epoch
                     m_hm_loss += hm_loss.d.item() / self.iterations_per_epoch
@@ -186,7 +186,7 @@ class Trainer(object):
                             wh_loss.d.item(), off_loss.d.item(), self.solver.learning_rate(),
                             self.scale))
 
-        if self.logger[0] != None:
+        if self.logger[0] is not None:
             if self.comm.rank == 0:
                 self.logger[0].add(epoch, m_total_loss)
                 self.logger[1].add(epoch, m_hm_loss)
@@ -244,7 +244,7 @@ class Trainer(object):
                     ), loss['hm_loss'].d.item(),
                     loss['wh_loss'].d.item(), loss['off_loss'].d.item()))
             del loss
-        if self.logger[4] != None:
+        if self.logger[4] is not None:
             if self.comm.rank == 0:
                 self.logger[4].add(epoch, total_loss /
                                    val_iterations_per_epoch)

@@ -98,7 +98,7 @@ class BaseDetector(object):
         pre_processed = False
         if isinstance(image_or_path_or_tensor, np.ndarray):
             image = image_or_path_or_tensor
-        elif type(image_or_path_or_tensor) == type(''):
+        elif isinstance(image_or_path_or_tensor, str):
             image = cv2.imread(image_or_path_or_tensor)
         else:
             image = image_or_path_or_tensor['image'][0].numpy()

@@ -263,7 +263,7 @@ class Debugger(object):
             center_thresh=0.5, img_id='det'):
         # dets: max_preds x 5
         self.imgs[img_id] = img.copy()
-        if type(dets) == type({}):
+        if isinstance(dets, dict):
             for cat in dets:
                 for i in range(len(dets[cat])):
                     if dets[cat][i, 2] > center_thresh:
