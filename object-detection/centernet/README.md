@@ -110,7 +110,7 @@ The following example shows how to run DLAv0 training for Pascal VOC dataset wit
 mpirun -n 4 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
     --train-config cfg/dlav0_34_pascal_fp.yaml \
-    -o <path to output training results & logs>
+    --save_dir <path to output training results & logs>
 ```
 
 See config files in `cfg` for more details such as configurations for dataset, batch size, mixed precision training, and learninge rate scheduler. (**Note**: mixed precision training doesn't work at this moment for some reason. Any contribution to fix the issue is welcome!)
@@ -121,7 +121,7 @@ For a single GPU training, you can run the following.
 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
     --train-config cfg/dlav0_34_pascal_fp.yaml \
-    -o <path to output training results & logs>
+    --save_dir <path to output training results & logs>
 ```
 
 To specify a GPU to use, set `CUDA_VISIBLE_DEVICES=<gpu id>` as an environment variable. For example;
@@ -173,7 +173,7 @@ The evaluation scripts from the official datasets is used to calculate AP/mAP.
 
 ## Export nnp file
 
-`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `exp/ctdet/your_exp_id/`.
+`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `--save_dir` or `exp/ctdet_{arch}_{num_layers}_{timestamp}` by default.
 
 ```bash
 # For example, to export DLAv034 nnp file, use the following command.

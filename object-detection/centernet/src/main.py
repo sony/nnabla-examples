@@ -51,8 +51,7 @@ def main(opt):
     comm = init_nnabla(ext_name=opt.extension_module,
                        device_id='0', type_config=type_config)
     nn.set_auto_forward(True)
-    output_folder = os.path.join(
-        opt.save_dir, "tmp.monitor.{}_{}".format(opt.arch, opt.num_layers))
+    output_folder = os.path.join(opt.save_dir, "tmp.monitor")
     monitor = Monitor(output_folder)
     monitor_loss = None
     monitor_hm_loss = None
@@ -129,9 +128,7 @@ def main(opt):
          monitor_val_wh_loss, monitor_val_off_loss],
         opt, comm)
 
-    root_dir = opt.save_dir
-
-    checkpoint_dir = os.path.join(root_dir, output_folder, 'checkpoints')
+    checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0
     if opt.resume_from is not None:
         start_epoch = trainer.load_checkpoint(checkpoint_dir, opt.resume_from)

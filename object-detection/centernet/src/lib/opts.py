@@ -50,12 +50,7 @@ class opts(object):
                                       'cpu | cuda | cudnn')
         self.parser.add_argument('--data_dir', type=str, default='/home/ubuntu/data/',
                                  help='Path to root directory of dataset.')
-        self.parser.add_argument('--root_output_dir', '-o', type=str,
-                                 default=os.path.join(
-                                     os.path.dirname(__file__), '..', '..'),
-                                 help='Path to root directory of output data.')
-        self.parser.add_argument('--save_dir', type=str,
-                                 default=None,
+        self.parser.add_argument('--save_dir', type=str, default=None,
                                  help='Path to directory for saving outputs of training and inference etc.')
 
         # system
@@ -203,9 +198,15 @@ class opts(object):
         opt.pad = 31
         opt.num_stacks = 1
 
-        opt.exp_dir = os.path.join(opt.root_output_dir, "exp", opt.task)
         if opt.save_dir is None:
-            opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id)
+            import datetime
+            top_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+            timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+            opt.save_dir = os.path.join(
+                top_dir,
+                "exp",
+                f"{opt.task}_{opt.arch}_{opt.num_layers}_{timestamp}"
+            )
         opt.debug_dir = os.path.join(opt.save_dir, 'debug')
         print(f'The output will be saved to {opt.save_dir}')
         os.makedirs(opt.save_dir, exist_ok=True)
