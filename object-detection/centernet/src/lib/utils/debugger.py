@@ -24,6 +24,7 @@ import os
 import cv2
 import numpy as np
 import nnabla as nn
+from nnabla.utils.save import save
 
 
 class Debugger(object):
@@ -541,6 +542,7 @@ color_list = color_list.reshape((-1, 3)) * 255
 
 
 def save_nnp(opt, model, extension='nnp'):
+
     input_variable = nn.Variable([1, 3, opt.input_h, opt.input_w])
     output_list = model(input_variable)
 
@@ -557,6 +559,4 @@ def save_nnp(opt, model, extension='nnp'):
     }
 
     model_name = f'{opt.arch}_{opt.num_layers}'
-
-    nn.utils.save.save(os.path.join(opt.save_dir, '%s.%s' %
-                                    (model_name, extension)), runtime_contents)
+    save(os.path.join(opt.save_dir, f'{model_name}.{extension}'), runtime_contents)
