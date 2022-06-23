@@ -173,7 +173,7 @@ The evaluation scripts from the official datasets is used to calculate AP/mAP.
 
 ## Export nnp file
 
-`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `--save_dir` or `exp/ctdet_{arch}_{num_layers}_{timestamp}` by default.
+`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `--save_dir` or `exp/ctdet_{dataset}_{arch}_{num_layers}_{timestamp}` by default.
 
 ```bash
 # For example, to export DLAv034 nnp file, use the following command.

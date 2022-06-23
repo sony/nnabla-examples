@@ -205,7 +205,7 @@ class opts(object):
             opt.save_dir = os.path.join(
                 top_dir,
                 "exp",
-                f"{opt.task}_{opt.arch}_{opt.num_layers}_{timestamp}"
+                f"{opt.task}_{opt.dataset}_{opt.arch}_{opt.num_layers}_{timestamp}"
             )
         opt.debug_dir = os.path.join(opt.save_dir, 'debug')
         print(f'The output will be saved to {opt.save_dir}')
