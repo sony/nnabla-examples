@@ -28,11 +28,9 @@ from models.model import create_model, load_model
 from tqdm import trange
 
 from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
-from nnabla.ext_utils import get_extension_context
 from nnabla.utils.data_iterator import data_iterator
 import nnabla.solvers as S
 import nnabla as nn
-from nnabla.utils.save import save
 import nnabla.logger as logger
 
 

@@ -27,7 +27,6 @@ import numpy as np
 from models.networks.initializers import torch_initializer
 from models.networks.model_resnet import resnet_imagenet
 from nnabla.initializer import ConstantInitializer, NormalInitializer
-from nnabla.utils.save import save
 
 
 def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1, 1), dilation=(2, 2), with_bias=False, w_init=None, b_init=None, channel_last=False):

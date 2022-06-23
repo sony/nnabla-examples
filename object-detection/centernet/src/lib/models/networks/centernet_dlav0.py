@@ -23,9 +23,7 @@ import nnabla as nn
 import nnabla.parametric_functions as PF
 import nnabla.functions as F
 from nnabla.initializer import UniformInitializer, ConstantInitializer, NormalInitializer
-from nnabla.logger import logger
-from nnabla.utils.save import save
-from .model_dlav0 import dla_imagenet, DLAUp
+from .model_dlav0 import DLAUp
 import numpy as np
 
 

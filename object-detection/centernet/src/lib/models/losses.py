@@ -17,13 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .utils import _tranpose_and_gather_feat
-import nnabla as nn
 import nnabla.functions as F
-import nnabla.parametric_functions as PF
-import numpy as np
-import os
-import cv2
 
 
 def _focal_loss(pred, gt):

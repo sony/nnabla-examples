@@ -16,7 +16,6 @@
 import numpy as np
 import os
 import nnabla as nn
-import nnabla.functions as F
 
 from models.losses import FocalLoss
 from models.losses import L1Loss

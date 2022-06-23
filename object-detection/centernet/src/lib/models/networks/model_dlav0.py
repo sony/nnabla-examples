@@ -23,9 +23,8 @@ import nnabla as nn
 import nnabla.parametric_functions as PF
 import nnabla.functions as F
 
-from nnabla.initializer import UniformInitializer, ConstantInitializer, NormalInitializer, calc_normal_std_he_forward, calc_normal_std_he_backward
+from nnabla.initializer import NormalInitializer
 from nnabla.logger import logger
-from nnabla.utils.save import save
 from nnabla.utils.nnp_graph import NnpNetworkPass
 
 from models.networks.initializers import he_initializer, bilinear_depthwise_initializer

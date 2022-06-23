@@ -20,16 +20,10 @@ from __future__ import print_function
 import _init_paths
 
 import os
-import cv2
-import numpy as np
-
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
-import nnabla.functions as F
-from nnabla.utils.nnp_graph import NnpLoader
 
 from opts import opts
-from models.decode import ctdet_decode
 from detectors.detector_factory import detector_factory
 
 image_ext = ['jpg', 'jpeg', 'png', 'webp']
