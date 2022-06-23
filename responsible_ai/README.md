@@ -134,7 +134,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 </p>
 
 ## Post Processing
-## Rejection Option-Based Classification [code](./rejection_option_based_classification/)
+### Rejection Option-Based Classification [code](./rejection_option_based_classification/)
 > **Decision Theory for Discrimination-Aware Classification**
 > F. Kamiran, A. Karim and X. Zhang.
 > *[IEEE 12th International Conference on Data Mining, 2012, pp. 924-929](https://ieeexplore.ieee.org/document/6413831)* 

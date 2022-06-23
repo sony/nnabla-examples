@@ -34,7 +34,7 @@ Figure: Objective function of Prejudice Remover Regularizer
 This is based on Kamishima, Toshihiro, et al. "Fairness-aware classifier with prejudice remover regularizer." Joint European conference on machine learning and knowledge discovery in databases. Springer, Berlin, Heidelberg, 2012.
 
 # References
-1. Kamishima, Toshihiro, et al. "Fairness-aware classifier with prejudice remover regularizer." Joint European conference on machine learning and knowledge discovery in databases. Springer, Berlin, Heidelberg, 2012.
+1. Toshihiro Kamishima, Shotaro Akaho, Hideki Asoh & Jun Sakuma. "Fairness-aware classifier with prejudice remover regularizer. " Joint European Conference on Machine Learning and Knowledge Discovery in Databases ECML PKDD 2012: Machine Learning and Knowledge Discovery in Databases pp 35–50
 2. Celis, L. Elisa, et al. "Classification with fairness constraints: A meta-algorithm with provable guarantees." Proceedings of the conference on fairness, accountability, and transparency. 2019.
 3. Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell. "Mitigating unwanted biases with adversarial learning." Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society. 2018.
 4. https://archive.ics.uci.edu/ml/datasets/Adult
