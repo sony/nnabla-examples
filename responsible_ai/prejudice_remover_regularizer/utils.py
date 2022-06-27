@@ -66,7 +66,7 @@ def load_adult_dataset():
     return features, target, sensitive_attributes
 
 
-def CVS(output_f,output_m):
+def CVS(output_f, output_m):
     """
     Calders and Verwer defined a discrimination score,
     by subtracting the conditional probability of the positive class given a sensitive value 
@@ -84,17 +84,17 @@ def CVS(output_f,output_m):
     P_y1_s1 = corr_f / output_f.shape[0]
     P_y1_s0 = corr_m / output_m.shape[0]
     CV_score = np.abs(P_y1_s0 - P_y1_s1)
-    return round(CV_score.item(),4)
-    print ('Calder-Verwer discrimination score: %.4f' % (CV_score.item()))
-    
+    return round(CV_score.item(), 4)
+    print('Calder-Verwer discrimination score: %.4f' % (CV_score.item()))
+
 
 def fairness_plot(x, x_name, y_left, y_left_name, y_right, y_right_name):
     """
     Graphical Comparison of fairness & performance with respect to
     Prejudice Regularizer 
     """
-    fig, ax1 = plt.subplots(figsize=(10,7))
-    ax1.plot(x, y_left,color='b')
+    fig, ax1 = plt.subplots(figsize=(10, 7))
+    ax1.plot(x, y_left, color='b')
     ax1.set_xlabel(x_name, fontsize=16, fontweight='bold')
     ax1.set_ylabel(y_left_name, color='b', fontsize=16, fontweight='bold')
     ax1.xaxis.set_tick_params(labelsize=14)
