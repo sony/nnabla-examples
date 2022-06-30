@@ -18,7 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import nnabla.functions as F
-from .utils import _gather_feat, _tranpose_and_gather_feat
+from .utils import _gather_feat, _transpose_and_gather_feat
 import numpy as np
 
 
@@ -53,7 +53,7 @@ def ctdet_decode(heat, wh, reg=None, K=128):
     batch, cat, height, width = heat.shape
     scores, inds, clses, ys, xs = _topk(heat, K=K)
     if reg is not None:
-        reg = _tranpose_and_gather_feat(reg.d, inds)
+        reg = _transpose_and_gather_feat(reg.d, inds)
         reg = reg.reshape((batch, K, 2))
         xs = xs.reshape((batch, K, 1))
         ys = ys.reshape((batch, K, 1))
@@ -62,7 +62,7 @@ def ctdet_decode(heat, wh, reg=None, K=128):
     else:
         xs = xs.reshape((batch, K, 1)) + 0.5
         ys = ys.reshape((batch, K, 1)) + 0.5
-    wh = _tranpose_and_gather_feat(wh.d, inds).reshape((batch, K, 2))
+    wh = _transpose_and_gather_feat(wh.d, inds).reshape((batch, K, 2))
 
     clses = clses.reshape((batch, K, 1))
     scores = scores.reshape((batch, K, 1))
