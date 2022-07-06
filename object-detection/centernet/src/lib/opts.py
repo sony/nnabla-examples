@@ -206,7 +206,7 @@ class opts(object):
         if opt.save_dir is None:
             opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id)
         opt.debug_dir = os.path.join(opt.save_dir, 'debug')
-        print('The output will be saved to ', opt.save_dir)
+        print(f'The output will be saved to {opt.save_dir}')
         os.makedirs(opt.save_dir, exist_ok=True)
 
         return opt
