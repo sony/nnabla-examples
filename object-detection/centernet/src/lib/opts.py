@@ -234,6 +234,7 @@ class opts(object):
             opt.heads = {'hm': opt.num_classes,
                          'wh': 2}  # if not opt.cat_spec_wh else 2 * opt.num_classes}
             opt.heads.update({'reg': 2})
+            opt.dataset_info = {'max_objs': dataset.max_objs}
         else:
             assert 0, 'task {} not defined!'.format(opt.task)
         print('heads', opt.heads)
