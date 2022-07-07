@@ -16,6 +16,7 @@
 import numpy as np
 import os
 import nnabla as nn
+from nnabla.monitor import MonitorSeries
 
 from models.losses import FocalLoss
 from models.losses import L1Loss
@@ -67,14 +68,13 @@ class Trainer(object):
     # Super class which defines common methods for full precision and mixed precision training
 
     def __init__(
-            self, model, loss_func, solver, train_data_loader,
-            train_data_source, logger, opt, comm=None, N=2000,
-            scaling_factor=2.0
+        self, model, loss_func, solver, train_data_loader,
+        train_data_source, monitor, opt, comm=None, N=2000,
+        scaling_factor=2.0
     ):
 
         self.model = model
         self.loss_func = loss_func
-        self.logger = logger
         self.comm = comm
         self._iteration = 0
         self.data_loader = train_data_loader
@@ -115,6 +115,20 @@ class Trainer(object):
         _ = self.model(self._img)
         self.solver.set_parameters(
             nn.get_parameters(), reset=False, retain_state=True)
+        self._train_monitor = {'loss': None, 'hm_loss': None, 'wh_loss': None, 'off_loss': None}
+        self._val_monitor = {'loss': None, 'hm_loss': None, 'wh_loss': None, 'off_loss': None}
+
+        interval = 1
+        if comm.rank == 0:
+            self._train_monitor['loss'] = MonitorSeries("Training Loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['hm_loss'] = MonitorSeries("hm_loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['wh_loss'] = MonitorSeries("wh_loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['off_loss'] = MonitorSeries("off_loss", monitor, interval=interval, verbose=False)
+
+            self._val_monitor['loss'] = MonitorSeries("Validation Loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['hm_loss'] = MonitorSeries("val_hm_loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['wh_loss'] = MonitorSeries("val_wh_loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['off_loss'] = MonitorSeries("val_off_loss", monitor, interval=interval, verbose=False)
 
     def compute_gradient(self, data):
         loss = self.compute_loss(data)
@@ -176,30 +190,28 @@ class Trainer(object):
                     self._counter = 0
                 self._counter += 1
 
-            if self.logger[0] is not None:
-                if self.comm.rank == 0:
-                    m_total_loss += total_loss.d.item() / self.iterations_per_epoch
-                    m_hm_loss += hm_loss.d.item() / self.iterations_per_epoch
-                    m_wh_loss += wh_loss.d.item() / self.iterations_per_epoch
-                    m_off_loss += off_loss.d.item() / self.iterations_per_epoch
-
-                    pbar_text = (
-                        f"[Train] epoch:{epoch}/{self.opt.num_epochs}||"
-                        f"loss:{total_loss.d.item():8.4f}, "
-                        f"hm_loss:{hm_loss.d.item():8.4f}, "
-                        f"wh_loss:{wh_loss.d.item():8.4f}, "
-                        f"off_loss:{wh_loss.d.item():8.4f}, "
-                        f"lr:{self.solver.learning_rate():.2e}, "
-                        f"scale:{self.scale:.2e}"
-                    )
-                    pbar.set_description(pbar_text)
-
-        if self.logger[0] is not None:
             if self.comm.rank == 0:
-                self.logger[0].add(epoch, m_total_loss)
-                self.logger[1].add(epoch, m_hm_loss)
-                self.logger[2].add(epoch, m_wh_loss)
-                self.logger[3].add(epoch, m_off_loss)
+                m_total_loss += total_loss.d.item() / self.iterations_per_epoch
+                m_hm_loss += hm_loss.d.item() / self.iterations_per_epoch
+                m_wh_loss += wh_loss.d.item() / self.iterations_per_epoch
+                m_off_loss += off_loss.d.item() / self.iterations_per_epoch
+
+                pbar_text = (
+                    f"[Train] epoch:{epoch}/{self.opt.num_epochs}||"
+                    f"loss:{total_loss.d.item():8.4f}, "
+                    f"hm_loss:{hm_loss.d.item():8.4f}, "
+                    f"wh_loss:{wh_loss.d.item():8.4f}, "
+                    f"off_loss:{wh_loss.d.item():8.4f}, "
+                    f"lr:{self.solver.learning_rate():.2e}, "
+                    f"scale:{self.scale:.2e}"
+                )
+                pbar.set_description(pbar_text)
+
+        if self.comm.rank == 0:
+            self._train_monitor['loss'].add(epoch, m_total_loss)
+            self._train_monitor['hm_loss'].add(epoch, m_hm_loss)
+            self._train_monitor['wh_loss'].add(epoch, m_wh_loss)
+            self._train_monitor['off_loss'].add(epoch, m_off_loss)
 
     def save_checkpoint(self, path, epoch):
         # path: saved_models_dir
@@ -260,10 +272,8 @@ class Trainer(object):
             pbar.set_description(pbar_text)
             del loss
 
-        if self.logger[4] is not None:
-            if self.comm.rank == 0:
-                self.logger[4].add(
-                    epoch, total_loss / val_iterations_per_epoch)
-                self.logger[5].add(epoch, hm_loss / val_iterations_per_epoch)
-                self.logger[6].add(epoch, wh_loss / val_iterations_per_epoch)
-                self.logger[7].add(epoch, off_loss / val_iterations_per_epoch)
+        if self.comm.rank == 0:
+            self._val_monitor['loss'].add(epoch, total_loss / val_iterations_per_epoch)
+            self._val_monitor['hm_loss'].add(epoch, hm_loss / val_iterations_per_epoch)
+            self._val_monitor['wh_loss'].add(epoch, wh_loss / val_iterations_per_epoch)
+            self._val_monitor['off_loss'].add(epoch, off_loss / val_iterations_per_epoch)
