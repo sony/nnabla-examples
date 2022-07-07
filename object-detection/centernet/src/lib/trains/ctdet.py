@@ -68,13 +68,12 @@ class Trainer(object):
     # Super class which defines common methods for full precision and mixed precision training
 
     def __init__(
-        self, model, loss_func, solver, train_data_loader,
-        train_data_source, monitor, opt, comm=None, N=2000,
-        scaling_factor=2.0
+            self, model, solver, train_data_loader, train_data_source,
+            monitor, opt, comm=None, N=2000, scaling_factor=2.0
     ):
 
         self.model = model
-        self.loss_func = loss_func
+        self.loss_func = CtdetLoss(opt)
         self.comm = comm
         self._iteration = 0
         self.data_loader = train_data_loader

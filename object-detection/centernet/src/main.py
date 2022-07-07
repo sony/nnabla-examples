@@ -38,7 +38,7 @@ from utils import setup_neu
 setup_neu()
 from neu.misc import init_nnabla
 from neu.learning_rate_scheduler import create_learning_rate_scheduler
-from trains.ctdet import Trainer, CtdetLoss
+from trains.ctdet import Trainer
 from datasets.dataset_factory import get_data_source
 from detectors.detector_factory import detector_factory
 
@@ -91,11 +91,10 @@ def main(opt):
         load_model(model, opt.checkpoint, clear=True)
 
     start_epoch = 0
-    loss_func = CtdetLoss(opt)
     lr_sched = create_learning_rate_scheduler(
         opt.config_file.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
-    trainer = Trainer(model, loss_func, solver, train_loader, train_source, monitor, opt, comm)
+    trainer = Trainer(model, solver, train_loader, train_source, monitor, opt, comm)
 
     checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0
