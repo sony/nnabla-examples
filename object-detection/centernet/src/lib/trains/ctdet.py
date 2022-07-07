@@ -96,23 +96,15 @@ class Trainer(object):
                 (opt.batch_size, opt.input_h, opt.input_w, channels))
             self._hm = nn.Variable(
                 (opt.batch_size, opt.output_h, opt.output_w, opt.num_classes))
-            self.pred_hm = nn.Variable(
-                (opt.batch_size, opt.output_h, opt.output_w, opt.num_classes))
         else:
             self._img = nn.Variable(
                 (opt.batch_size, channels, opt.input_h, opt.input_w))
             self._hm = nn.Variable(
                 (opt.batch_size, opt.num_classes, opt.output_h, opt.output_w))
-            self.pred_hm = nn.Variable(
-                (opt.batch_size, opt.num_classes, opt.output_h, opt.output_w))
         self._inds = nn.Variable((opt.batch_size, max_objs))
         self._wh = nn.Variable((opt.batch_size, max_objs, 2))
         self._reg = nn.Variable((opt.batch_size, max_objs, 2))
         self._reg_mask = nn.Variable((opt.batch_size, max_objs, 1))
-        self.pred_wh_map = nn.Variable(
-            (opt.batch_size, 2, opt.output_h, opt.output_w))
-        self.pred_reg_map = nn.Variable(
-            (opt.batch_size, 2, opt.output_h, opt.output_w))
 
     def compute_gradient(self, data):
         loss = self.compute_loss(data)
