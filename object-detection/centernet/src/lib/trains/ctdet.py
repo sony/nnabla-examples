@@ -81,7 +81,7 @@ class Trainer(object):
         self.solver = solver
         self.opt = opt
         train_size = opt.train_size
-        max_objs = 128
+        max_objs = opt.dataset_info['max_objs']
         batch_size = opt.batch_size
         self.iterations_per_epoch = int(
             np.ceil(train_size / (comm.n_procs * batch_size)))
