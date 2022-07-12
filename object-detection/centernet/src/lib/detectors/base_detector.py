@@ -95,6 +95,14 @@ class BaseDetector(object):
         raise NotImplementedError
 
     def merge_outputs(self, detections):
+        """Merge detection results
+
+        Args:
+            detections (list): List of detection results. Each 1-based detection result will be saved to dictionary.
+
+        Raises:
+            NotImplementedError: Abstract method.
+        """
         raise NotImplementedError
 
     def debug(self, debugger, images, dets, output, scale=1):

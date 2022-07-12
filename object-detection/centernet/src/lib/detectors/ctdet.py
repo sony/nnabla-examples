@@ -75,6 +75,14 @@ class CtdetDetector(BaseDetector):
         return dets[0]
 
     def merge_outputs(self, detections):
+        """Merge detection results.
+
+        Args:
+            detections (list): List of detection results. Each 1-based detection result will be saved to dictionary.
+
+        Returns:
+            dict: Merged detection results. The keys will be [1, 2, ..., num_classes].
+        """
         results = {}
         for j in range(1, self.opt.num_classes + 1):
             results[j] = np.concatenate(
