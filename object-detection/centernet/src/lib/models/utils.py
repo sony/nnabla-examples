@@ -29,7 +29,7 @@ def _gather_feat(feat, ind, mask=None):
         mask (_type_, optional):Mask of feature map. Defaults to None.
 
     Returns:
-        _type_: Gathered feature. Shape: (batch, 1, K, 1, B)
+        numpy.ndarray: Gathered feature. Shape: (batch, 1, K, 1, B)
     """
     ind = np.expand_dims(ind, axis=2).astype(int)
     result = np.take(feat, ind, axis=1)
@@ -44,7 +44,7 @@ def _transpose_and_gather_feat(feat, ind):
         ind (numpy.ndarray): Corresponding index array with (batch, K) shape.
 
     Returns:
-        _type_: Gathered feature. Shape: (batch, 1, K, 1, C)
+        numpy.ndarray: Gathered feature. Shape: (batch, 1, K, 1, C)
     """
     # output shape: (batch, C, H, W) -> (batch, H, W, C)
     feat = feat.transpose(0, 2, 3, 1)
