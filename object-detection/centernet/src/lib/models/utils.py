@@ -20,13 +20,12 @@ from __future__ import print_function
 import numpy as np
 
 
-def _gather_feat(feat, ind, mask=None):
+def _gather_feat(feat, ind):
     """Gather feature according to index.
 
     Args:
         feat (numpy.ndarray): Target feature map. Shape: (batch, A, B)
         ind (numpy.ndarray): Target coord index. Shape: (batch, K)
-        mask (_type_, optional):Mask of feature map. Defaults to None.
 
     Returns:
         numpy.ndarray: Gathered feature. Shape: (batch, 1, K, 1, B)
