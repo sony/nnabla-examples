@@ -28,13 +28,12 @@ try:
 except ImportError:
     import pickle
 import os
-import math
 
 from utils.timer import Timer
 from utils.blob import im_list_to_blob
 
 from model.config import cfg, get_output_dir
-from model.bbox_transform import clip_boxes, bbox_transform_inv
+from model.bbox_transform import bbox_transform_inv
 # from model.nms_wrapper import nms  # need to compile cython nms before import nms
 nms = None  # not needed in pascal evaluation
 

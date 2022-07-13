@@ -31,7 +31,6 @@ import sys
 import os.path as osp
 sys.path.insert(0, osp.join(osp.dirname(__file__), 'voc_eval_lib'))
 
-from model.test import apply_nms
 from tools.voc_eval_lib.datasets.pascal_voc import pascal_voc
 import pickle
 import os

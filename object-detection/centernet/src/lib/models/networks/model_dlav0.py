@@ -28,7 +28,7 @@ from nnabla.logger import logger
 from nnabla.utils.save import save
 from nnabla.utils.nnp_graph import NnpNetworkPass
 
-from models.networks.initializers import he_initializer, bilinear_depthwise_initializer, bilinear_initializer
+from models.networks.initializers import he_initializer, bilinear_depthwise_initializer
 
 RNG = np.random.RandomState(214)
 

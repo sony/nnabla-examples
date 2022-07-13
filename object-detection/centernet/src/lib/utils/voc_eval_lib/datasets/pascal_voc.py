@@ -25,12 +25,9 @@ from __future__ import print_function
 
 import os
 from tools.voc_eval_lib.datasets.imdb import imdb
-import tools.voc_eval_lib.datasets.ds_utils as ds_utils
 import xml.etree.ElementTree as ET
 import numpy as np
 import scipy.sparse
-import scipy.io as sio
-# import utils.cython_bbox
 import pickle
 import subprocess
 import uuid

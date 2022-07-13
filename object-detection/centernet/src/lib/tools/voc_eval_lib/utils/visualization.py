@@ -24,7 +24,6 @@ from __future__ import print_function
 import numpy as np
 from six.moves import range
 import PIL.Image as Image
-import PIL.ImageColor as ImageColor
 import PIL.ImageDraw as ImageDraw
 import PIL.ImageFont as ImageFont
 
