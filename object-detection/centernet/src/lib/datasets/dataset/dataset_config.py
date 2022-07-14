@@ -16,10 +16,7 @@
 import numpy as np
 import os
 import cv2
-
-cv2.setNumThreads(1)
 import math
-
 
 from nnabla.utils.data_source import DataSource
 
@@ -27,6 +24,8 @@ from utils.image import fast_pad
 from utils.image import color_aug
 from utils.image import get_affine_transform, affine_transform
 from utils.image import gaussian_radius, draw_umich_gaussian
+
+cv2.setNumThreads(1)
 
 
 class DatasetConfig(DataSource):
