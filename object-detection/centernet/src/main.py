@@ -58,7 +58,6 @@ def main(opt):
     monitor_hm_loss = None
     monitor_wh_loss = None
     monitor_off_loss = None
-    monitor_acc = None
     monitor_val_loss = None
     monitor_val_hm_loss = None
     monitor_val_wh_loss = None
@@ -141,7 +140,7 @@ def main(opt):
     for epoch in range(start_epoch, opt.num_epochs):
         lr_sched.set_epoch(epoch)
         trainer.solver.set_learning_rate(lr_sched.get_lr())
-        iteration = trainer.update(epoch)
+        _ = trainer.update(epoch)
         if comm.rank == 0:
             if epoch % opt.save_intervals == 0 or epoch == (opt.num_epochs - 1):
                 monitor_time.add(epoch)

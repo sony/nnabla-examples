@@ -42,7 +42,6 @@ class CtdetLoss(object):
     def __call__(self, pred_hm, pred_wh, pred_reg, hm, inds, wh, reg, reg_mask, comm=None, channel_last=False):
         with nn.context_scope(comm.ctx_float):
             loss, hm_loss, wh_loss, off_loss = 0.0, 0.0, 0.0, 0.0
-            eps = 1e-4
             hm_loss = self.crit.forward(pred_hm, hm)
             if self.opt.wh_weight > 0:
                 wh_loss = self.crit_wh.forward(
@@ -172,11 +171,15 @@ class Trainer(object):
                     m_hm_loss += hm_loss.d.item() / self.iterations_per_epoch
                     m_wh_loss += wh_loss.d.item() / self.iterations_per_epoch
                     m_off_loss += off_loss.d.item() / self.iterations_per_epoch
-                    pbar.set_description(
-                        '[Train][exp_id:{}, epoch:{}/{}||loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f}, lr:{:.2e}, scale:{:.2e}]'.format(
-                            self.opt.exp_id, epoch, self.opt.num_epochs, total_loss.d.item(), hm_loss.d.item(),
-                            wh_loss.d.item(), off_loss.d.item(), self.solver.learning_rate(),
-                            self.scale))
+
+                    pbar_text = '[Train][exp_id:{}, epoch:{}/{}||'.format(self.opt.exp_id, epoch, self.opt.num_epochs)
+                    pbar_text += 'loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f},'.format(
+                        total_loss.d.item(),
+                        hm_loss.d.item(),
+                        wh_loss.d.item(),
+                        off_loss.d.item())
+                    pbar_text += 'lr:{:.2e}, scale:{:.2e}]'.format(self.solver.learning_rate(), self.scale)
+                    pbar.set_description(pbar_text)
 
         if self.logger[0] is not None:
             if self.comm.rank == 0:
@@ -230,12 +233,16 @@ class Trainer(object):
             wh_loss += loss['wh_loss'].d.item()
             off_loss += loss['off_loss'].d.item()
 
-            pbar.set_description(
-                '[Validation][exp_id:{}, epoch:{}/{}||loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f}]'.format(
-                    self.opt.exp_id, epoch, self.opt.num_epochs, loss['loss'].d.item(
-                    ), loss['hm_loss'].d.item(),
-                    loss['wh_loss'].d.item(), loss['off_loss'].d.item()))
+            pbar_text = '[Validation][exp_id:{}, epoch:{}/{}||'.format(self.opt.exp_id, epoch, self.opt.num_epochs)
+            pbar_text += 'loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f}]'.format(
+                loss['loss'].d.item(),
+                loss['hm_loss'].d.item(),
+                loss['wh_loss'].d.item(),
+                loss['off_loss'].d.item()
+            )
+            pbar.set_description(pbar_text)
             del loss
+
         if self.logger[4] is not None:
             if self.comm.rank == 0:
                 self.logger[4].add(epoch, total_loss / val_iterations_per_epoch)
