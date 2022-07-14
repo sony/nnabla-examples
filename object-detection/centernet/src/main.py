@@ -47,7 +47,6 @@ def main(opt):
     '''
     NNabla configuration
     '''
-    # os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     type_config = 'half' if opt.mixed_precision else 'float'
     comm = init_nnabla(ext_name=opt.extension_module,
                        device_id='0', type_config=type_config)

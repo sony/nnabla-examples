@@ -39,7 +39,6 @@ def demo(opt):
     if opt.checkpoint == '':
         print("Please provide trained model")
         return
-    # opt.extension_module = 'cpu'
     if opt.extension_module != 'cpu':
         if opt.mixed_precision:
             ctx = get_extension_context(
