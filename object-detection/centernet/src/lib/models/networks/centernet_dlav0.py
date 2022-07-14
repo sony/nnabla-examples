@@ -28,29 +28,33 @@ import numpy as np
 
 
 def xavier_initializer(inmaps, outmaps, kernel):
-    d = np.sqrt(6. / (np.prod(kernel) * inmaps + np.prod(kernel) * outmaps))
+    d = np.sqrt(6.0 / (np.prod(kernel) * inmaps + np.prod(kernel) * outmaps))
     return UniformInitializer((-d, d))
 
 
 def torch_initializer(inmaps, kernel):
-    d = np.sqrt(1. / (np.prod(kernel) * inmaps))
+    d = np.sqrt(1.0 / (np.prod(kernel) * inmaps))
     return UniformInitializer((-d, d))
 
 
-def pf_convolution(x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
-    return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad,
-                          with_bias=with_bias, w_init=w_init, b_init=b_init, channel_last=channel_last)
+def pf_convolution(
+    x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False
+):
+    return PF.convolution(
+        x,
+        ochannels,
+        kernel,
+        stride=stride,
+        pad=pad,
+        with_bias=with_bias,
+        w_init=w_init,
+        b_init=b_init,
+        channel_last=channel_last,
+    )
 
 
 class PoseDLA(object):
-    def __init__(
-            self,
-            num_layers,
-            heads,
-            head_conv,
-            training=True,
-            channel_last=False,
-            **kwargs):
+    def __init__(self, num_layers, heads, head_conv, training=True, channel_last=False, **kwargs):
 
         self.n_init = NormalInitializer(0.001)
         self.backbone_model = DLAUp
@@ -72,8 +76,7 @@ class PoseDLA(object):
         else:
             input_variable = x
 
-        features = self.backbone_model(
-            input_variable, test=not self.training, channel_last=self.channel_last)
+        features = self.backbone_model(input_variable, test=not self.training, channel_last=self.channel_last)
 
         output = []
         for head in sorted(self.heads):
@@ -81,8 +84,7 @@ class PoseDLA(object):
             if self.head_conv > 0:
                 with nn.parameter_scope(head + "_conv1"):
                     b_init_param = -2.19 if head == 'hm' else 0.0
-                    w_init_param = torch_initializer(
-                        features.shape[self.axes], (3, 3)) if head == 'hm' else self.n_init
+                    w_init_param = torch_initializer(features.shape[self.axes], (3, 3)) if head == 'hm' else self.n_init
                     out = pf_convolution(
                         features,
                         self.head_conv,
@@ -92,12 +94,11 @@ class PoseDLA(object):
                         w_init=w_init_param,
                         b_init=ConstantInitializer(b_init_param),
                         with_bias=True,
-                        channel_last=self.channel_last
+                        channel_last=self.channel_last,
                     )
                     out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
-                    w_init_param = torch_initializer(
-                        features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init
+                    w_init_param = torch_initializer(features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init
                     out = pf_convolution(
                         out,
                         num_output,
@@ -107,12 +108,11 @@ class PoseDLA(object):
                         w_init=w_init_param,
                         b_init=ConstantInitializer(b_init_param),
                         with_bias=True,
-                        channel_last=self.channel_last
+                        channel_last=self.channel_last,
                     )
             else:
                 with nn.parameter_scope(head + "_final"):
-                    w_init_param = torch_initializer(
-                        features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init
+                    w_init_param = torch_initializer(features.shape[self.axes], (1, 1)) if head == 'hm' else self.n_init
                     out = pf_convolution(
                         features,
                         num_output,
@@ -121,19 +121,17 @@ class PoseDLA(object):
                         stride=(1, 1),
                         w_init=w_init_param,
                         with_bias=True,
-                        channel_last=self.channel_last
+                        channel_last=self.channel_last,
                     )
             output.append(out)
         return output
 
 
 def get_pose_net(num_layers, heads, head_conv, training, channel_last=False, opt=None, batch_size=None):
-    model = PoseDLA(num_layers, heads, head_conv,
-                    training=training, channel_last=channel_last)
+    model = PoseDLA(num_layers, heads, head_conv, training=training, channel_last=channel_last)
     return model
 
 
 def load_weights(pretrained_model_dir, num_layers, channel_last):
     layout = 'nhwc' if channel_last else 'nchw'
-    nn.load_parameters(os.path.join(pretrained_model_dir,
-                                    "dla{}_{}_imagenet.h5".format(num_layers, layout)))
+    nn.load_parameters(os.path.join(pretrained_model_dir, "dla{}_{}_imagenet.h5".format(num_layers, layout)))
