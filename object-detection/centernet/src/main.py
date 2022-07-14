@@ -126,8 +126,10 @@ def main(opt):
         opt.train_config.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
     trainer = Trainer(
-                model, loss_func, solver, train_loader, train_source, [
-                    monitor_loss, monitor_hm_loss, monitor_wh_loss, monitor_off_loss, monitor_val_loss, monitor_val_hm_loss, monitor_val_wh_loss, monitor_val_off_loss], opt, comm)
+        model, loss_func, solver, train_loader, train_source,
+        [monitor_loss, monitor_hm_loss, monitor_wh_loss, monitor_off_loss, monitor_val_loss, monitor_val_hm_loss,
+         monitor_val_wh_loss, monitor_val_off_loss],
+        opt, comm)
 
     root_dir = opt.save_dir
 
@@ -142,11 +144,11 @@ def main(opt):
         trainer.solver.set_learning_rate(lr_sched.get_lr())
         iteration = trainer.update(epoch)
         if comm.rank == 0:
-            if epoch % opt.save_intervals == 0 or epoch == (opt.num_epochs-1):
+            if epoch % opt.save_intervals == 0 or epoch == (opt.num_epochs - 1):
                 monitor_time.add(epoch)
                 trainer.save_checkpoint(checkpoint_dir, epoch)
 
-        if epoch % opt.val_intervals == 0 or epoch == (opt.num_epochs-1):
+        if epoch % opt.val_intervals == 0 or epoch == (opt.num_epochs - 1):
             model.training = False
             trainer.evaluate(val_loader, epoch)
             if not opt.val_calc_map:

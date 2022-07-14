@@ -111,8 +111,9 @@ class opts(object):
                                  help='Channel last models. Currently only DLAv0 is supported')
         self.parser.add_argument('--checkpoint_dir', type=str, default='',
                                  help='Root folder that includes checkpoint(s) for test.')
-        self.parser.add_argument('--resume-from', type=int, default=None,
-                                 help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')
+        self.parser.add_argument(
+            '--resume-from', type=int, default=None,
+            help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')
 
         # test
         self.parser.add_argument('--test_scales', type=str, default='1',
@@ -238,9 +239,9 @@ class opts(object):
 
     def init(self, args=''):
         default_dataset_info = {
-                'coco': COCODefaultParams,
-                'pascal': PascalVOCDefaultParams,
-                }
+            'coco': COCODefaultParams,
+            'pascal': PascalVOCDefaultParams,
+        }
         opt = self.parse(args)
         dataset = default_dataset_info[opt.dataset]
         opt = self.update_dataset_info_and_set_heads(opt, dataset)
