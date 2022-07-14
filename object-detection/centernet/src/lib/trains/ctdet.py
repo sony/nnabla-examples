@@ -238,8 +238,7 @@ class Trainer(object):
             del loss
         if self.logger[4] is not None:
             if self.comm.rank == 0:
-                self.logger[4].add(epoch, total_loss /
-                                   val_iterations_per_epoch)
+                self.logger[4].add(epoch, total_loss / val_iterations_per_epoch)
                 self.logger[5].add(epoch, hm_loss / val_iterations_per_epoch)
                 self.logger[6].add(epoch, wh_loss / val_iterations_per_epoch)
                 self.logger[7].add(epoch, off_loss / val_iterations_per_epoch)
