@@ -35,7 +35,8 @@ def _focal_loss(pred, gt):
     neg_inds = 1 - pos_inds
     neg_weights = F.pow_scalar(1.0 - gt, beta)
     prob_pred = F.sigmoid(pred)
-    pos_loss = F.log_sigmoid(pred) * F.pow_scalar(1.0 - prob_pred, alpha) * pos_inds
+    pos_loss = F.log_sigmoid(pred) * \
+        F.pow_scalar(1.0 - prob_pred, alpha) * pos_inds
     pos_loss = F.sum(pos_loss)
     neg_loss = F.log_sigmoid(-pred) * F.pow_scalar(prob_pred,
                                                    alpha) * neg_weights * neg_inds

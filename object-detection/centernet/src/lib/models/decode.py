@@ -32,8 +32,10 @@ def _nms(heat, kernel=3):
 def _topk(scores, K=40):
     batch, cat, height, width = scores.shape
     # Gather topk inds and scores using argpartition
-    topk_inds = np.argsort(scores.d.reshape(batch, cat, -1))[:, :, ::-1][:, :, :K]
-    topk_scores = np.sort(scores.d.reshape(batch, cat, -1))[:, :, ::-1][:, :, :K]
+    topk_inds = np.argsort(scores.d.reshape(
+        batch, cat, -1))[:, :, ::-1][:, :, :K]
+    topk_scores = np.sort(scores.d.reshape(
+        batch, cat, -1))[:, :, ::-1][:, :, :K]
     topk_inds = topk_inds % (height * width)
     topk_ys = (topk_inds / width).astype(int).astype(np.float32)
     topk_xs = (topk_inds % width).astype(int).astype(np.float32)
@@ -41,9 +43,12 @@ def _topk(scores, K=40):
     topk_ind = np.argsort(topk_scores.reshape(batch, -1))[:, ::-1][:, :K]
     topk_score = np.sort(topk_scores.reshape(batch, -1))[:, ::-1][:, :K]
     topk_clses = (topk_ind / K).astype(int).astype(np.float32)
-    topk_inds = _gather_feat(topk_inds.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
-    topk_xs = _gather_feat(topk_xs.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
-    topk_ys = _gather_feat(topk_ys.reshape((batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_inds = _gather_feat(topk_inds.reshape(
+        (batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_xs = _gather_feat(topk_xs.reshape(
+        (batch, -1, 1)), topk_ind).reshape((batch, K))
+    topk_ys = _gather_feat(topk_ys.reshape(
+        (batch, -1, 1)), topk_ind).reshape((batch, K))
 
     return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 

@@ -39,7 +39,10 @@ class CtdetLoss(object):
         self.crit_reg = L1Loss()
         self.crit_wh = self.crit_reg
 
-    def __call__(self, pred_hm, pred_wh, pred_reg, hm, inds, wh, reg, reg_mask, comm=None, channel_last=False):
+    def __call__(
+            self, pred_hm, pred_wh, pred_reg, hm, inds, wh, reg, reg_mask,
+            comm=None, channel_last=False
+    ):
         with nn.context_scope(comm.ctx_float):
             loss, hm_loss, wh_loss, off_loss = 0.0, 0.0, 0.0, 0.0
             hm_loss = self.crit.forward(pred_hm, hm)
@@ -63,8 +66,11 @@ class CtdetLoss(object):
 class Trainer(object):
     # Super class which defines common methods for full precision and mixed precision training
 
-    def __init__(self, model, loss_func, solver, train_data_loader, train_data_source, logger, opt, comm=None,
-                 N=2000, scaling_factor=2.0):
+    def __init__(
+            self, model, loss_func, solver, train_data_loader,
+            train_data_source, logger, opt, comm=None, N=2000,
+            scaling_factor=2.0
+    ):
 
         self.model = model
         self.loss_func = loss_func
@@ -172,13 +178,16 @@ class Trainer(object):
                     m_wh_loss += wh_loss.d.item() / self.iterations_per_epoch
                     m_off_loss += off_loss.d.item() / self.iterations_per_epoch
 
-                    pbar_text = '[Train][exp_id:{}, epoch:{}/{}||'.format(self.opt.exp_id, epoch, self.opt.num_epochs)
-                    pbar_text += 'loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f},'.format(
-                        total_loss.d.item(),
-                        hm_loss.d.item(),
-                        wh_loss.d.item(),
-                        off_loss.d.item())
-                    pbar_text += 'lr:{:.2e}, scale:{:.2e}]'.format(self.solver.learning_rate(), self.scale)
+                    pbar_text = (
+                        f"[Train][exp_id: {self.opt.exp_id}, "
+                        f"epoch:{epoch}/{self.opt.num_epochs}||"
+                        f"loss:{total_loss.d.item():8.4f}, "
+                        f"hm_loss:{hm_loss.d.item():8.4f}, "
+                        f"wh_loss:{wh_loss.d.item():8.4f}, "
+                        f"off_loss:{wh_loss.d.item():8.4f}, "
+                        f"lr:{self.solver.learning_rate():.2e}, "
+                        f"scale:{self.scale:.2e}"
+                    )
                     pbar.set_description(pbar_text)
 
         if self.logger[0] is not None:
@@ -204,8 +213,11 @@ class Trainer(object):
         # Performs forward pass.
         self._img.d, self._hm.d, self._inds.d, self._wh.d, self._reg.d, self._reg_mask.d, _ = data
         pred_hm, pred_wh, pred_reg = self.model(self._img)
-        loss = self.loss_func(pred_hm, pred_wh, pred_reg, self._hm, self._inds, self._wh,
-                              self._reg, self._reg_mask, self.comm, channel_last=self.opt.channel_last)
+        loss = self.loss_func(
+            pred_hm, pred_wh, pred_reg, self._hm, self._inds,
+            self._wh, self._reg, self._reg_mask, self.comm,
+            channel_last=self.opt.channel_last
+        )
         return loss
 
     def evaluate(self, val_data_loader, epoch):
@@ -233,19 +245,22 @@ class Trainer(object):
             wh_loss += loss['wh_loss'].d.item()
             off_loss += loss['off_loss'].d.item()
 
-            pbar_text = '[Validation][exp_id:{}, epoch:{}/{}||'.format(self.opt.exp_id, epoch, self.opt.num_epochs)
-            pbar_text += 'loss:{:8.4f}, hm_loss:{:8.4f}, wh_loss:{:8.4f}, off_loss:{:8.4f}]'.format(
-                loss['loss'].d.item(),
-                loss['hm_loss'].d.item(),
-                loss['wh_loss'].d.item(),
-                loss['off_loss'].d.item()
+            pbar_text = (
+                f"[Validation][exp_id: {self.opt.exp_id}, "
+                f"epoch:{epoch}/{self.opt.num_epochs}||"
+                f"loss:{loss['loss'].d.item():8.4f}, "
+                f"hm_loss:{loss['hm_loss'].d.item():8.4f}, "
+                f"wh_loss:{loss['wh_loss'].d.item():8.4f}, "
+                f"off_loss:{loss['off_loss'].d.item():8.4f}, "
             )
+
             pbar.set_description(pbar_text)
             del loss
 
         if self.logger[4] is not None:
             if self.comm.rank == 0:
-                self.logger[4].add(epoch, total_loss / val_iterations_per_epoch)
+                self.logger[4].add(
+                    epoch, total_loss / val_iterations_per_epoch)
                 self.logger[5].add(epoch, hm_loss / val_iterations_per_epoch)
                 self.logger[6].add(epoch, wh_loss / val_iterations_per_epoch)
                 self.logger[7].add(epoch, off_loss / val_iterations_per_epoch)

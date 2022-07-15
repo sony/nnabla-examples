@@ -33,7 +33,7 @@ class CtdetDetector(BaseDetector):
         super(CtdetDetector, self).__init__(opt)
 
     def process(self, images, return_time=False):
-        """ Apply detection to input images.
+        """Apply detection to input images.
 
         :param images: input images with "NCHW" format.
         :param return_time: if True, return processing time.
@@ -60,8 +60,13 @@ class CtdetDetector(BaseDetector):
     def post_process(self, dets, meta, scale=1):
         dets = dets.reshape(1, -1, dets.shape[2])
         dets = ctdet_post_process(
-            dets.copy(), [meta['c']], [meta['s']],
-            meta['out_height'], meta['out_width'], self.opt.num_classes)
+            dets.copy(),
+            [meta['c']],
+            [meta['s']],
+            meta['out_height'],
+            meta['out_width'],
+            self.opt.num_classes,
+        )
         for j in range(1, self.opt.num_classes + 1):
             dets[0][j] = np.array(dets[0][j], dtype=np.float32).reshape(-1, 5)
             dets[0][j][:, :4] /= scale
@@ -71,14 +76,16 @@ class CtdetDetector(BaseDetector):
         results = {}
         for j in range(1, self.opt.num_classes + 1):
             results[j] = np.concatenate(
-                [detection[j] for detection in detections], axis=0).astype(np.float32)
+                [detection[j] for detection in detections], axis=0
+            ).astype(np.float32)
         scores = np.hstack(
-            [results[j][:, 4] for j in range(1, self.opt.num_classes + 1)])
+            [results[j][:, 4] for j in range(1, self.opt.num_classes + 1)]
+        )
         if len(scores) > self.max_per_image:
             kth = len(scores) - self.max_per_image
             thresh = np.partition(scores, kth)[kth]
             for j in range(1, self.opt.num_classes + 1):
-                keep_inds = (results[j][:, 4] >= thresh)
+                keep_inds = results[j][:, 4] >= thresh
                 results[j] = results[j][keep_inds]
         return results
 
@@ -101,10 +108,12 @@ class CtdetDetector(BaseDetector):
             debugger.add_img(img, img_id='out_pred_{:.1f}'.format(scale))
             for k in range(len(dets[i])):
                 if detection[i, k, 4] > self.opt.vis_thresh:
-                    debugger.add_coco_bbox(detection[i, k, :4],
-                                           detection[i, k, -1],
-                                           detection[i, k, 4],
-                                           img_id='out_pred_{:.1f}'.format(scale))
+                    debugger.add_coco_bbox(
+                        detection[i, k, :4],
+                        detection[i, k, -1],
+                        detection[i, k, 4],
+                        img_id='out_pred_{:.1f}'.format(scale),
+                    )
             for j in range(hm[i].shape[0]):
                 hmap = hm[i][j].d
                 hmap *= 255
@@ -112,7 +121,8 @@ class CtdetDetector(BaseDetector):
                 print("max at channel {}:".format(j), np.max(hmap))
                 hmap = cv2.applyColorMap(hmap, cv2.COLORMAP_JET)
                 debugger.add_img(
-                    hmap, img_id='heatmap_{}_{:.1f}'.format(j, scale))
+                    hmap, img_id='heatmap_{}_{:.1f}'.format(j, scale)
+                )
 
     def show_results(self, debugger, image, results):
         debugger.add_img(image, img_id='ctdet')
@@ -120,5 +130,6 @@ class CtdetDetector(BaseDetector):
             for bbox in results[j]:
                 if bbox[4] > self.opt.vis_thresh:
                     debugger.add_coco_bbox(
-                        bbox[:4], j - 1, bbox[4], img_id='ctdet')
+                        bbox[:4], j - 1, bbox[4], img_id='ctdet'
+                    )
         debugger.show_all_imgs(path=self.opt.save_dir)

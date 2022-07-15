@@ -122,7 +122,10 @@ class PoseResNet(object):
                 features,
                 axes=[axes],
                 batch_stat=self.training,
-                param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)},
+                param_init={
+                    'gamma': ConstantInitializer(1),
+                    'beta': ConstantInitializer(0)
+                },
             )
 
             features = F.relu(features)
@@ -146,7 +149,10 @@ class PoseResNet(object):
                     features,
                     axes=[axes],
                     batch_stat=self.training,
-                    param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)},
+                    param_init={
+                        'gamma': ConstantInitializer(1),
+                        'beta': ConstantInitializer(0)
+                    },
                 )
             )
 
@@ -168,7 +174,10 @@ class PoseResNet(object):
                     features,
                     axes=[axes],
                     batch_stat=self.training,
-                    param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)},
+                    param_init={
+                        'gamma': ConstantInitializer(1),
+                        'beta': ConstantInitializer(0)
+                    },
                 )
             )
 
@@ -179,7 +188,8 @@ class PoseResNet(object):
             b_init_param = -2.19 if head == 'hm' else 0.0
             if self.head_conv > 0:
                 with nn.parameter_scope(head + "_conv1"):
-                    w_init_param = torch_initializer(features.shape[axes], (3, 3)) if head == 'hm' else self.n_init
+                    w_init_param = torch_initializer(
+                        features.shape[axes], (3, 3)) if head == 'hm' else self.n_init
                     out = pf_convolution(
                         features,
                         self.head_conv,
@@ -193,7 +203,8 @@ class PoseResNet(object):
                     )
                     out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
-                    w_init_param = torch_initializer(out.shape[axes], (1, 1)) if head == 'hm' else self.n_init
+                    w_init_param = torch_initializer(
+                        out.shape[axes], (1, 1)) if head == 'hm' else self.n_init
                     out = pf_convolution(
                         out,
                         num_output,
@@ -224,10 +235,12 @@ class PoseResNet(object):
 
 
 def get_pose_net(num_layers, heads, head_conv, training, channel_last=False, opt=None, batch_size=None):
-    model = PoseResNet(num_layers, heads, head_conv, training=training, channel_last=channel_last)
+    model = PoseResNet(num_layers, heads, head_conv,
+                       training=training, channel_last=channel_last)
     return model
 
 
 def load_weights(pretrained_model_dir, num_layers, channel_last):
     layout = 'nhwc' if channel_last else 'nchw'
-    nn.load_parameters(os.path.join(pretrained_model_dir, "resnet{}_{}_imagenet.h5".format(num_layers, layout)))
+    nn.load_parameters(os.path.join(pretrained_model_dir,
+                       "resnet{}_{}_imagenet.h5".format(num_layers, layout)))

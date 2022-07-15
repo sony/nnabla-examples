@@ -35,7 +35,13 @@ class DatasetConfig(DataSource):
     mixed_precision zero pads the input image channel to 4 for better utilization of Tensor Cores
     '''
 
-    def __init__(self, mixed_precision=False, channel_last=False, shuffle=False, rng=None):
+    def __init__(
+        self,
+        mixed_precision=False,
+        channel_last=False,
+        shuffle=False,
+        rng=None,
+    ):
         super(DatasetConfig, self).__init__(shuffle=shuffle, rng=rng)
         self.channel_last = channel_last
         self.mixed_precision = mixed_precision
@@ -50,7 +56,10 @@ class DatasetConfig(DataSource):
         raise NotImplementedError
 
     def _coco_box_to_bbox(self, box):
-        bbox = np.array([box[0], box[1], box[0] + box[2], box[1] + box[3]], dtype=np.float32)
+        bbox = np.array(
+            [box[0], box[1], box[0] + box[2], box[1] + box[3]],
+            dtype=np.float32,
+        )
         return bbox
 
     def _to_float(self, x):
@@ -82,7 +91,9 @@ class DatasetConfig(DataSource):
 
         img = cv2.imread(img_path)
         height, width = img.shape[0], img.shape[1]
-        c = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
+        c = np.array(
+            [img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32
+        )
         if self.opt.keep_res:
             input_h = (height | self.opt.pad) + 1
             input_w = (width | self.opt.pad) + 1
@@ -97,8 +108,12 @@ class DatasetConfig(DataSource):
                 s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
                 w_border = self._get_border(128, img.shape[1])
                 h_border = self._get_border(128, img.shape[0])
-                c[0] = np.random.randint(low=w_border, high=img.shape[1] - w_border)
-                c[1] = np.random.randint(low=h_border, high=img.shape[0] - h_border)
+                c[0] = np.random.randint(
+                    low=w_border, high=img.shape[1] - w_border
+                )
+                c[1] = np.random.randint(
+                    low=h_border, high=img.shape[0] - h_border
+                )
             else:
                 sf = self.opt.scale
                 cf = self.opt.shift
@@ -114,10 +129,14 @@ class DatasetConfig(DataSource):
                 img = img[:, ::-1, :]
                 c[0] = width - c[0] - 1
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
-        inp = cv2.warpAffine(img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR
+        )
         inp = inp.astype(np.float32) / 255.0
         if self.split == 'train' and not self.opt.no_color_aug:
-            color_aug(self._rng, inp, self.params._eig_val, self.params._eig_vec)
+            color_aug(
+                self._rng, inp, self.params._eig_val, self.params._eig_vec
+            )
         inp = (inp - self.params.mean) / self.params.std
 
         if self.mixed_precision:
@@ -152,7 +171,10 @@ class DatasetConfig(DataSource):
             if h > 0 and w > 0:
                 radius = gaussian_radius((math.ceil(h), math.ceil(w)))
                 radius = max(0, int(radius))
-                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32,
+                )
                 ct_int = ct.astype(np.int32)
                 draw_gaussian(hm[cls_id], ct_int, radius)
                 wh[k] = 1.0 * w, 1.0 * h

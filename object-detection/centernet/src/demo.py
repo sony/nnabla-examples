@@ -42,7 +42,8 @@ def demo(opt):
     if opt.extension_module != 'cpu':
         if opt.mixed_precision:
             ctx = get_extension_context(
-                opt.extension_module, device_id="0", type_config="half")
+                opt.extension_module, device_id="0", type_config="half"
+            )
         else:
             ctx = get_extension_context(opt.extension_module, device_id="0")
         nn.set_default_context(ctx)
@@ -64,8 +65,8 @@ def demo(opt):
                 image_names.append(os.path.join(opt.demo, file_name))
     else:
         image_names = [opt.demo]
-    for (image_name) in image_names:
-        assert(os.path.exists(image_name)), "{} not found.".format(image_name)
+    for image_name in image_names:
+        assert os.path.exists(image_name), "{} not found.".format(image_name)
         ret = detector.run(image_name)
 
         time_str = ''
