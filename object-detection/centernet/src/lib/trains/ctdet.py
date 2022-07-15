@@ -251,7 +251,7 @@ class Trainer(object):
                 f"loss:{loss['loss'].d.item():8.4f}, "
                 f"hm_loss:{loss['hm_loss'].d.item():8.4f}, "
                 f"wh_loss:{loss['wh_loss'].d.item():8.4f}, "
-                f"off_loss:{loss['off_loss'].d.item():8.4f}, "
+                f"off_loss:{loss['off_loss'].d.item():8.4f}"
             )
 
             pbar.set_description(pbar_text)
