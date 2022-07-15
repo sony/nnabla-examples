@@ -87,6 +87,17 @@ class PoseResNet(object):
         self.kernels_size = [4, 4, 4]
 
     def __call__(self, x):
+        """Defines the computation performed at every call.
+
+        Args:
+            x (np.ndarray, nn.NdArray, nn.Variable): Input
+
+        Returns:
+            dict: Return detection results. Each key is defined as below.
+              - 'hm': heatmap-based detection results.
+              - 'wh': Bbox size.
+              - 'reg': Offsets from the center point.
+        """
         if not isinstance(x, nn._variable.Variable):
             input_variable = nn.Variable(x.shape)
             if isinstance(x, np.ndarray):
