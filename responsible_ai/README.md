@@ -106,6 +106,15 @@ In order to utilize AI technology to enrich human's life style and contribute to
 </p>
 
 ## In Processing
+### PRR: Prejudice Remover Regularizer [code](./prejudice_remover_regularizer/)
+> **Fairness-aware classifier with prejudice remover regularizer.**
+> Toshihiro Kamishima, Shotaro Akaho, Hideki Asoh & Jun Sakuma.
+> *[Joint European Conference on Machine Learning and Knowledge Discovery in Databases ECML PKDD 2012: Machine Learning and Knowledge Discovery in Databases pp 35–50](https://doi.org/10.1007/978-3-642-33486-3_3)*
+
+<p align="center">
+<img src="./prejudice_remover_regularizer/images/Prejudice_Remover_Regularizer_workflow_diagram.png" width="80%">
+</p>
+
 ### Adversarial Debiasing [code](./adversarial_debiasing/)
 > **Mitigating Unwanted Biases with Adversarial Learning**
 > Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell.
@@ -125,7 +134,7 @@ In order to utilize AI technology to enrich human's life style and contribute to
 </p>
 
 ## Post Processing
-## Rejection Option-Based Classification [code](./rejection_option_based_classification/)
+### Rejection Option-Based Classification [code](./rejection_option_based_classification/)
 > **Decision Theory for Discrimination-Aware Classification**
 > F. Kamiran, A. Karim and X. Zhang.
 > *[IEEE 12th International Conference on Data Mining, 2012, pp. 924-929](https://ieeexplore.ieee.org/document/6413831)* 
