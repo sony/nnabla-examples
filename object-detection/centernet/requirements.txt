@@ -2,7 +2,7 @@ Cython==0.29.11
 opencv_python==4.1.1.26
 nnabla_ubuntu16==1.0.20
 matplotlib==3.1.1
-numpy==1.16.4
+numpy==1.22.0
 tqdm==4.32.1
 Pillow==6.2.1
 dataset==1.1.2
