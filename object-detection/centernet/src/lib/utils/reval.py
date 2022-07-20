@@ -36,8 +36,6 @@ print(sys.path)
 from voc_datasets.pascal_voc import pascal_voc
 import pickle
 import os
-import argparse
-import numpy as np
 import json
 
 

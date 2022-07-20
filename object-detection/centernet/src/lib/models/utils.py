@@ -18,18 +18,37 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import nnabla as nn
-import nnabla.functions as F
 
 
-def _gather_feat(feat, ind, mask=None):
+def _gather_feat(feat, ind):
+    """Gather feature according to index.
+
+    Args:
+        feat (numpy.ndarray): Target feature map. Shape: (batch, A, B)
+        ind (numpy.ndarray): Target coord index. Shape: (batch, K)
+
+    Returns:
+        numpy.ndarray: Gathered feature. Shape: (batch, 1, K, 1, B)
+    """
     ind = np.expand_dims(ind, axis=2).astype(int)
     result = np.take(feat, ind, axis=1)
     return result
 
 
-def _tranpose_and_gather_feat(feat, ind):
+def _transpose_and_gather_feat(feat, ind):
+    """Transpose feature map and get gathered feature according to the corresponding index array.
+
+    Args:
+        feat (numpy.ndarray): Target feature map with (batch, C, H, W) shape
+        ind (numpy.ndarray): Corresponding index array with (batch, K) shape.
+
+    Returns:
+        numpy.ndarray: Gathered feature. Shape: (batch, 1, K, 1, C)
+    """
+    # output shape: (batch, C, H, W) -> (batch, H, W, C)
     feat = feat.transpose(0, 2, 3, 1)
+    # output shape: (batch, (W * H), C)
     feat = feat.reshape((feat.shape[0], -1, feat.shape[3]))
+    # output shape: (batch, 1, K, 1, C)
     feat = _gather_feat(feat, ind)
     return feat

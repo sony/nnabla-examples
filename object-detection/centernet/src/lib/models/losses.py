@@ -17,13 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .utils import _tranpose_and_gather_feat
-import nnabla as nn
 import nnabla.functions as F
-import nnabla.parametric_functions as PF
-import numpy as np
-import os
-import cv2
 
 
 def _focal_loss(pred, gt):
@@ -41,13 +35,14 @@ def _focal_loss(pred, gt):
     neg_inds = 1 - pos_inds
     neg_weights = F.pow_scalar(1.0 - gt, beta)
     prob_pred = F.sigmoid(pred)
-    pos_loss = F.log_sigmoid(pred)*F.pow_scalar(1.0-prob_pred, alpha)*pos_inds
+    pos_loss = F.log_sigmoid(pred) * \
+        F.pow_scalar(1.0 - prob_pred, alpha) * pos_inds
     pos_loss = F.sum(pos_loss)
-    neg_loss = F.log_sigmoid(-pred)*F.pow_scalar(prob_pred,
-                                                 alpha)*neg_weights*neg_inds
+    neg_loss = F.log_sigmoid(-pred) * F.pow_scalar(prob_pred,
+                                                   alpha) * neg_weights * neg_inds
     neg_loss = F.sum(neg_loss)
     num_pos = F.maximum_scalar(F.sum(pos_inds), 1)
-    loss = -(1/num_pos) * (pos_loss + neg_loss)
+    loss = -(1 / num_pos) * (pos_loss + neg_loss)
     return loss
 
 
@@ -75,14 +70,14 @@ class L1Loss():
         c = output.shape[1]
         max_objs = inds.shape[1]
         # divide by number of :
-        num_objs = F.sum(reg_mask)*2
-        f_map_size = output.shape[2]*output.shape[3]
+        num_objs = F.sum(reg_mask) * 2
+        f_map_size = output.shape[2] * output.shape[3]
         output = F.reshape(output, (-1, f_map_size))
         inds = F.broadcast(inds.reshape((b, 1, max_objs)), (b, c, max_objs))
         inds = inds.reshape((-1, max_objs))
         y = output[F.broadcast(F.reshape(
-            F.arange(0, b*c), (b*c, 1)), (b*c, max_objs)), inds].reshape((b, c, max_objs))
+            F.arange(0, b * c), (b * c, 1)), (b * c, max_objs)), inds].reshape((b, c, max_objs))
         y = F.transpose(y, (0, 2, 1))
-        loss = F.sum(reg_mask*F.absolute_error(y, gt))
+        loss = F.sum(reg_mask * F.absolute_error(y, gt))
         loss = loss / (num_objs + 1e-4)
         return loss

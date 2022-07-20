@@ -17,19 +17,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import cv2
-import nnabla as nn
 import nnabla.functions as F
-from .utils import _gather_feat, _tranpose_and_gather_feat
+from .utils import _gather_feat, _transpose_and_gather_feat
 import numpy as np
 
 
 def _nms(heat, kernel=3):
     pad = (kernel - 1) // 2
-    hmax = F.max_pooling(
-        heat, (kernel, kernel), stride=(1, 1), pad=(pad, pad))
+    hmax = F.max_pooling(heat, (kernel, kernel), stride=(1, 1), pad=(pad, pad))
     keep = F.equal(hmax, heat)
-    return heat*keep
+    return heat * keep
 
 
 def _topk(scores, K=40):
@@ -61,7 +58,7 @@ def ctdet_decode(heat, wh, reg=None, K=128):
     batch, cat, height, width = heat.shape
     scores, inds, clses, ys, xs = _topk(heat, K=K)
     if reg is not None:
-        reg = _tranpose_and_gather_feat(reg.d, inds)
+        reg = _transpose_and_gather_feat(reg.d, inds)
         reg = reg.reshape((batch, K, 2))
         xs = xs.reshape((batch, K, 1))
         ys = ys.reshape((batch, K, 1))
@@ -70,21 +67,18 @@ def ctdet_decode(heat, wh, reg=None, K=128):
     else:
         xs = xs.reshape((batch, K, 1)) + 0.5
         ys = ys.reshape((batch, K, 1)) + 0.5
-    wh = _tranpose_and_gather_feat(wh.d, inds).reshape((batch, K, 2))
+    wh = _transpose_and_gather_feat(wh.d, inds).reshape((batch, K, 2))
 
     clses = clses.reshape((batch, K, 1))
     scores = scores.reshape((batch, K, 1))
-    bboxes = np.concatenate([xs - wh[..., 0:1] / 2,
-                             ys -
-                             wh[..., 1:2] / 2,
-                             xs +
-                             wh[..., 0:1] / 2,
-                             ys +
-                             wh[..., 1:2] / 2],
-                            axis=2)
-    detections = np.concatenate([
-            bboxes,
-            scores,
-            clses],
-            axis=2)
+    bboxes = np.concatenate(
+        [
+            xs - wh[..., 0:1] / 2,
+            ys - wh[..., 1:2] / 2,
+            xs + wh[..., 0:1] / 2,
+            ys + wh[..., 1:2] / 2,
+        ],
+        axis=2,
+    )
+    detections = np.concatenate([bboxes, scores, clses], axis=2)
     return detections

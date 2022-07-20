@@ -27,11 +27,9 @@ from pycocotools.cocoeval import COCOeval
 from datasets.dataset.dataset_config import DatasetConfig
 
 
-class COCODefaultParams():
-    mean = np.array([0.40789654, 0.44719302, 0.47026115],
-                    dtype=np.float32)
-    std = np.array([0.28863828, 0.27408164, 0.27809835],
-                   dtype=np.float32)
+class COCODefaultParams:
+    mean = np.array([0.40789654, 0.44719302, 0.47026115], dtype=np.float32)
+    std = np.array([0.28863828, 0.27408164, 0.27809835], dtype=np.float32)
     num_classes = 80
     default_resolution = [512, 512]
     max_objs = 128
@@ -62,32 +60,47 @@ class COCODefaultParams():
             72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
             82, 84, 85, 86, 87, 88, 89, 90]
     cat_ids = {v: i for i, v in enumerate(_valid_ids)}
-    voc_color = [(v // 32 * 64 + 64, (v // 8) % 4 * 64, v % 8 * 32)
-                 for v in range(1, num_classes + 1)]
-    _eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
-                        dtype=np.float32)
-    _eig_vec = np.array([
-        [-0.58752847, -0.69563484, 0.41340352],
-        [-0.5832747, 0.00994535, -0.81221408],
-        [-0.56089297, 0.71832671, 0.41158938]
-        ], dtype=np.float32)
+    voc_color = [
+        (v // 32 * 64 + 64, (v // 8) % 4 * 64, v % 8 * 32)
+        for v in range(1, num_classes + 1)
+    ]
+    _eig_val = np.array([0.2141788, 0.01817699, 0.00341571], dtype=np.float32)
+    _eig_vec = np.array(
+        [
+            [-0.58752847, -0.69563484, 0.41340352],
+            [-0.5832747, 0.00994535, -0.81221408],
+            [-0.56089297, 0.71832671, 0.41158938],
+        ],
+        dtype=np.float32,
+    )
 
 
 class COCO(DatasetConfig):
-
-    def __init__(self, opt, split, shuffle=False, rng=None, mixed_precision=False, channel_last=False):
-        super(COCO, self).__init__(shuffle=shuffle, rng=rng,
-                                   mixed_precision=mixed_precision, channel_last=channel_last)
+    def __init__(
+        self,
+        opt,
+        split,
+        shuffle=False,
+        rng=None,
+        mixed_precision=False,
+        channel_last=False,
+    ):
+        super(COCO, self).__init__(
+            shuffle=shuffle,
+            rng=rng,
+            mixed_precision=mixed_precision,
+            channel_last=channel_last,
+        )
         self.data_dir = os.path.join(opt.data_dir, 'coco')
         self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
         if split == 'test':
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations',
-                'image_info_test-dev2017.json').format(split)
+                self.data_dir, 'annotations', 'image_info_test-dev2017.json'
+            ).format(split)
         else:
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations',
-                'instances_{}2017.json').format(split)
+                self.data_dir, 'annotations', 'instances_{}2017.json'
+            ).format(split)
         self.params = COCODefaultParams()
         self.split = split
         self.opt = opt
@@ -113,7 +126,6 @@ class COCO(DatasetConfig):
         return float("{:.2f}".format(x))
 
     def convert_eval_format(self, all_bboxes):
-        # import pdb; pdb.set_trace()
         detections = []
         for image_id in all_bboxes:
             for cls_ind in all_bboxes[image_id]:
@@ -127,7 +139,7 @@ class COCO(DatasetConfig):
                         "image_id": int(image_id),
                         "category_id": int(category_id),
                         "bbox": bbox_out,
-                        "score": float("{:.2f}".format(score))
+                        "score": float("{:.2f}".format(score)),
                     }
                     if len(bbox) > 5:
                         extreme_points = list(map(self._to_float, bbox[5:13]))
@@ -136,8 +148,10 @@ class COCO(DatasetConfig):
         return detections
 
     def save_results(self, results, save_dir):
-        json.dump(self.convert_eval_format(results), open(
-            '{}/results.json'.format(save_dir), 'w'))
+        json.dump(
+            self.convert_eval_format(results),
+            open('{}/results.json'.format(save_dir), 'w'),
+        )
 
     def run_eval(self, results, save_dir, data_dir):
         self.save_results(results, save_dir)

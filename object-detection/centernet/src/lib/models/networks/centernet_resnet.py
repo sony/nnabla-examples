@@ -27,12 +27,24 @@ import numpy as np
 from models.networks.initializers import torch_initializer
 from models.networks.model_resnet import resnet_imagenet
 from nnabla.initializer import ConstantInitializer, NormalInitializer
-from nnabla.utils.save import save
 
 
-def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1, 1), dilation=(2, 2), with_bias=False, w_init=None, b_init=None, channel_last=False):
+def pf_deconvolution(
+    x,
+    ochannels,
+    kernel,
+    stride=(1, 1),
+    pad=(1, 1),
+    dilation=(2, 2),
+    with_bias=False,
+    w_init=None,
+    b_init=None,
+    channel_last=False,
+):
     x = PF.deconvolution(
-        x, ochannels, kernel,
+        x,
+        ochannels,
+        kernel,
         pad=pad,
         stride=stride,
         dilation=dilation,
@@ -40,24 +52,29 @@ def pf_deconvolution(x, ochannels, kernel, stride=(1, 1), pad=(1, 1), dilation=(
         group=1,
         with_bias=with_bias,
         b_init=b_init,
-        channel_last=channel_last)
+        channel_last=channel_last,
+    )
     return x
 
 
-def pf_convolution(x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False):
-    return PF.convolution(x, ochannels, kernel, stride=stride, pad=pad,
-                          with_bias=with_bias, w_init=w_init, b_init=b_init, channel_last=channel_last)
+def pf_convolution(
+    x, ochannels, kernel, pad=(1, 1), stride=(1, 1), with_bias=False, w_init=None, b_init=None, channel_last=False
+):
+    return PF.convolution(
+        x,
+        ochannels,
+        kernel,
+        stride=stride,
+        pad=pad,
+        with_bias=with_bias,
+        w_init=w_init,
+        b_init=b_init,
+        channel_last=channel_last,
+    )
 
 
 class PoseResNet(object):
-    def __init__(
-            self,
-            num_layers,
-            heads,
-            head_conv,
-            training=True,
-            channel_last=False,
-            **kwargs):
+    def __init__(self, num_layers, heads, head_conv, training=True, channel_last=False, **kwargs):
         self.num_layers = num_layers
         self.training = training
         self.heads = heads
@@ -66,8 +83,8 @@ class PoseResNet(object):
         self.n_init = NormalInitializer(0.001)
         self.channel_last = channel_last
         # used for deconv num_layers
-        self.ochannels = ([256, 256, 256])
-        self.kernels_size = ([4, 4, 4])
+        self.ochannels = [256, 256, 256]
+        self.kernels_size = [4, 4, 4]
 
     def __call__(self, x):
         if not isinstance(x, nn._variable.Variable):
@@ -85,25 +102,30 @@ class PoseResNet(object):
             num_layers=self.num_layers,
             shortcut_type='b',
             test=not self.training,
-            channel_last=self.channel_last)
+            channel_last=self.channel_last,
+        )
         with nn.parameter_scope("upsample1"):
             kernel_size = self.kernels_size[0]
             features = pf_deconvolution(
-                hidden['r4'], self.ochannels[0], (kernel_size, kernel_size),
+                hidden['r4'],
+                self.ochannels[0],
+                (kernel_size, kernel_size),
                 pad=(1, 1),
                 stride=(2, 2),
                 dilation=(1, 1),
                 w_init=self.n_init,
                 with_bias=False,
-                channel_last=self.channel_last
+                channel_last=self.channel_last,
             )
 
             features = PF.batch_normalization(
                 features,
                 axes=[axes],
                 batch_stat=self.training,
-                param_init={'gamma': ConstantInitializer(
-                    1), 'beta': ConstantInitializer(0)},
+                param_init={
+                    'gamma': ConstantInitializer(1),
+                    'beta': ConstantInitializer(0)
+                },
             )
 
             features = F.relu(features)
@@ -111,39 +133,53 @@ class PoseResNet(object):
         with nn.parameter_scope("upsample2"):
             kernel_size = self.kernels_size[1]
             features = pf_deconvolution(
-                features, self.ochannels[1], (kernel_size, kernel_size),
+                features,
+                self.ochannels[1],
+                (kernel_size, kernel_size),
                 pad=(1, 1),
                 stride=(2, 2),
                 dilation=(1, 1),
                 w_init=self.n_init,
                 with_bias=False,
-                channel_last=self.channel_last
+                channel_last=self.channel_last,
             )
 
-            features = F.relu(PF.batch_normalization(
-                features,
-                axes=[axes],
-                batch_stat=self.training,
-                param_init={'gamma': ConstantInitializer(
-                    1), 'beta': ConstantInitializer(0)}))
+            features = F.relu(
+                PF.batch_normalization(
+                    features,
+                    axes=[axes],
+                    batch_stat=self.training,
+                    param_init={
+                        'gamma': ConstantInitializer(1),
+                        'beta': ConstantInitializer(0)
+                    },
+                )
+            )
 
         with nn.parameter_scope("upsample3"):
             kernel_size = self.kernels_size[2]
             features = pf_deconvolution(
-                features, self.ochannels[2], (kernel_size, kernel_size),
+                features,
+                self.ochannels[2],
+                (kernel_size, kernel_size),
                 pad=(1, 1),
                 stride=(2, 2),
                 dilation=(1, 1),
                 w_init=self.n_init,
                 with_bias=False,
-                channel_last=self.channel_last
+                channel_last=self.channel_last,
             )
-            features = F.relu(PF.batch_normalization(
-                features,
-                axes=[axes],
-                batch_stat=self.training,
-                param_init={'gamma': ConstantInitializer(1), 'beta': ConstantInitializer(0)})
+            features = F.relu(
+                PF.batch_normalization(
+                    features,
+                    axes=[axes],
+                    batch_stat=self.training,
+                    param_init={
+                        'gamma': ConstantInitializer(1),
+                        'beta': ConstantInitializer(0)
+                    },
                 )
+            )
 
         output = []
         for head in sorted(self.heads):
@@ -154,43 +190,46 @@ class PoseResNet(object):
                 with nn.parameter_scope(head + "_conv1"):
                     w_init_param = torch_initializer(
                         features.shape[axes], (3, 3)) if head == 'hm' else self.n_init
-                    out = pf_convolution(features,
-                                         self.head_conv,
-                                         (3, 3),
-                                         pad=(1, 1),
-                                         stride=(1, 1),
-                                         with_bias=True,
-                                         w_init=w_init_param,
-                                         b_init=ConstantInitializer(
-                                             b_init_param),
-                                         channel_last=self.channel_last,
-                                         )
+                    out = pf_convolution(
+                        features,
+                        self.head_conv,
+                        (3, 3),
+                        pad=(1, 1),
+                        stride=(1, 1),
+                        with_bias=True,
+                        w_init=w_init_param,
+                        b_init=ConstantInitializer(b_init_param),
+                        channel_last=self.channel_last,
+                    )
                     out = F.relu(out)
                 with nn.parameter_scope(head + "_final"):
                     w_init_param = torch_initializer(
                         out.shape[axes], (1, 1)) if head == 'hm' else self.n_init
                     out = pf_convolution(
-                        out, num_output, (1, 1),
+                        out,
+                        num_output,
+                        (1, 1),
                         pad=(0, 0),
                         stride=(1, 1),
                         with_bias=True,
                         w_init=w_init_param,
                         b_init=ConstantInitializer(b_init_param),
-                        channel_last=self.channel_last
+                        channel_last=self.channel_last,
                     )
 
             else:
                 with nn.parameter_scope(head + "_final"):
                     out = pf_convolution(
                         features,
-                        num_output, (1, 1),
+                        num_output,
+                        (1, 1),
                         pad=(0, 0),
                         stride=(1, 1),
                         with_bias=True,
                         w_init=w_init_param,
                         b_init=ConstantInitializer(b_init_param),
-                        channel_last=self.channel_last
-                        )
+                        channel_last=self.channel_last,
+                    )
             output.append(out)
         return output
 
@@ -204,4 +243,4 @@ def get_pose_net(num_layers, heads, head_conv, training, channel_last=False, opt
 def load_weights(pretrained_model_dir, num_layers, channel_last):
     layout = 'nhwc' if channel_last else 'nchw'
     nn.load_parameters(os.path.join(pretrained_model_dir,
-                                    "resnet{}_{}_imagenet.h5".format(num_layers, layout)))
+                       "resnet{}_{}_imagenet.h5".format(num_layers, layout)))

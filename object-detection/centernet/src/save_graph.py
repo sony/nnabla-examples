@@ -42,8 +42,8 @@ def main(opt):
         filename = os.path.join(opt.save_dir, '{}_graph'.format(
             os.path.splitext(os.path.basename(opt.checkpoint))[0]))
     else:
-        model = create_model(opt.arch, opt.heads,
-                             opt.head_conv, opt.num_layers)
+        model = create_model(opt.arch, opt.heads, opt.head_conv, opt.num_layers,
+                             training=False, channel_last=opt.channel_last)
         input_variable = nn.Variable([1, 3, 512, 512])
         output_list = model(input_variable)
         filename = os.path.join(

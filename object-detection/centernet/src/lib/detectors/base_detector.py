@@ -28,12 +28,19 @@ from utils.debugger import Debugger
 
 class BaseDetector(object):
     def __init__(self, opt):
-        self.model = create_model(opt.arch, opt.heads, opt.head_conv, opt.num_layers,
-                                  training=False, channel_last=opt.channel_last)
+        self.model = create_model(
+            opt.arch,
+            opt.heads,
+            opt.head_conv,
+            opt.num_layers,
+            training=False,
+            channel_last=opt.channel_last,
+        )
         if opt.checkpoint != '':
             extension = os.path.splitext(opt.checkpoint)[1]
-            assert (extension == '.h5' or
-                    extension == ".protobuf"), "incorrect file extension, should be either .h5 or .protobuf"
+            assert (
+                extension == '.h5' or extension == ".protobuf"
+            ), "incorrect file extension, should be either .h5 or .protobuf"
             load_model(self.model, opt.checkpoint, clear=True)
 
         self.mean = opt.mean
@@ -48,7 +55,7 @@ class BaseDetector(object):
         new_width = int(width * scale)
         if self.opt.fix_res:
             inp_height, inp_width = self.opt.input_h, self.opt.input_w
-            c = np.array([new_width / 2., new_height / 2.], dtype=np.float32)
+            c = np.array([new_width / 2.0, new_height / 2.0], dtype=np.float32)
             s = max(height, width) * 1.0
         else:
             inp_height = (new_height | self.opt.pad) + 1
@@ -59,19 +66,26 @@ class BaseDetector(object):
         trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])
         resized_image = cv2.resize(image, (new_width, new_height))
         inp_image = cv2.warpAffine(
-            resized_image, trans_input, (inp_width, inp_height),
-            flags=cv2.INTER_LINEAR)
-        inp_image = ((inp_image / 255. - self.mean) /
-                     self.std).astype(np.float32)
+            resized_image,
+            trans_input,
+            (inp_width, inp_height),
+            flags=cv2.INTER_LINEAR,
+        )
+        inp_image = ((inp_image / 255.0 - self.mean) / self.std).astype(
+            np.float32
+        )
 
         if self.opt.mixed_precision:
             inp_image = fast_pad(inp_image)
         if not self.opt.channel_last:
             inp_image = inp_image.transpose(2, 0, 1)
         images = np.expand_dims(inp_image, axis=0)
-        meta = {'c': c, 's': s,
-                'out_height': inp_height // self.opt.down_ratio,
-                'out_width': inp_width // self.opt.down_ratio}
+        meta = {
+            'c': c,
+            's': s,
+            'out_height': inp_height // self.opt.down_ratio,
+            'out_width': inp_width // self.opt.down_ratio,
+        }
         return images, meta
 
     def process(self, images, return_time=False):
@@ -92,13 +106,16 @@ class BaseDetector(object):
     def run(self, image_or_path_or_tensor, meta=None):
         load_time, pre_time, net_time, dec_time, post_time = 0, 0, 0, 0, 0
         merge_time, tot_time = 0, 0
-        debugger = Debugger(dataset=self.opt.dataset, ipynb=(self.opt.debug == 3),
-                            theme=self.opt.debugger_theme)
+        debugger = Debugger(
+            dataset=self.opt.dataset,
+            ipynb=(self.opt.debug == 3),
+            theme=self.opt.debugger_theme,
+        )
         start_time = time.time()
         pre_processed = False
         if isinstance(image_or_path_or_tensor, np.ndarray):
             image = image_or_path_or_tensor
-        elif type(image_or_path_or_tensor) == type(''):
+        elif isinstance(image_or_path_or_tensor, str):
             image = cv2.imread(image_or_path_or_tensor)
         else:
             image = image_or_path_or_tensor['image'][0].numpy()
@@ -106,7 +123,7 @@ class BaseDetector(object):
             pre_processed = True
 
         loaded_time = time.time()
-        load_time += (loaded_time - start_time)
+        load_time += loaded_time - start_time
 
         detections = []
         for scale in self.opt.test_scales:
@@ -114,7 +131,6 @@ class BaseDetector(object):
             if not pre_processed:
                 images, meta = self.pre_process(image, scale, meta)
             else:
-                # import pdb; pdb.set_trace()
                 images = pre_processed_images['images'][scale][0]
                 meta = pre_processed_images['meta'][scale]
                 meta = {k: v.numpy()[0] for k, v in meta.items()}
@@ -144,6 +160,13 @@ class BaseDetector(object):
         if self.opt.debug >= 1:
             self.show_results(debugger, image, results)
 
-        return {'results': results, 'tot': tot_time, 'load': load_time,
-                'pre': pre_time, 'net': net_time, 'dec': dec_time,
-                'post': post_time, 'merge': merge_time}
+        return {
+            'results': results,
+            'tot': tot_time,
+            'load': load_time,
+            'pre': pre_time,
+            'net': net_time,
+            'dec': dec_time,
+            'post': post_time,
+            'merge': merge_time,
+        }

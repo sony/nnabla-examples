@@ -24,14 +24,15 @@ import os
 import cv2
 import numpy as np
 import nnabla as nn
+from nnabla.utils.save import save
 
 
 class Debugger(object):
-    def __init__(self, ipynb=False, theme='black',
-                 num_classes=-1, dataset=None, down_ratio=4):
+    def __init__(self, ipynb=False, theme='black', num_classes=-1, dataset=None, down_ratio=4):
         self.ipynb = ipynb
         if not self.ipynb:
             import matplotlib.pyplot as plt
+
             self.plt = plt
         self.imgs = {}
         self.theme = theme
@@ -40,9 +41,9 @@ class Debugger(object):
         self.colors = np.array(colors, dtype=np.uint8).reshape(
             len(colors), 1, 1, 3)
         if self.theme == 'white':
-            self.colors = self.colors.reshape(-1)[::-
-                                                  1].reshape(len(colors), 1, 1, 3)
-            self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
+            self.colors = self.colors.reshape(-1)[::-1].reshape(
+                len(colors), 1, 1, 3)
+            self.colors = np.clip(self.colors, 0.0, 0.6 * 255).astype(np.uint8)
         self.dim_scale = 1
         if dataset == 'coco_hp':
             self.names = ['p']
@@ -97,8 +98,7 @@ class Debugger(object):
 
     def add_mask(self, mask, bg, imgId='default', trans=0.8):
         self.imgs[imgId] = (mask.reshape(
-            mask.shape[0], mask.shape[1], 1) * 255 * trans +
-                            bg * (1 - trans)).astype(np.uint8)
+            mask.shape[0], mask.shape[1], 1) * 255 * trans + bg * (1 - trans)).astype(np.uint8)
 
     def show_img(self, pause=False, imgId='default'):
         cv2.imshow('{}'.format(imgId), self.imgs[imgId])
@@ -113,7 +113,7 @@ class Debugger(object):
         if len(fore.shape) == 2:
             fore = fore.reshape(fore.shape[0], fore.shape[1], 1)
 
-        self.imgs[img_id] = (back * (1. - trans) + fore * trans)
+        self.imgs[img_id] = back * (1.0 - trans) + fore * trans
         self.imgs[img_id][self.imgs[img_id] > 255] = 255
         self.imgs[img_id][self.imgs[img_id] < 0] = 0
         self.imgs[img_id] = self.imgs[img_id].astype(np.uint8).copy()
@@ -147,16 +147,41 @@ class Debugger(object):
 
     def add_rect(self, rect1, rect2, c, conf=1, img_id='default'):
         cv2.rectangle(
-            self.imgs[img_id], (rect1[0], rect1[1]), (rect2[0], rect2[1]), c, 2)
+            self.imgs[img_id],
+            (rect1[0], rect1[1]),
+            (rect2[0], rect2[1]),
+            c,
+            2
+        )
         if conf < 1:
-            cv2.circle(self.imgs[img_id], (rect1[0],
-                                           rect1[1]), int(10 * conf), c, 1)
-            cv2.circle(self.imgs[img_id], (rect2[0],
-                                           rect2[1]), int(10 * conf), c, 1)
-            cv2.circle(self.imgs[img_id], (rect1[0],
-                                           rect2[1]), int(10 * conf), c, 1)
-            cv2.circle(self.imgs[img_id], (rect2[0],
-                                           rect1[1]), int(10 * conf), c, 1)
+            cv2.circle(
+                self.imgs[img_id],
+                (rect1[0], rect1[1]),
+                int(10 * conf),
+                c,
+                1
+            )
+            cv2.circle(
+                self.imgs[img_id],
+                (rect2[0], rect2[1]),
+                int(10 * conf),
+                c,
+                1
+            )
+            cv2.circle(
+                self.imgs[img_id],
+                (rect1[0], rect2[1]),
+                int(10 * conf),
+                c,
+                1
+            )
+            cv2.circle(
+                self.imgs[img_id],
+                (rect2[0], rect1[1]),
+                int(10 * conf),
+                c,
+                1
+            )
 
     def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True, img_id='default'):
         bbox = np.array(bbox, dtype=np.int32)
@@ -170,24 +195,44 @@ class Debugger(object):
         font = cv2.FONT_HERSHEY_SIMPLEX
         cat_size = cv2.getTextSize(txt, font, 0.5, 2)[0]
         cv2.rectangle(
-            self.imgs[img_id], (bbox[0], bbox[1]), (bbox[2], bbox[3]), c, 2)
+            self.imgs[img_id],
+            (bbox[0], bbox[1]),
+            (bbox[2], bbox[3]),
+            c,
+            2
+        )
         if show_txt:
-            cv2.rectangle(self.imgs[img_id],
-                          (bbox[0], bbox[1] - cat_size[1] - 2),
-                          (bbox[0] + cat_size[0], bbox[1] - 2), c, -1)
-            cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - 2),
-                        font, 0.5, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
+            cv2.rectangle(
+                self.imgs[img_id],
+                (bbox[0], bbox[1] - cat_size[1] - 2),
+                (bbox[0] + cat_size[0], bbox[1] - 2),
+                c,
+                -1
+            )
+            cv2.putText(
+                self.imgs[img_id], txt, (bbox[0], bbox[1] - 2), font, 0.5, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA
+            )
 
     def add_coco_hp(self, points, img_id='default'):
         points = np.array(points, dtype=np.int32).reshape(self.num_joints, 2)
         for j in range(self.num_joints):
-            cv2.circle(self.imgs[img_id],
-                       (points[j, 0], points[j, 1]), 3, self.colors_hp[j], -1)
+            cv2.circle(
+                self.imgs[img_id],
+                (points[j, 0], points[j, 1]),
+                3,
+                self.colors_hp[j],
+                -1
+            )
         for j, e in enumerate(self.edges):
             if points[e].min() > 0:
-                cv2.line(self.imgs[img_id], (points[e[0], 0], points[e[0], 1]),
-                         (points[e[1], 0], points[e[1], 1]), self.ec[j], 2,
-                         lineType=cv2.LINE_AA)
+                cv2.line(
+                    self.imgs[img_id],
+                    (points[e[0], 0], points[e[0], 1]),
+                    (points[e[1], 0], points[e[1], 1]),
+                    self.ec[j],
+                    2,
+                    lineType=cv2.LINE_AA,
+                )
 
     def add_points(self, points, img_id='default'):
         num_classes = len(points)
@@ -195,12 +240,22 @@ class Debugger(object):
         for i in range(num_classes):
             for j in range(len(points[i])):
                 c = self.colors[i, 0, 0]
-                cv2.circle(self.imgs[img_id], (points[i][j][0] * self.down_ratio,
-                                               points[i][j][1] * self.down_ratio),
-                           5, (255, 255, 255), -1)
-                cv2.circle(self.imgs[img_id], (points[i][j][0] * self.down_ratio,
-                                               points[i][j][1] * self.down_ratio),
-                           3, (int(c[0]), int(c[1]), int(c[2])), -1)
+                cv2.circle(
+                    self.imgs[img_id],
+                    (points[i][j][0] * self.down_ratio,
+                     points[i][j][1] * self.down_ratio),
+                    5,
+                    (255, 255, 255),
+                    -1,
+                )
+                cv2.circle(
+                    self.imgs[img_id],
+                    (points[i][j][0] * self.down_ratio,
+                     points[i][j][1] * self.down_ratio),
+                    3,
+                    (int(c[0]), int(c[1]), int(c[2])),
+                    -1,
+                )
 
     def show_all_imgs(self, path='.'):
         if not self.ipynb:
@@ -251,7 +306,7 @@ class Debugger(object):
         b = hs.shape[0] - 1
         while hs[b] == 0 and b > 0:
             b -= 1
-        self.imgs[img_id] = self.imgs[img_id][t:b + 1, l:r + 1].copy()
+        self.imgs[img_id] = self.imgs[img_id][t: b + 1, l: r + 1].copy()
 
     def project_3d_to_bird(self, pt):
         pt[0] += self.world_size / 2
@@ -259,12 +314,10 @@ class Debugger(object):
         pt = pt * self.out_size / self.world_size
         return pt.astype(np.int32)
 
-    def add_ct_detection(
-            self, img, dets, show_box=False, show_txt=True,
-            center_thresh=0.5, img_id='det'):
+    def add_ct_detection(self, img, dets, show_box=False, show_txt=True, center_thresh=0.5, img_id='det'):
         # dets: max_preds x 5
         self.imgs[img_id] = img.copy()
-        if type(dets) == type({}):
+        if isinstance(dets, dict):
             for cat in dets:
                 for i in range(len(dets[cat])):
                     if dets[cat][i, 2] > center_thresh:
@@ -273,27 +326,26 @@ class Debugger(object):
                         if show_box:
                             w, h = dets[cat][i, -2], dets[cat][i, -1]
                             x, y = dets[cat][i, 0], dets[cat][i, 1]
-                            bbox = np.array([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
-                                            dtype=np.float32)
+                            bbox = np.array(
+                                [x - w / 2, y - h / 2, x + w / 2, y + h / 2], dtype=np.float32)
                             self.add_coco_bbox(
-                                bbox, cat - 1, dets[cat][i, 2],
-                                show_txt=show_txt, img_id=img_id)
+                                bbox, cat - 1, dets[cat][i, 2], show_txt=show_txt, img_id=img_id)
         else:
             for i in range(len(dets)):
                 if dets[i, 2] > center_thresh:
                     # print('dets', dets[i])
                     cat = int(dets[i, -1])
-                    cl = (self.colors[cat, 0, 0] if self.theme == 'black' else
-                          255 - self.colors[cat, 0, 0]).tolist()
+                    cl = (self.colors[cat, 0, 0] if self.theme ==
+                          'black' else 255 - self.colors[cat, 0, 0]).tolist()
                     ct = dets[i, :2].astype(np.int32) * self.down_ratio
                     cv2.circle(self.imgs[img_id], (ct[0], ct[1]), 3, cl, -1)
                     if show_box:
                         w, h = dets[i, -3] * \
-                               self.down_ratio, dets[i, -2] * self.down_ratio
+                            self.down_ratio, dets[i, -2] * self.down_ratio
                         x, y = dets[i, 0] * \
                             self.down_ratio, dets[i, 1] * self.down_ratio
-                        bbox = np.array([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
-                                        dtype=np.float32)
+                        bbox = np.array(
+                            [x - w / 2, y - h / 2, x + w / 2, y + h / 2], dtype=np.float32)
                         self.add_coco_bbox(
                             bbox, dets[i, -1], dets[i, 2], img_id=img_id)
 
@@ -351,9 +403,7 @@ class Debugger(object):
             [self.imgs[img_id], self.imgs[bev]], axis=1)
     """
 
-    def add_2d_detection(
-            self, img, dets, show_box=False, show_txt=True,
-            center_thresh=0.5, img_id='det'):
+    def add_2d_detection(self, img, dets, show_box=False, show_txt=True, center_thresh=0.5, img_id='det'):
         self.imgs[img_id] = img
         for cat in dets:
             for i in range(len(dets[cat])):
@@ -361,8 +411,7 @@ class Debugger(object):
                 if dets[cat][i, -1] > center_thresh:
                     bbox = dets[cat][i, 1:5]
                     self.add_coco_bbox(
-                        bbox, cat - 1, dets[cat][i, -1],
-                        show_txt=show_txt, img_id=img_id)
+                        bbox, cat - 1, dets[cat][i, -1], show_txt=show_txt, img_id=img_id)
 
     """ Not supported
     def add_bird_view(self, dets, center_thresh=0.3, img_id='bird'):
@@ -544,6 +593,7 @@ color_list = color_list.reshape((-1, 3)) * 255
 
 
 def save_nnp(opt, model, extension='nnp'):
+
     input_variable = nn.Variable([1, 3, opt.input_h, opt.input_w])
     output_list = model(input_variable)
 
@@ -552,14 +602,11 @@ def save_nnp(opt, model, extension='nnp'):
         pred_dict[key] = output_list[i]
 
     runtime_contents = {
-        'networks': [
-            {'name': 'runtime',
-             'batch_size': 1,
-             'outputs': pred_dict,
-             'names': {'x': input_variable}}],
+        'networks': [{'name': 'runtime', 'batch_size': 1, 'outputs': pred_dict, 'names': {'x': input_variable}}],
     }
 
     model_name = f'{opt.arch}_{opt.num_layers}'
-
-    nn.utils.save.save(os.path.join(opt.save_dir, '%s.%s' %
-                                    (model_name, extension)), runtime_contents)
+    save(
+        os.path.join(opt.save_dir, f'{model_name}.{extension}'),
+        runtime_contents
+    )

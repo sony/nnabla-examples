@@ -17,7 +17,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 import nnabla as nn
 
 from .networks.centernet_resnet import get_pose_net as get_centernet_resnet

@@ -24,13 +24,13 @@ def torch_initializer(inmaps, kernel):
 
 def he_initializer(ochan, kernel, rng):
     return NormalInitializer(
-        sigma=np.sqrt(2/(kernel*kernel*ochan)),
+        sigma=np.sqrt(2 / (kernel * kernel * ochan)),
         rng=rng
     )
 
 
 def bilinear_depthwise_initializer(ichan, kernel):
-    factor = (kernel+1)//2
+    factor = (kernel + 1) // 2
     if kernel % 2 == 1:
         center = factor - 1
     else:
@@ -46,7 +46,7 @@ def bilinear_depthwise_initializer(ichan, kernel):
 
 
 def bilinear_initializer(ichan, kernel):
-    factor = (kernel+1)//2
+    factor = (kernel + 1) // 2
     if kernel % 2 == 1:
         center = factor - 1
     else:

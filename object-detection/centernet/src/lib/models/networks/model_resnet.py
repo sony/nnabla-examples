@@ -69,7 +69,7 @@ def shortcut(x, ochannels, stride, shortcut_type, test, channel_last=False):
             ishape = x.shape
             if channel_last:
                 zero_shape = (ishape[0],) + ishape[1:3] + \
-                              (ochannels - ichannels,)
+                    (ochannels - ichannels,)
             else:
                 zero_shape = (ishape[0], ochannels - ichannels) + ishape[-2:]
             zeros = F.constant(zero_shape, 0)
