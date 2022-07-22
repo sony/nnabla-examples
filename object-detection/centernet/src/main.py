@@ -146,7 +146,7 @@ def main(opt):
         if epoch % opt.val_intervals == 0 or epoch == (opt.num_epochs - 1):
             model.training = False
             trainer.evaluate(val_loader, epoch)
-            if not opt.val_calc_map:
+            if not opt.disable_val_calc_map:
                 num_iters = val_loader.size
                 pbar = trange(num_iters, desc="[Test][exp_id:{} epoch:{}/{}]".format(
                     opt.exp_id, epoch, opt.num_epochs), disable=comm.rank > 0)

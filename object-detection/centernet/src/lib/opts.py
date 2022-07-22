@@ -63,7 +63,7 @@ class opts(object):
                                  help='number of epochs to run validation.')
         self.parser.add_argument('--save_intervals', type=int, default=5,
                                  help='number of epochs to save weights.')
-        self.parser.add_argument('--val_calc_map', action='store_true',
+        self.parser.add_argument('--disable_val_calc_map', action='store_true',
                                  help='Disable AP calculation during validation.')
         self.parser.add_argument('--metric', default='loss',
                                  help='main metric to save best model')
