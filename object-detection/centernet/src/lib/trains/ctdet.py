@@ -203,7 +203,7 @@ class Trainer(object):
         os.makedirs(path, exist_ok=True)
         cu.save_checkpoint(path, epoch, self.solver)
 
-    def load_checkpont(self, path, epoch):
+    def load_checkpoint(self, path, epoch):
         from neu import checkpoint_util as cu
         checkpoint_file = os.path.join(
             path, 'checkpoint_{}.json'.format(epoch))
