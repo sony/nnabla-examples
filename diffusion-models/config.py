@@ -74,8 +74,11 @@ class ModelConfig:
     # input
     input_channels: int = 3
     image_size: List[int] = MISSING
+    low_res_size: Union[None, List[int]] = None
     image_shape: List[int] = \
      "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
+    low_res_shape: Union[None, List[int]] = \
+     "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
 
     # arch.
     scale_shift_norm: bool = True
@@ -148,6 +151,9 @@ class GenerateConfig:
     # for refinement
     respacing_step: int = 4
     t_start: Union[None, int] = None
+ 
+    # nstep
+    base_samples_dir: Union[None, str] = None
 
     # for SDEidt
     x_start_path: Union[None, str] = None 

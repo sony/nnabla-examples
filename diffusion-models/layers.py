@@ -171,3 +171,34 @@ def sqrt(x, recompute=False):
     assert isinstance(x, (nn.Variable, nn.NdArray))
     with nn.recompute(recompute):
         return x ** 0.5
+
+
+def interp_like(x, arr, channel_last):
+    # interpolate spatial size of `x`` to be the same as `arr`.
+
+    # get target shape from arr
+    h, w = Shape4D(arr.shape, channel_last=channel_last).get_as_tuple("hw")
+
+    x_interp = F.interpolate(x, output_size=(h, w), mode="linear", channel_last=channel_last)
+
+    return x_interp
+
+
+def adaptive_pooling_2d(x, output_shape, channel_last, mode):
+    # output_shape: (hight, width)
+    assert len(output_shape) == 2
+    
+    h, w = Shape4D(x.shape, channel_last=channel_last).get_as_tuple("hw")
+    mode = mode.lower()
+
+    stride_h = h / output_shape[0]
+    stride_w = w / output_shape[1]
+    kernel_h = h - (output_shape[0] - 1) * stride_h
+    kernel_w = w - (output_shape[1] - 1) * stride_w
+
+    if mode == "average":
+        return F.average_pooling(x, kernel=(kernel_h, kernel_w), stride=(stride_h, stride_w), channel_last=channel_last)
+    if mode == "max":
+        return F.max_pooling(x, kernel=(kernel_h, kernel_w), stride=(stride_h, stride_w), channel_last=channel_last)
+    else:
+        raise NotImplementedError(f"mode {mode} is not implemented.")

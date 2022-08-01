@@ -227,6 +227,18 @@ class UNet(object):
         self.conf: ModelConfig = conf
         self.emb_dims = 4 * self.conf.base_channels
 
+    def concat_input_cond(self, x, input_cond):
+        if input_cond is None:
+            return x
+        
+        assert isinstance(input_cond, (nn.Variable, nn.NdArray)), "input_cond must be nn.Variable or nn,NdArray."
+        assert x.shape[0] == input_cond.shape[0], "batch size must be the same between x and input_cond"
+
+        return F.concatenate(x, 
+                             interp_like(input_cond, x, channel_last=self.conf.channel_last),
+                             axis=3 if self.conf.channel_last else 1)
+
+
     def timestep_embedding(self, t):
         with nn.parameter_scope('timestep_embedding'):
             # sinusoidal embedding
@@ -352,7 +364,10 @@ class UNet(object):
         return h
 
 
-    def __call__(self, x, t, name=None):
+    def __call__(self, x, t, *, name=None, input_cond=None, class_label=None, class_cond_drop_rate=0):
+        # concat input condition
+        x = self.concat_input_cond(x, input_cond)
+
         ch = self.conf.base_channels
         with nn.parameter_scope('UNet' if name is None else name):
             if self.conf.channel_last:

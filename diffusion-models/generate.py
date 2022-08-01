@@ -59,22 +59,36 @@ def main(conf: config.GenScriptConfig):
     # setup data iterator for lowres samples
     B = conf.generate.batch_size
 
+    model_kwargs = {}
+    is_upsample = loaded_conf.model.low_res_size is not None
+    if is_upsample:
+        data_lowres = SimpleDataIterator(batch_size=B,
+                                         root_dir=conf.generate.base_samples_dir,
+                                         image_size=loaded_conf.model.low_res_size,
+                                         comm=comm,
+                                         shuffle=False, 
+                                         on_memory=False, 
+                                         channel_last=loaded_conf.model.channel_last)
 
-
-
-    # Generate
-    # sampling
-    B = args.batch_size
-    num_samples_per_iter = B * comm.n_procs
-    num_iter = (args.samples + num_samples_per_iter -
-                1) // num_samples_per_iter
+        # setup input condition
+        model_kwargs["input_cond"] = nn.Variable((B, ) + loaded_conf.model.low_res_shape)
+        
+        # calculate number of iterations based on number of lowres samples.
+        num_iter = (data_lowres.size + B - 1) // B
+   
+    else:
+        num_samples_per_iter = B * comm.n_procs
+        num_iter = (conf.generate.samples + num_samples_per_iter - 1) // num_samples_per_iter
 
     # sampling
     local_saved_cnt = 0
 
     # setup output dir and show config
     if comm.rank == 0:
-        os.makedirs(conf.generate.output_dir, exist_ok=True)        
+        os.makedirs(conf.generate.output_dir, exist_ok=True)
+        if is_upsample:
+            os.makedirs(os.path.join(conf.generate.output_dir, "base"), exist_ok=True)
+        
         logger.info("===== script config =====")
         print(OmegaConf.to_yaml(conf))
 
@@ -86,12 +100,17 @@ def main(conf: config.GenScriptConfig):
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
 
-        sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
+        if is_upsample:
+            lowres, _ = data_lowres.next()
+            model_kwargs["input_cond"].d = lowres / 127.5 - 1
+
+        sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + loaded_conf.model.image_shape[1:],
                                                         noise=None,
                                                         dump_interval=-1,
                                                         use_ema=conf.generate.ema,
                                                         progress=comm.rank == 0,
-                                                        use_ddim=conf.generate.ddim)
+                                                        use_ddim=conf.generate.ddim,
+                                                        model_kwargs=model_kwargs)
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
@@ -103,6 +122,13 @@ def main(conf: config.GenScriptConfig):
                              save_path,
                              channel_last=loaded_conf.model.channel_last)
 
+            if is_upsample:
+                save_path_base = os.path.join(
+                    conf.generate.output_dir, "base", f"base_{local_saved_cnt}_{comm.rank}.png")
+                save_tiled_image(lowres.astype(np.uint8),
+                                 save_path_base,
+                                 channel_last=loaded_conf.model.channel_last)
+
             local_saved_cnt += 1
         else:
             for b in range(B):
@@ -110,6 +136,13 @@ def main(conf: config.GenScriptConfig):
                     conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
                     np.uint8), channel_first=not loaded_conf.model.channel_last)
+
+                if is_upsample:
+                    save_path_base = os.path.join(
+                        conf.generate.output_dir, "base", f"base_{local_saved_cnt}_{comm.rank}.png")
+                    imsave(save_path_base,
+                           lowres[b].astype(np.uint8),
+                           channel_first=not loaded_conf.model.channel_last)
 
                 local_saved_cnt += 1
 

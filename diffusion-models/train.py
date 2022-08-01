@@ -15,6 +15,7 @@
 
 import fnmatch
 import os
+import queue
 import sys
 
 import hydra
@@ -32,6 +33,7 @@ from omegaconf import OmegaConf
 import config
 from dataset import get_dataset
 from diffusion import is_learn_sigma
+from layers import adaptive_pooling_2d
 from model import Model
 from utils import (create_ema_op, get_lr_scheduler, init_checkpoint_queue,
                    sum_grad_norm)
@@ -155,9 +157,23 @@ def main(conf: config.TrainScriptConfig):
     # setup input image
     x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)  # assume data_iterator returns [0, 255]
     x_rescaled = x / 127.5 - 1  # rescale to [-1, 1]
-    x_rescaled = augmentation(x_rescaled, conf.runtime.channel_last, random_flip=True)
+    x_rescaled = augmentation(x_rescaled, conf.model.channel_last, random_flip=True)
+
+    # create low-resolution image
+    model_kwargs = {}
+    if conf.model.low_res_size is not None:
+        assert len(conf.model.low_res_size) == 2
+        x_low_res = adaptive_pooling_2d(x_rescaled, 
+                                        conf.model.low_res_size, 
+                                        mode="average",
+                                        channel_last=conf.model.channel_last)
+
+        # create model_kwargs
+        model_kwargs["input_cond"] = x_low_res
+    
     loss_dict, t = model.build_train_graph(x_rescaled,
-                                           loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling)
+                                           loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling,
+                                           model_kwargs=model_kwargs)
     assert loss_dict.batched_loss.shape == (conf.train.batch_size, )
     assert t.shape == (conf.train.batch_size, )
 
@@ -237,7 +253,10 @@ def main(conf: config.TrainScriptConfig):
         use_fp16=conf.runtime.type_config == "half",
         initial_log_loss_scale=10)
 
+    # Queue to keep data instances for input_cond during sampling
     num_gen = 16
+    data_queue = queue.Queue(maxsize=num_gen)
+
     for i in piter:
         # update learning rate
         if lr_scheduler is not None:
@@ -257,6 +276,12 @@ def main(conf: config.TrainScriptConfig):
         while accum_cnt < conf.train.accum:
             data, label = data_iterator.next()
             x.d = data
+
+            # keep data for input_condition in generation step
+            for data_instance in data:
+                if data_queue.full():
+                    break
+                data_queue.put(data_instance)
 
             loss_dict.loss.forward(clear_no_need_grad=True)
             is_overflow = mpm.backward(loss_dict.loss, solver,
@@ -349,7 +374,26 @@ def main(conf: config.TrainScriptConfig):
 
         if conf.train.gen_interval > 0 and i % conf.train.gen_interval == 0:
             # sampling
+            gen_model_kwargs = {}
+            if conf.model.low_res_size is not None:
+                # create lowres input from training dataset
+                assert data_queue.qsize() == num_gen, \
+                     f"queue size is smaller than expected. ({data_queue.qsize()} < {num_gen})"
+                data_list = []
+                for _ in range(num_gen):
+                    data_list.append(data_queue.get())
+                
+                input_cond = nn.Variable.from_numpy_array(np.stack(data_list) / 127.5 - 1)
+                
+                input_cond_lowres = adaptive_pooling_2d(input_cond, conf.model.low_res_size, 
+                                                        mode="average",
+                                                        channel_last=conf.model.channel_last)
+                input_cond_lowres.forward(clear_buffer=True)
+                
+                gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(need_grad=False)
+            
             sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
+                                                model_kwargs=gen_model_kwargs,
                                                 use_ema=True, progress=False)
             assert sample_out.shape == (num_gen, ) + x.shape[1:]
 
