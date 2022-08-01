@@ -79,7 +79,7 @@ class MixedPrecisionManager(object):
 
         return False
 
-    def update(self, solver: Solver, *, clip_grad=-1, **kwargs) -> bool:
+    def update(self, solver: Solver, *, clip_grad=None, **kwargs) -> bool:
         """
         Return True if overflow.
         """
@@ -97,7 +97,8 @@ class MixedPrecisionManager(object):
             solver.zero_grad()
             return True
 
-        if clip_grad > 0:
+        if clip_grad is not None:
+            assert isinstance(clip_grad, float), "clip_grad must be None or float."
             solver.clip_grad_by_norm(clip_grad)
 
         solver.update(**kwargs)

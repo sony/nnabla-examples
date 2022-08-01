@@ -25,7 +25,7 @@ from typing import Union
 
 
 class Shape4D(object):
-    def __init__(self, shape: Union[tuple, list], channel_last=False):
+    def __init__(self, shape: Union[tuple, list], channel_last: bool):
 
         assert isinstance(shape, (tuple, list)) and len(shape) == 4, \
              f"shape must be a tuple having 4 elements, but {shape} is given."
@@ -43,7 +43,7 @@ class Shape4D(object):
         return f"(b={self.b}, c={self.c}, h={self.h}, w={self.w})"
 
     def get_as_tuple(self, subscripts: str) -> tuple:
-        assert isinstance(subscripts, str) and len(subscripts) == 4
+        assert isinstance(subscripts, str)
 
         ret = []
         for s in subscripts:
@@ -51,7 +51,7 @@ class Shape4D(object):
             ) in "bchw", f"Unknown axis `{s}` is specified. Subscripts must be consist of [`b`,`c`,`h`,`w`]."
             ret.append(getattr(self, s.lower()))
 
-        return tuple(ret)
+        return ret[0] if len(ret) == 1 else tuple(ret) 
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, (tuple, list)):

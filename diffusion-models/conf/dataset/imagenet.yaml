@@ -1,0 +1,13 @@
+defaults:
+  - /proto_configs/dataset@_here_
+
+name: imagenet
+num_classes: 1000
+
+# path configuration
+# change this if you place a dataset in other directory
+data_dir: ./data 
+dataset_root_dir: ${dataset.data_dir}/ilsvrc2012
+
+# data iterator
+random_crop: True

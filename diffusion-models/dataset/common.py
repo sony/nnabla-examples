@@ -16,12 +16,17 @@ import math
 import os
 import queue
 
+from typing import List
+
 import numpy as np
 from neu.datasets import _get_sliced_data_source
 from nnabla import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.image_utils import imread, imresize
+
+from config import DatasetConfig
+from neu.comm import CommunicatorWrapper
 
 
 def resize_center_crop(img, size, channel_first=True):
@@ -53,9 +58,9 @@ def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
     h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
 
     assert max_crop_scale >= 1.0
-    pre_crop_size = np.random.randrange(
+    pre_crop_size = np.random.randint(
         size, math.ceil(size * max_crop_scale) + 1)
-    resize_scale = pre_crop_size / min(h1, h2)
+    resize_scale = pre_crop_size / min(h1, w1)
 
     # todo: box -> bicubic may improve downsammple quality?
     h_rsz = max(pre_crop_size, int(round(resize_scale * h1)))
@@ -63,8 +68,8 @@ def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
     rsz = imresize(img, (w_rsz, h_rsz), channel_first=channel_first)
 
     h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
-    h_off = np.random.randrange(h2 - size + 1)
-    w_off = np.random.randrange(w2 - size + 1)
+    h_off = np.random.randint(h2 - size + 1)
+    w_off = np.random.randint(w2 - size + 1)
     rsz = rsz[:, h_off:h_off+size, w_off:w_off +
               size] if channel_first else rsz[h_off:h_off+size, w_off:w_off+size]
 
@@ -75,10 +80,14 @@ def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
 
 
 class SimpleDatasource(DataSource):
-    def __init__(self, img_paths, img_size, *,
-                 labels=None, rng=None, on_memory=True,
-                 fix_aspect_ratio=True, random_crop=False, channel_last=False):
-        super(SimpleDatasource, self).__init__(shuffle=True, rng=rng)
+    def __init__(self, 
+                 conf: DatasetConfig, 
+                 img_paths: List[str],
+                 *,
+                 labels=None,
+                 rng=None):
+        super(SimpleDatasource, self).__init__(shuffle=conf.shuffle_dataset,
+                                               rng=rng)
 
         if labels is not None:
             assert len(labels) == len(
@@ -88,18 +97,16 @@ class SimpleDatasource(DataSource):
         self.labels = labels
 
         # check resolution
-        assert len(img_size) in [1, 2]
-        if len(img_size) == 1:
-            # If image_size has only one element, deplicate it for both resolution H and W.
-            img_size = img_size * 2
-
-        self.im_size = img_size
+        assert len(conf.image_size) == 2, \
+            "the length of image_size must be 2 (height, width)"
+        
+        self.im_size = conf.image_size
         self._variables = ["image", "label"]
         self._size = len(self.img_paths)
-        self.on_memory = on_memory
-        self.fix_aspect_ratio = fix_aspect_ratio
-        self.random_crop = random_crop
-        self.channel_last = channel_last
+        self.on_memory = conf.on_memory
+        self.fix_aspect_ratio = conf.fix_aspect_ratio
+        self.random_crop = conf.random_crop
+        self.channel_last = conf.channel_last
 
         if self.on_memory:
             self.images = [None for _ in range(self.size)]
@@ -167,30 +174,27 @@ class SimpleDatasource(DataSource):
 SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 
-def SimpleDataIterator(batch_size, root_dir, image_size,
-                       comm=None, shuffle=True, rng=None, on_memory=True,
-                       fix_aspect_ratio=True, random_crop=False, channel_last=False):
+def SimpleDataIterator(conf: DatasetConfig,
+                       comm: CommunicatorWrapper=None,
+                       rng=None):
     # get all files
-    paths = [os.path.join(root_dir, x)
-             for x in os.listdir(root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
+    paths = [os.path.join(conf.dataset_root_dir, x)
+             for x in os.listdir(conf.dataset_root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
 
     if len(paths) == 0:
-        raise ValueError(f"[SimpleDataIterator] '{root_dir}' is not found. "
+        raise ValueError(f"[SimpleDataIterator] No data is found in {conf.dataset_root_dir}'. "
                          "Please make sure that you specify the correct directory path.")
 
-    ds = SimpleDatasource(img_paths=paths,
-                          img_size=image_size,
-                          rng=rng,
-                          on_memory=on_memory,
-                          fix_aspect_ratio=fix_aspect_ratio,
-                          random_crop=random_crop,
-                          channel_last=channel_last)
+    ds = SimpleDatasource(conf,
+                          img_paths=paths,
+                          rng=rng)
 
     logger.info(f"Initialized data iterator. {ds.size} images are found.")
 
-    ds = _get_sliced_data_source(ds, comm, shuffle)
+    ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, batch_size,
+    return data_iterator(ds, 
+                         conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,
                          with_file_cache=False)

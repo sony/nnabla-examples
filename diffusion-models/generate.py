@@ -14,98 +14,53 @@
 
 
 import os
-import moviepy.editor as mp
 
-import click
+import hydra
 import nnabla as nn
-from nnabla.logger import logger
 import numpy as np
+from hydra.core.config_store import ConfigStore
+from neu.misc import init_nnabla
+from neu.reporter import get_tiled_image, save_tiled_image
+from nnabla.logger import logger
 from nnabla.utils.image_utils import imsave
-from neu.misc import AttrDict, init_nnabla
-from neu.reporter import save_tiled_image, get_tiled_image
-from neu.yaml_wrapper import read_yaml
+from omegaconf import OmegaConf
 
+import config
+from dataset.common import SimpleDataIterator
 from model import Model
-from diffusion import ModelVarType
 
+cs = ConfigStore.instance()
+cs.store(name="base_config", node=config.GenScriptConfig)
+config.register_configs()
 
-def refine_obsolete_conf(conf: AttrDict):
-    """
-    Add default arguments for obsolete config.
-    """
+@hydra.main(version_base=None,
+            config_path="conf", 
+            config_name="config_generate")
+def main(conf: config.GenScriptConfig):
+    # load diffusion and model config
+    loaded_conf: config.LoadedConfig = config.load_saved_conf(conf.generate.config)
 
-    if "model_var_type" in conf:
-        conf.model_var_type = ModelVarType.get_vartype_from_key(
-            conf.model_var_type)
-    else:
-        conf.model_var_type = ModelVarType.FIXED_SMALL
+    comm = init_nnabla(ext_name="cudnn", device_id=conf.runtime.device_id,
+                       type_config=conf.runtime.type_config, random_pseed=True)
+    
+    # update respacing parameter based on given config
+    loaded_conf.diffusion.respacing_step = conf.generate.respacing_step
 
-    if "channel_last" not in conf:
-        conf.channel_last = False
-
-    if "num_attention_head_channels" not in conf:
-        conf.num_attention_head_channels = None
-
-    if "resblock_resample" not in conf:
-        conf.resblock_resample = False
-
-
-@click.command()
-# configs for generating process
-@click.option("--device-id", default='0', help="Device id.", show_default=True)
-@click.option("--samples", default=16, help="# of generating samples on each device.", show_default=True)
-@click.option("--batch-size", default=32, help="# of generating samples for each inference.", show_default=True)
-# model configs
-@click.option("--config", required=True, type=str, help="A path for config file.")
-@click.option("--h5", required=True, type=str, help="A path for parameter to load.")
-@click.option("--ema/--no-ema", default=True, help="Use ema params or not.")
-@click.option("--ddim/--no-ddim", default=False, help="Use ddim sampler to generate data.", show_default=True)
-@click.option("--sampling-interval", "-s", default=None, type=int, help="A timestep interval for sampling.")
-# configs for dumping
-@click.option("--output-dir", default="./outs", help="output dir", show_default=True)
-@click.option("--tiled/--no-tiled", default=True, help="If true, generated images will be saved as tiled image.")
-@click.option("--save-xstart/--no-save-xstart", default=False, help="If true, predicted xstarts at each timestep will be saved as video.")
-def main(**kwargs):
-    # set training args
-    args = AttrDict(kwargs)
-
-    assert os.path.exists(
-        args.config), f"{args.config} is not found. Please make sure the config file exists."
-    conf = read_yaml(args.config)
-
-    comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config=conf.type_config, random_pseed=True)
-    if args.sampling_interval is None:
-        args.sampling_interval = 1
-
-    use_timesteps = list(
-        range(0, conf.num_diffusion_timesteps, args.sampling_interval))
-    if use_timesteps[-1] != conf.num_diffusion_timesteps - 1:
-        # The last step should be included always.
-        use_timesteps.append(conf.num_diffusion_timesteps - 1)
-
-    refine_obsolete_conf(conf)
-    if comm.rank == 0:
-        conf.dump()
-
-    model = Model(beta_strategy=conf.beta_strategy,
-                  use_timesteps=use_timesteps,
-                  model_var_type=conf.model_var_type,
-                  num_diffusion_timesteps=conf.num_diffusion_timesteps,
-                  attention_num_heads=conf.num_attention_heads,
-                  attention_head_channels=conf.num_attention_head_channels,
-                  attention_resolutions=conf.attention_resolutions,
-                  scale_shift_norm=conf.ssn,
-                  base_channels=conf.base_channels,
-                  channel_mult=conf.channel_mult,
-                  num_res_blocks=conf.num_res_blocks,
-                  resblock_resample=conf.resblock_resample,
-                  channel_last=conf.channel_last)
+    model = Model(diffusion_conf=loaded_conf.diffusion,
+                  model_conf=loaded_conf.model)
 
     # load parameters
     assert os.path.exists(
-        args.h5), f"{args.h5} is not found. Please make sure the h5 file exists."
-    nn.parameter.load_parameters(args.h5)
+        conf.generate.h5), f"{conf.generate.h5} is not found. Please make sure the h5 file exists."
+    nn.parameter.load_parameters(conf.generate.h5)
+
+    # Generate
+
+    # setup data iterator for lowres samples
+    B = conf.generate.batch_size
+
+
+
 
     # Generate
     # sampling
@@ -114,42 +69,54 @@ def main(**kwargs):
     num_iter = (args.samples + num_samples_per_iter -
                 1) // num_samples_per_iter
 
+    # sampling
     local_saved_cnt = 0
 
-    # setup output dir
+    # setup output dir and show config
     if comm.rank == 0:
-        os.makedirs(args.output_dir, exist_ok=True)
+        os.makedirs(conf.generate.output_dir, exist_ok=True)        
+        logger.info("===== script config =====")
+        print(OmegaConf.to_yaml(conf))
+
+        logger.info("===== loaded config =====")
+        print(OmegaConf.to_yaml(loaded_conf))
 
     comm.barrier()
 
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
-        sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + conf.image_shape[1:],
+
+        sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
                                                         noise=None,
                                                         dump_interval=-1,
-                                                        use_ema=args.ema,
+                                                        use_ema=conf.generate.ema,
                                                         progress=comm.rank == 0,
-                                                        use_ddim=args.ddim)
+                                                        use_ddim=conf.generate.ddim)
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
 
-        if args.tiled:
+        if conf.generate.tiled:
             save_path = os.path.join(
-                args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
+                conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
             save_tiled_image(sample_out.astype(np.uint8),
-                             save_path, channel_last=conf.channel_last)
+                             save_path,
+                             channel_last=loaded_conf.model.channel_last)
+
             local_saved_cnt += 1
         else:
             for b in range(B):
                 save_path = os.path.join(
-                    args.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
+                    conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
-                    np.uint8), channel_first=not conf.channel_last)
+                    np.uint8), channel_first=not loaded_conf.model.channel_last)
+
                 local_saved_cnt += 1
 
         # create video for x_starts
-        if args.save_xstart:
+        if conf.generate.save_xstart:
+            import moviepy.editor as mp
+
             clips = []
             for i in range(len(x_starts)):
                 xstart = x_starts[i][1]
@@ -160,7 +127,7 @@ def main(**kwargs):
 
             clip = mp.ImageSequenceClip(clips, fps=5)
             clip.write_videofile(os.path.join(
-                args.output_dir, f"pred_x0_along_time_{local_saved_cnt}_{comm.rank}.mp4"))
+                conf.generate.output_dir, f"pred_x0_along_time_{local_saved_cnt}_{comm.rank}.mp4"))
 
 
 if __name__ == "__main__":

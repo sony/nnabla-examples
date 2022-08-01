@@ -23,7 +23,10 @@ from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.download import download
 
+from config import DatasetConfig
+
 from neu.datasets import _get_sliced_data_source
+from neu.comm import CommunicatorWrapper
 
 
 class Cifar10DataSource(DataSource):
@@ -120,14 +123,19 @@ class Cifar10DataSource(DataSource):
         return self._labels.copy()
 
 
-def Cifar10DataIterator(batch_size, *, image_size=(32, 32),
-                        comm=None, shuffle=True, rng=None, train=True, channel_last=False):
-    ds = Cifar10DataSource(train=train, shuffle=shuffle,
-                           rng=rng, channel_last=channel_last)
+def Cifar10DataIterator(conf: DatasetConfig,
+                        comm: CommunicatorWrapper=None,
+                        rng=None, 
+                        train=True):
+    ds = Cifar10DataSource(train=train,
+                           shuffle=conf.shuffle_dataset,
+                           rng=rng,
+                           channel_last=conf.channel_last)
 
-    ds = _get_sliced_data_source(ds, comm, shuffle)
+    ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, batch_size,
+    return data_iterator(ds, 
+                         conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,
                          with_file_cache=False)

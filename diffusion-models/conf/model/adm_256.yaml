@@ -1,0 +1,31 @@
+defaults:
+  - /proto_configs/model@_here_
+
+# input
+image_size: 
+  - 256 # hight
+  - 256 # width
+
+# model arch.
+num_res_blocks: 2
+channel_mult:
+  - 1
+  - 1
+  - 2
+  - 2
+  - 4
+  - 4
+base_channels: 256
+dropout: 0
+resblock_resample: True
+
+# attention
+attention_resolutions:
+  - 8
+  - 16
+  - 32
+num_attention_heads: null
+num_attention_head_channels: 64
+
+# output
+model_var_type: learned_range

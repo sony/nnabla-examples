@@ -121,10 +121,10 @@ def upsample(x, name, with_conv, *, channel_last=False, recompute=False):
         if with_conv:
             x = conv(x, C, "upsample_conv", channel_last=channel_last)
 
-        assert Shape4D(x.shape, channel_last=channel_last) == Shape4D(
-            (B, C, H * 2, W * 2))
+        assert Shape4D(x.shape, channel_last=channel_last) == \
+             Shape4D((B, C, H * 2, W * 2), channel_last=False) # reference
 
-        return x
+    return x
 
 
 def downsample(x, name, with_conv, *, channel_last=False, recompute=False):
@@ -139,8 +139,9 @@ def downsample(x, name, with_conv, *, channel_last=False, recompute=False):
                 2, 2), channel_last=channel_last)
 
         assert Shape4D(x.shape, channel_last=channel_last) == \
-            Shape4D((B, C, H // 2, W // 2))
-        return x
+            Shape4D((B, C, H // 2, W // 2), channel_last=False) # reference
+
+    return x
 
 
 def chunk(x, num_chunk, axis, recompute=False):

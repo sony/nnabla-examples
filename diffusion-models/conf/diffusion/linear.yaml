@@ -1,0 +1,5 @@
+defaults:
+  - /proto_configs/diffusion@_here_
+
+beta_strategy: linear
+max_timesteps: 1000

@@ -16,25 +16,24 @@
 import os
 import sys
 
-import fnmatch
-
-import click
+import hydra
 import nnabla as nn
 import nnabla.solvers as S
-from nnabla.logger import logger
 import numpy as np
-
+from hydra.core.config_store import ConfigStore
 from neu.checkpoint_util import load_checkpoint, save_checkpoint
-from neu.misc import AttrDict, get_current_time, init_nnabla
-from neu.reporter import KVReporter, save_tiled_image
-from neu.yaml_wrapper import write_yaml
+from neu.misc import get_current_time, init_nnabla
 from neu.mixed_precision import MixedPrecisionManager
+from neu.reporter import KVReporter, save_tiled_image
+from nnabla.logger import logger
+from omegaconf import OmegaConf
 
+import config
 from dataset import get_dataset
+from diffusion import is_learn_sigma
 from model import Model
-from utils import get_warmup_lr, sum_grad_norm, create_ema_op
-from config import refine_args_by_dataset
-from diffusion import ModelVarType, is_learn_sigma
+from utils import (create_ema_op, init_checkpoint_queue,
+                   sum_grad_norm)
 
 
 def setup_resume(output_dir, dataset, solvers, is_master=False):
@@ -84,118 +83,63 @@ def get_output_dir_name(org, dataset):
     return os.path.join(org, f"{get_current_time()}_{dataset}")
 
 
-def str_as_integer_list(ctx, param, value):
-    if value is None or len(value) == 0 or value.lower() == "none":
-        return None
+def augmentation(x, channel_last, random_flip=True):
+    import nnabla.functions as F
+    aug = x
+    
+    if random_flip:
+        aug = F.random_flip(aug, axes=[2, ] if channel_last else None)
 
-    return tuple(int(x) for x in value.split(","))
+    return aug
 
+# config
+cs = ConfigStore.instance()
+cs.store(name="base_config", node=config.TrainScriptConfig)
 
-@click.command()
-# configs for training process
-@click.option("--accum", default=1, help="# of gradient accumulation.", show_default=True)
-@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
-@click.option("--device-id", default='0', help="Device id.", show_default=True)
-@click.option("--batch-size", default=4, help="Batch size to train.", show_default=True)
-@click.option("--n-iters", default=int(5e5), help="# of training iterations.", show_default=True)
-@click.option("--progress/--no-progress", default=False, help="Use tqdm to show progress.")
-@click.option("--resume/--no-resume", default=False, help="Resume training from the latest params saved at the same output_dir.")
-@click.option("--loss-scaling", default=1.0, type=float, help="Loss scaling factor.", show_default=True)
-@click.option("--lr", default=None, type=float, help="Learning rate.")
-# model configs
-@click.option("--beta-strategy", default="linear", help="Strategy to create betas.", show_default=True,
-              type=click.Choice(["linear", "cosine"], case_sensitive=False), show_choices=True)
-@click.option("--num-diffusion-timesteps", default=1000, help="Number of diffusion timesteps.", show_default=True)
-@click.option("--ssn/--no-ssn", default=True, type=bool, help="use scale shift norm or not.")
-@click.option("--resblock-resample/--no-resblock-resample", default=False, type=bool, help="Use resblock for down/up sampling.")
-@click.option("--num-attention-heads", default=4, type=int, help="Number of multihead attention heads", show_default=True)
-@click.option("--attention-resolutions", default="16,8", type=str, callback=str_as_integer_list,
-              help="Resolutions which attention is applied. Comma separated string should be passed. If None, use default for dataset.")
-@click.option("--num-attention-head-channels", default=None, type=int,
-              help="Number of channels of each attention head."
-                   "If specified, # of heads for each attention layer is automatically calculated and num-attention-heads will be ignored.", show_default=True)
-@click.option("--base-channels", default=None, type=int, help="Base channel size. If None, use default for dataset.")
-@click.option("--channel-mult", default=None, type=str, callback=str_as_integer_list,
-              help="Channel multipliers for each block. Comma separated string should be passed. If None, use default for dataset.")
-@click.option("--num-res-blocks", default=None, type=int, help="# of residual blocks. If None, use default for dataset.")
-@click.option("--dropout", default=0.0, type=float, help="Dropout prob.", show_default=True)
-@click.option("--model-var-type", type=click.Choice(ModelVarType.get_supported_keys(), case_sensitive=False),
-              default="fixed_small", help="A type of the model variance.", show_default=True, show_choices=True)
-@click.option("--channel-last/--no-channel-last", default=False, type=bool,
-              help="Use channel last layout.", show_default=True)
-# data related configs
-@click.option("--dataset", default="custum", help="Dataset name to train model on.",
-              type=click.Choice(["celebahq", "cifar10", "imagenet", "custom"], case_sensitive=False), show_choices=True)
-@click.option("--image-size", default=None,
-              type=int, help="Image size. Should be a integer and used for both height and width.")
-@click.option("--data-dir", default="./data", help="The path for data directory.", show_default=True)
-@click.option("--dataset-root-dir", default=None,
-              help="The path for dataset root directory.", show_default=True)
-@click.option("--dataset-on-memory/--no-dataset-on-memory", default=False,
-              help="If True, the data once loaded will be kept on Host memory.", show_default=True)
-@click.option("--fix-aspect-ratio/--no-fix-aspect-ratio", default=True,
-              help="Whether keep aspect ratio or not for loaded training images.", show_default=True)
-# configs for logging
-@click.option("--output-dir", default="./logdir", help="output dir", show_default=True)
-@click.option("--save-interval", default=int(1e4), help="Number of iters between saves.", show_default=True)
-@click.option("--gen-interval", default=int(1e4), help="Number of iters between each generation.", show_default=True)
-@click.option("--show-interval", default=10, help="Number of iters between showing current logging values.", show_default=True)
-@click.option("--dump-grad-norm/--no-dump-grap-norm",
-              default=False, help="Show sum of gradient norm of all params for each iteration.")
-def main(**kwargs):
-    # set training args
-    args = AttrDict(kwargs)
-    refine_args_by_dataset(args)
+config.register_configs()
 
-    args.output_dir = get_output_dir_name(args.output_dir, args.dataset)
+def create_gen_config(conf: config.TrainScriptConfig,
+                      respacing_step: int) -> config.GenScriptConfig:
+    conf_gen: config.GenScriptConfig \
+         = OmegaConf.masked_copy(conf, ["diffusion", "model"])
+    
+    # setup respacing
+    conf_gen.diffusion.respacing_step = respacing_step
 
-    comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config=args.type_config, random_pseed=True)
+    # disable dropout
+    conf_gen.model.dropout = 0
 
-    data_iterator = get_dataset(args, comm)
+    OmegaConf.set_readonly(conf_gen, True)
 
-    model = Model(beta_strategy=args.beta_strategy,
-                  num_diffusion_timesteps=args.num_diffusion_timesteps,
-                  model_var_type=ModelVarType.get_vartype_from_key(
-                      args.model_var_type),
-                  attention_num_heads=args.num_attention_heads,
-                  attention_head_channels=args.num_attention_head_channels,
-                  attention_resolutions=args.attention_resolutions,
-                  scale_shift_norm=args.ssn,
-                  base_channels=args.base_channels,
-                  channel_mult=args.channel_mult,
-                  num_res_blocks=args.num_res_blocks,
-                  resblock_resample=args.resblock_resample,
-                  channel_last=args.channel_last)
+    return conf_gen
 
-    use_timesteps = list(
-        range(0, args.num_diffusion_timesteps, 4))  # sampling interval
-    if use_timesteps[-1] != args.num_diffusion_timesteps - 1:
-        # The last step should be included always.
-        use_timesteps.append(args.num_diffusion_timesteps - 1)
+@hydra.main(version_base=None, config_path="conf", config_name="config_train")
+def main(conf: config.TrainScriptConfig):
+    # setup output dir 
+    conf.train.output_dir = get_output_dir_name(conf.train.output_dir,
+                                                conf.dataset.name)
+    
+    # initialize nnabla runtime and get communicator
+    comm = init_nnabla(ext_name="cudnn",
+                       device_id=conf.runtime.device_id,
+                       type_config=conf.runtime.type_config,
+                       random_pseed=True)
 
-    gen_model = Model(beta_strategy=args.beta_strategy,
-                      use_timesteps=use_timesteps,
-                      model_var_type=model.model_var_type,
-                      num_diffusion_timesteps=args.num_diffusion_timesteps,
-                      attention_num_heads=args.num_attention_heads,
-                      attention_head_channels=args.num_attention_head_channels,
-                      attention_resolutions=args.attention_resolutions,
-                      scale_shift_norm=args.ssn,
-                      base_channels=args.base_channels,
-                      channel_mult=args.channel_mult,
-                      num_res_blocks=args.num_res_blocks,
-                      resblock_resample=args.resblock_resample,
-                      channel_last=args.channel_last)
+    # create data iterator
+    data_iterator = get_dataset(conf.dataset, comm)
 
     # build graph
-    x = nn.Variable(args.image_shape)  # assume data_iterator returns [0, 255]
+    model = Model(diffusion_conf=conf.diffusion,
+                model_conf=conf.model)
+
+    # setup input image
+    x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)  # assume data_iterator returns [0, 255]
     x_rescaled = x / 127.5 - 1  # rescale to [-1, 1]
+    x_rescaled = augmentation(x_rescaled, conf.runtime.channel_last, random_flip=True)
     loss_dict, t = model.build_train_graph(x_rescaled,
-                                           dropout=args.dropout,
-                                           loss_scaling=None if args.loss_scaling == 1.0 else args.loss_scaling)
-    assert loss_dict.batched_loss.shape == (args.batch_size, )
-    assert t.shape == (args.batch_size, )
+                                           loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling)
+    assert loss_dict.batched_loss.shape == (conf.train.batch_size, )
+    assert t.shape == (conf.train.batch_size, )
 
     # optimizer
     solver = S.Adam()
@@ -217,42 +161,60 @@ def main(**kwargs):
     }
 
     start_iter = 0  # exclusive
-    if args.resume:
-        start_iter = setup_resume(
-            args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
-
-    image_dir = os.path.join(args.output_dir, "image")
+    if conf.train.resume:
+        # when resume, use the previous output_dir having the last checkpoint. 
+        start_iter = setup_resume(conf.train.output_dir,
+                                  conf.dataset.name,
+                                  solvers, is_master=comm.rank == 0)
+    
+    image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:
         os.makedirs(image_dir, exist_ok=True)
 
     comm.barrier()
 
     # Reporter
-    reporter = KVReporter(comm, save_path=args.output_dir,
+    reporter = KVReporter(comm, save_path=conf.train.output_dir,
                           skip_kv_to_monitor=False)
     # set all keys before to prevent synchronization error
     for i in range(4):
         reporter.set_key(f"loss_q{i}")
-        if is_learn_sigma(model.model_var_type):
+        if is_learn_sigma(conf.model.model_var_type):
             reporter.set_key(f"vlb_q{i}")
 
-    if args.progress:
+    if conf.train.progress:
         from tqdm import trange
-        piter = trange(start_iter + 1, args.n_iters + 1,
+        piter = trange(start_iter + 1, conf.train.n_iters + 1,
                        disable=comm.rank > 0, ncols=0)
     else:
-        piter = range(start_iter + 1, args.n_iters + 1)
+        piter = range(start_iter + 1, conf.train.n_iters + 1)
+
+    # freeze config to disable setting or updating values in conf.
+    OmegaConf.resolve(conf)
+    OmegaConf.set_readonly(conf, True)
+    
+    # setup model for generation
+    conf_gen = create_gen_config(conf, respacing_step=4)
+    gen_model = Model(diffusion_conf=conf_gen.diffusion,
+                      model_conf=conf_gen.model)
 
     # dump config
     if comm.rank == 0:
-        args.dump()
-        write_yaml(os.path.join(args.output_dir, "config.yaml"), args)
+        # show configs in stdout
+        logger.info("===== configs =====")
+        print(OmegaConf.to_yaml(conf))
+        
+        # save configs
+        OmegaConf.save(conf, os.path.join(conf.train.output_dir, "config_train.yaml"))
+        OmegaConf.save(conf_gen, os.path.join(conf.train.output_dir, "config_gen.yaml"))
 
     comm.barrier()
 
     mpm = MixedPrecisionManager(
-        use_fp16=args.type_config == "half", initial_log_loss_scale=15)
+        use_fp16=conf.runtime.type_config == "half",
+        initial_log_loss_scale=10)
 
+    num_gen = 16
     for i in piter:
         # update solver's lr
         # cur_lr = get_warmup_lr(lr, args.n_warmup, i)
@@ -290,25 +252,26 @@ def main(**kwargs):
                 comm.all_reduce(
                     [x.grad for x in nn.get_parameters().values()], division=True, inplace=False)
 
+            # reporting
             reporter.kv_mean("loss", loss_dict.loss)
 
-            if is_learn_sigma(model.model_var_type):
+            if is_learn_sigma(conf.model.model_var_type):
                 reporter.kv_mean("vlb", loss_dict.vlb)
 
             # loss for each quantile
-            for j in range(args.batch_size):
+            for j in range(conf.train.batch_size):
                 ti = t.d[j]
-                q_level = int(ti) * 4 // args.num_diffusion_timesteps
+                q_level = int(ti) * 4 // conf.diffusion.max_timesteps
                 assert q_level in (
                     0, 1, 2, 3), f"q_level should be one of [0, 1, 2, 3], but {q_level} is given."
                 reporter.kv_mean(f"loss_q{q_level}", float(
                     loss_dict.batched_loss.d[j]))
 
-                if is_learn_sigma(model.model_var_type):
+                if is_learn_sigma(conf.model.model_var_type):
                     reporter.kv_mean(f"vlb_q{q_level}", loss_dict.vlb.d[j])
 
         # update
-        is_overflow = mpm.update(solver, clip_grad=args.clip_grad)
+        is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
 
         # update ema params
         if is_overflow:
@@ -318,39 +281,39 @@ def main(**kwargs):
             ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
-        if args.dump_grad_norm:
+        if conf.train.dump_grad_norm:
             gnorm = sum_grad_norm(solver.get_parameters().values())
             reporter.kv_mean("grad", gnorm)
 
         # samples
-        reporter.kv("samples", i * args.batch_size * comm.n_procs * args.accum)
+        reporter.kv("samples", i * conf.train.batch_size * comm.n_procs * conf.train.accum)
 
         # iteration (only for no-progress)
-        if not args.progress:
+        if not conf.train.progress:
             reporter.kv("iteration", i)
 
-        if i % args.show_interval == 0:
-            if args.progress:
+        if i % conf.train.show_interval == 0:
+            if conf.train.progress:
                 desc = reporter.desc(
-                    reset=True, sync=True if args.type_config == "float" else False)
+                    reset=True, sync=True if conf.runtime.type_config == "float" else False)
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True if args.type_config == "float" else False)
+                              0 else None, reset=True, sync=True if conf.runtime.type_config == "float" else False)
 
             reporter.flush_monitor(i)
 
-        if i > 0 and i % args.save_interval == 0:
+        if i % conf.train.save_interval == 0:
             if comm.rank == 0:
-                save_checkpoint(args.output_dir, i, solvers, n_keeps=3)
+                save_checkpoint(conf.train.output_dir, i, solvers, n_keeps=3)
 
             comm.barrier()
 
-        if i > 0 and args.gen_interval > 0 and i % args.gen_interval == 0:
+        if conf.train.gen_interval > 0 and i % conf.train.gen_interval == 0:
             # sampling
-            sample_out, _, _ = gen_model.sample(shape=(16, ) + x.shape[1:],
+            sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
                                                 use_ema=True, progress=False)
-            assert sample_out.shape == (16, ) + args.image_shape[1:]
+            assert sample_out.shape == (num_gen, ) + x.shape[1:]
 
             # scale back to [0, 255]
             sample_out = (sample_out + 1) * 127.5
@@ -358,7 +321,7 @@ def main(**kwargs):
             save_path = os.path.join(image_dir, f"gen_{i}_{comm.rank}.png")
 
             save_tiled_image(sample_out.astype(np.uint8),
-                             save_path, channel_last=args.channel_last)
+                             save_path, channel_last=conf.model.channel_last)
 
 
 if __name__ == "__main__":

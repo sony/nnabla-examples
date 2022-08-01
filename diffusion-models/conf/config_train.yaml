@@ -1,0 +1,8 @@
+defaults:
+  - runtime: default 
+  - train: ???
+  - dataset: ???
+  - model: ???
+  - diffusion: linear
+  - hydra: simple
+  

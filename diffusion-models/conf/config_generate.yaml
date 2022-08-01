@@ -1,0 +1,5 @@
+defaults:
+  - /proto_configs/generate@generate
+  - runtime: default
+  - hydra: simple
+  
