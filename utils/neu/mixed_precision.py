@@ -2,6 +2,8 @@ from nnabla.solvers import Solver
 from nnabla import Variable
 from nnabla.logger import logger
 
+from neu.comm import CommunicatorWrapper
+
 DEFAULT_INITIAL_LOG_LOSS_SCALE = 20  # 2 to the power of 20
 
 
@@ -78,16 +80,22 @@ class MixedPrecisionManager(object):
             return True
 
         return False
-
-    def update(self, solver: Solver, *, clip_grad=None, **kwargs) -> bool:
+    
+    def update(self, solver: Solver, comm: CommunicatorWrapper, *, clip_grad=None, **kwargs) -> bool:
         """
         Return True if overflow.
         """
         if not self.use_fp16:
             solver.update(**kwargs)
             return False
-
+        
+        # rescale grad before all_reduce along GPUs.
         solver.scale_grad(1. / (2 ** self.log_loss_scale))
+        
+        if comm is not None and comm.n_procs > 1:
+            comm.all_reduce([x.grad for x in solver.get_parameters().values()],
+                            division=True,
+                            inplace=False)
 
         if self.check_grad_overflow(solver):
             # skip update and make loss scale smaller

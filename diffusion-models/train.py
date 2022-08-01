@@ -33,7 +33,7 @@ import config
 from dataset import get_dataset
 from diffusion import is_learn_sigma
 from model import Model
-from utils import (create_ema_op, init_checkpoint_queue,
+from utils import (create_ema_op, get_lr_scheduler, init_checkpoint_queue,
                    sum_grad_norm)
 
 
@@ -165,6 +165,8 @@ def main(conf: config.TrainScriptConfig):
     solver = S.Adam()
     solver.set_parameters(nn.get_parameters())
 
+    lr_scheduler = get_lr_scheduler(conf.train)
+
     # for ema update
     # Note: this should be defined after solver.set_parameters() to avoid update by solver.
     ema_op, ema_params = create_ema_op(nn.get_parameters(), 0.9999)
@@ -237,42 +239,44 @@ def main(conf: config.TrainScriptConfig):
 
     num_gen = 16
     for i in piter:
-        # update solver's lr
-        # cur_lr = get_warmup_lr(lr, args.n_warmup, i)
-        solver.set_learning_rate(args.lr)
+        # update learning rate
+        if lr_scheduler is not None:
+            cur_lr = lr_scheduler._get_lr(i, None)
+        else:
+            cur_lr = conf.train.lr
+        
+        # rescale lr to cancel backward accumulation
+        solver.set_learning_rate(cur_lr / conf.train.accum)
 
         # evaluate graph
         dummy_solver_ema.zero_grad()  # just in case
         solver.zero_grad()
 
         retry_cnt = 0
-
-        for accum_iter in range(args.accum):  # accumelate
+        accum_cnt = 0
+        while accum_cnt < conf.train.accum:
             data, label = data_iterator.next()
-            x.d = data.copy()
+            x.d = data
 
             loss_dict.loss.forward(clear_no_need_grad=True)
-
-            all_reduce_cb = None
-            # if accum_iter == args.accum - 1:
-            #     all_reduce_cb = comm.get_all_reduce_callback(
-            #         params=solver.get_parameters().values())
-
             is_overflow = mpm.backward(loss_dict.loss, solver,
-                                       clear_buffer=True, communicator_callbacks=all_reduce_cb)
+                                       clear_buffer=True)
 
+            # Retry from the first accumulation step if overflow happens.
             if is_overflow:
                 retry_cnt += 1
-                if retry_cnt == 20:
+                
+                # Raise if retry happens too many times.
+                if retry_cnt == 100:
                     raise ValueError("Overflow happens too many times.")
 
-                accum_iter = 0
+                # mpm.backward resets grad of all params to zero in this case.
+                accum_cnt = 0
                 continue
-
-            if accum_iter == args.accum - 1:
-                comm.all_reduce(
-                    [x.grad for x in nn.get_parameters().values()], division=True, inplace=False)
-
+            
+            # fwd/bwd successes. Count up accum_cnt.
+            accum_cnt += 1
+        
             # reporting
             reporter.kv_mean("loss", loss_dict.loss)
 
@@ -290,16 +294,29 @@ def main(conf: config.TrainScriptConfig):
 
                 if is_learn_sigma(conf.model.model_var_type):
                     reporter.kv_mean(f"vlb_q{q_level}", loss_dict.vlb.d[j])
+        
+        # gradient accumulation
+        assert accum_cnt == conf.train.accum
 
         # update
         is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
 
-        # update ema params
-        if is_overflow:
-            i -= 1
+        # check all processes not to have overflow.
+        overflow_cnt = nn.NdArray.from_numpy_array(np.array([int(is_overflow)]))
+        comm.all_reduce([overflow_cnt], division=False, inplace=True)
+
+        if overflow_cnt.data > 0.5:
+            # If even a single process has overflow, stop update and retry fwd/bwd again.
+            
+            # Basically overflow_cnt should be 0 or comm.n_procs
+            # since allreduce over grads of all parmas has been performed above.
+            assert comm.n_procs - int(overflow_cnt.data) < 1e-5, \
+                "Some but not all nodes successfully update params without overflow. This is unintentional."
+            
             continue
-        else:
-            ema_op.forward(clear_no_need_grad=True)
+        
+        # update ema params
+        ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
         if conf.train.dump_grad_norm:

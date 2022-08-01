@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+from config import TrainConfig
 
 import nnabla as nn
 import nnabla.functions as F
@@ -91,12 +92,16 @@ def force_float(func):
     return wrapped_func
 
 
-def get_warmup_lr(max_lr, warmup_epoch, step):
-    # linear warmup
-    if warmup_epoch == 0 or step >= warmup_epoch:
-        return max_lr
-
-    return max_lr * step / warmup_epoch
+def get_lr_scheduler(conf: TrainConfig):
+    if conf.lr_scheduler is None:
+        return None
+    elif conf.lr_scheduler == "consine":
+        from neu.learning_rate_scheduler import EpochCosineLearningRateScheduler
+        return EpochCosineLearningRateScheduler(base_lr=conf.lr,
+                                                epochs=conf.n_iters,
+                                                warmup_epochs=10000)
+    
+    raise ValueError(f"scheduler name '{conf.lr_scheduler}' is not supported.")
 
 
 def sum_grad_norm(params):
