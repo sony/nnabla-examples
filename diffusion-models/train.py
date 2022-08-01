@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import fnmatch
 import os
 import sys
 
@@ -36,11 +37,32 @@ from utils import (create_ema_op, init_checkpoint_queue,
                    sum_grad_norm)
 
 
+def refine_monitor_files(dir_path, start_iter):
+    for filename in os.listdir(dir_path):
+        if filename.endswith(("series.txt", "timer.txt")):
+            contents = []
+            with open(os.path.join(dir_path, filename), "r") as f:
+                for line in f.readlines():
+                    iter = line.strip().split(" ")[0]
+                    if int(iter) >= start_iter:
+                        break
+                        
+                    contents.append(line)
+                
+            with open(os.path.join(dir_path, filename), "w") as f:
+                f.write("".join(contents))
+                
+
 def setup_resume(output_dir, dataset, solvers, is_master=False):
     # return
     start_iter = 0
+    new_output_dir = output_dir
 
     parent = os.path.dirname(os.path.abspath(output_dir))
+
+    if not os.path.exists(parent):
+        return start_iter, output_dir # no previous checkpoint, train from scratch.
+
     all_logs = sorted(fnmatch.filter(
         os.listdir(parent), "*{}*".format(dataset)))
     if len(all_logs):
@@ -61,12 +83,10 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
                     slv.zero_grad()
 
                 if is_master:
-                    # copy loaded checkpoint to the current output_dir so that the current output_dir has at least one checkpoint
-                    os.makedirs(output_dir, exist_ok=True)
-
-                    import shutil
-                    shutil.copy(cp_path, output_dir)
-
+                    refine_monitor_files(latest_dir, start_iter)
+                    init_checkpoint_queue(latest_dir)
+                
+                new_output_dir = latest_dir
                 logger.info(f"Load checkpoint from {cp_path}")
 
                 break
@@ -76,7 +96,7 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
         else:
             logger.warning("No valid checkpoint. Train from scratch")
 
-    return start_iter
+    return start_iter, new_output_dir
 
 
 def get_output_dir_name(org, dataset):
@@ -163,9 +183,10 @@ def main(conf: config.TrainScriptConfig):
     start_iter = 0  # exclusive
     if conf.train.resume:
         # when resume, use the previous output_dir having the last checkpoint. 
-        start_iter = setup_resume(conf.train.output_dir,
-                                  conf.dataset.name,
-                                  solvers, is_master=comm.rank == 0)
+        start_iter, output_dir = setup_resume(conf.train.output_dir,
+                                              conf.dataset.name,
+                                              solvers, is_master=comm.rank == 0)
+        conf.train.output_dir = output_dir
     
     image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:

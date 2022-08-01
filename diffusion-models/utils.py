@@ -140,3 +140,40 @@ def create_ema_op(params, ema_decay=0.9999):
             ema_params = nn.get_parameters(grad_only=False)
 
         return F.sink(*ops), ema_params
+
+
+# neu extention
+# todo: move this to neu
+
+def init_checkpoint_queue(path):
+    import re 
+    import os
+    all_files = os.listdir(path)
+
+    # get saved iters in ascending order.
+    # checkpoint files should be named as "checkpoint_{iter}.json".
+    checkpoints = [x for x in all_files if x.startswith("checkpoint")]
+    saved_iters = sorted([int(re.findall("checkpoint_(\d+).json", x)[0]) for x in checkpoints])
+    
+    # trace all saved files
+    from collections import defaultdict
+    saved_paths_per_iter = defaultdict(list)
+    for filename in all_files:
+        if not filename.endswith(".h5"):
+            continue
+        
+        # filename should be "{identifier}_{iter}.h5".
+        filename_wo_ext = os.path.splitext(filename)[0]
+        iter = int(filename_wo_ext.split("_")[-1])
+
+        saved_paths_per_iter[iter].append(os.path.join(path, filename))
+
+    from neu.checkpoint_util import prev_save_paths
+    for iter in saved_iters:
+        saved_paths = saved_paths_per_iter[iter]
+        
+        cp_path = os.path.join(path, f"checkpoint_{iter}.json")
+        assert os.path.exists(cp_path), f"{cp_path} doesn't exist."
+        saved_paths.append(cp_path)
+
+        prev_save_paths.put(saved_paths)
