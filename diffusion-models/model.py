@@ -14,7 +14,6 @@
 
 import nnabla as nn
 import nnabla.functions as F
-from functools import partial
 
 from diffusion import is_learn_sigma, GaussianDiffusion
 from unet import UNet
@@ -35,7 +34,12 @@ class Model(object):
         unet = UNet(self.model_conf)
         return unet
 
-    def build_train_graph(self, x, t=None, noise=None, loss_scaling=None):
+    def build_train_graph(self, 
+                          x,
+                          t=None,
+                          noise=None,
+                          loss_scaling=None, 
+                          model_kwargs=None):
         # get input shape before condition
         B = x.shape[0]
 
@@ -48,6 +52,7 @@ class Model(object):
         loss_dict = self.diffusion.train_loss(model=self._define_model(),
                                               x_start=x,
                                               t=t,
+                                              model_kwargs=model_kwargs,
                                               noise=noise,
                                               channel_last=self.model_conf.channel_last)
         assert isinstance(loss_dict, AttrDict)
@@ -78,6 +83,7 @@ class Model(object):
                *,
                noise=None,
                x_start=None,
+               model_kwargs=None, 
                use_ema=True, 
                dump_interval=-1, 
                progress=False, 
@@ -86,9 +92,9 @@ class Model(object):
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,
-                                   dump_interval=dump_interval,
                                    noise=noise,
                                    x_start=x_start,
+                                   model_kwargs=model_kwargs,
                                    use_ema=False,
                                    dump_interval=dump_interval,
                                    progress=progress,
@@ -103,15 +109,17 @@ class Model(object):
                 shape=shape,
                 noise=noise,
                 x_start=x_start,
+                model_kwargs=model_kwargs,
                 dump_interval=dump_interval,
                 progress=progress
             )
 
-    def sample_trajectory(self, shape, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
+    def sample_trajectory(self, shape, noise=None, x_start=None, model_kwargs=None, use_ema=True, progress=False, use_ddim=False):
         return self.sample(shape,
                            dump_interval=100,
                            noise=noise,
                            x_start=x_start,
+                           model_kwargs=model_kwargs,
                            use_ema=use_ema,
                            progress=progress,
                            use_ddim=use_ddim)
