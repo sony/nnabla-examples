@@ -137,7 +137,7 @@ class SimpleDatasource(DataSource):
 
     def _get_data(self, i):
         image_idx = self._indexes[i]
-        label = 0 if self.labels is None else self.labels[i]
+        label = 0 if self.labels is None else self.labels[image_idx]
 
         # keep data paths
         if self.data_history.full():

@@ -19,6 +19,8 @@ import click
 
 import nnabla as nn
 import nnabla.functions as F
+import nnabla.parametric_functions as PF
+import nnabla.initializer as I
 from nnabla.logger import logger
 
 from layers import *
@@ -260,6 +262,42 @@ class UNet(object):
 
         return emb
 
+    def class_embedding(self, class_label, class_cond_drop_rate):
+        assert len(class_label.shape) == 1, f"Invalid shape for class_label: {class_label.shape}."
+        assert 0 <= class_cond_drop_rate <= 1, "class_cond_drop_rate must be in the range of [0, 1]."
+
+        with nn.parameter_scope("class_embedding"):
+            emb = PF.embed(inp=class_label,
+                           n_inputs=self.conf.num_classes,
+                           n_features=self.emb_dims,
+                           initializer=I.NormalInitializer()) # align init with pytorch
+
+            # dropout for unconditional generation                
+            if class_cond_drop_rate > 0:
+                mask = F.rand_binomial(p=1-class_cond_drop_rate,
+                                    shape=class_label.shape + (1, ))
+                emb = emb * mask
+            
+            # reshape to use conv rather than affine
+            if self.conf.channel_last:
+                emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
+            else:
+                emb = F.reshape(emb, emb.shape + (1, 1))
+            
+            # post process
+            if self.conf.class_cond_emb_type == "simple":
+                pass
+            elif self.conf.class_cond_emb_type == "MLP":
+                # linear transforms
+                emb = nin(emb, self.emb_dims, name='dense0',
+                        channel_last=self.conf.channel_last)
+                emb = nonlinearity(emb)
+
+                emb = nin(emb, self.emb_dims, name='dense1',
+                        channel_last=self.conf.channel_last)                
+
+        return emb
+
     def resblock_with_attention(self, h, emb, out_channels, name):
         with nn.parameter_scope(name):
             block = ResidualBlock(out_channels,
@@ -377,6 +415,11 @@ class UNet(object):
 
             h = conv(x, ch, name="first_conv", channel_last=self.conf.channel_last)
             emb = self.timestep_embedding(t)
+
+            if self.conf.class_cond:
+                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
+                emb = emb + self.class_embedding(class_label, class_cond_drop_rate)
+
             emb = nonlinearity(emb)
 
             hs = [h]

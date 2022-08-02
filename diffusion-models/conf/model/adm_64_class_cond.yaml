@@ -1,0 +1,5 @@
+defaults:
+  - adm_64
+
+class_cond: True
+class_cond_drop_rate: 0.1

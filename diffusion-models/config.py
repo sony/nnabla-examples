@@ -88,7 +88,11 @@ class ModelConfig:
     channel_mult: List[int] = MISSING    
     base_channels: int = 128
     dropout: float = 0.
+    class_cond: bool = False
+    class_cond_drop_rate: float = 0
+    class_cond_emb_type: str = "simple"
     channel_last: bool = True
+    num_classes: int = "${dataset.num_classes}"
     conv_resample: bool = True
 
     # attention

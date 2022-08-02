@@ -171,6 +171,10 @@ def main(conf: config.TrainScriptConfig):
         # create model_kwargs
         model_kwargs["input_cond"] = x_low_res
     
+    if conf.model.class_cond:
+        model_kwargs["class_label"] = nn.Variable((conf.train.batch_size, ))
+        model_kwargs["class_cond_drop_rate"] = conf.model.class_cond_drop_rate
+
     loss_dict, t = model.build_train_graph(x_rescaled,
                                            loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling,
                                            model_kwargs=model_kwargs)
@@ -276,6 +280,9 @@ def main(conf: config.TrainScriptConfig):
         while accum_cnt < conf.train.accum:
             data, label = data_iterator.next()
             x.d = data
+
+            if conf.model.class_cond:
+                model_kwargs["class_label"].d = label
 
             # keep data for input_condition in generation step
             for data_instance in data:
@@ -392,6 +399,11 @@ def main(conf: config.TrainScriptConfig):
                 
                 gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(need_grad=False)
             
+            if conf.model.class_cond:
+                gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
+                                                                                                 shape=(num_gen, )))
+                gen_model_kwargs["class_cond_drop_rate"] = 0
+
             sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
                                                 model_kwargs=gen_model_kwargs,
                                                 use_ema=True, progress=False)
