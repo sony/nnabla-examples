@@ -401,7 +401,7 @@ def main(conf: config.TrainScriptConfig):
             
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
-                                                                                                 shape=(num_gen, )))
+                                                                                                 size=(num_gen, )))
                 gen_model_kwargs["class_cond_drop_rate"] = 0
 
             sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
