@@ -159,6 +159,9 @@ class GenerateConfig:
     # nstep
     base_samples_dir: Union[None, str] = None
 
+    # class cond
+    gen_class_id: Union[None, int] = None
+
     # for SDEidt
     x_start_path: Union[None, str] = None 
 

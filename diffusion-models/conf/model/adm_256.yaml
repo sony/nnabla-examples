@@ -1,5 +1,6 @@
 defaults:
   - /proto_configs/model@_here_
+  - _self_
 
 # input
 image_size: 

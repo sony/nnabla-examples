@@ -79,6 +79,17 @@ def main(conf: config.GenScriptConfig):
     else:
         num_samples_per_iter = B * comm.n_procs
         num_iter = (conf.generate.samples + num_samples_per_iter - 1) // num_samples_per_iter
+    
+    if loaded_conf.model.class_cond:
+        if conf.generate.gen_class_id is None:
+            # random class
+            import nnabla.functions as F
+            model_kwargs["class_label"] = F.randint(low=0, high=loaded_conf.model.num_classes, shape=(B, ))
+        else:
+            assert conf.generate.gen_class_id in list(range(0, loaded_conf.model.num_classes)), \
+                f"invalid class_id: '{conf.generate_gen_class_id}'. Must be an integer in [0, {loaded_conf.model.num_classes})."
+            # deterministic class
+            model_kwargs["class_label"] = nn.Variable.from_numpy_array([conf.generate.gen_class_id for _ in range(B)])
 
     # sampling
     local_saved_cnt = 0
@@ -104,7 +115,7 @@ def main(conf: config.GenScriptConfig):
             lowres, _ = data_lowres.next()
             model_kwargs["input_cond"].d = lowres / 127.5 - 1
 
-        sample_out, xt_samples, x_starts = model.sample(shape=(B, ) + loaded_conf.model.image_shape[1:],
+        sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
                                                         noise=None,
                                                         dump_interval=-1,
                                                         use_ema=conf.generate.ema,
