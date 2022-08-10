@@ -8,6 +8,3 @@ num_classes: 1 # no label
 # change this if you place a dataset in other directory
 data_dir: ./data 
 dataset_root_dir: ${dataset.data_dir}/images
-
-# data iterator
-random_crop: True

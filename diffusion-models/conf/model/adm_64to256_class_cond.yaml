@@ -15,6 +15,7 @@ base_channels: 192
 
 # attention
 num_attention_heads: 4
+num_attention_head_channels: null
 
 # output
 model_var_type: learned_range

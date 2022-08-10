@@ -1,5 +1,6 @@
 defaults:
   - /proto_configs/train@_here_
+  - _self_
 
 
 ## batch size
@@ -22,7 +23,7 @@ output_dir: ./logdir/imagenet_64_adm
 # resume: False
 
 ## loss
-lr: 3e-4
+lr: 3.75e-5 # 3e-4 for bs=2048
 # loss_scaling: 1.0
 # clip_grad: 1.0
 lr_scheduler: null

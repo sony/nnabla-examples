@@ -1,5 +1,6 @@
 defaults:
   - /proto_configs/train@_here_
+  - _self_
 
 
 ## batch size
