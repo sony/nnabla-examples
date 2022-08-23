@@ -1,0 +1,10 @@
+defaults:
+  - /proto_configs/dataset@_here_
+
+name: cifar10
+num_classes: 10
+
+# path configuration
+# change this if you place a dataset in other directory
+# data_dir: ./data 
+# dataset_root_dir: null

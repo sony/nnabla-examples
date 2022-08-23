@@ -15,12 +15,15 @@
 import enum
 import math
 from functools import partial
+from config import DiffusionConfig
 
 import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from neu.losses import gaussian_log_likelihood, kl_normal
 from neu.misc import AttrDict
+
+from typing import Union
 
 from layers import chunk
 from utils import Shape4D, float_context_scope, force_float
@@ -46,7 +49,7 @@ class ModelVarType(enum.Enum):
         return [x.name for x in ModelVarType]
 
     @staticmethod
-    def get_vartype_from_key(key):
+    def get_vartype_from_key(key: str):
         for elem in ModelVarType:
             if elem.name.lower() == key.lower():
                 return elem
@@ -55,7 +58,11 @@ class ModelVarType(enum.Enum):
             f"key '{key}' is not supported. Key must be one of {ModelVarType.get_supported_keys()}.")
 
 
-def is_learn_sigma(model_var_type: ModelVarType):
+def is_learn_sigma(model_var_type: Union[ModelVarType, str]):
+    # convert string to ModelVarType
+    if isinstance(model_var_type, str):
+        model_var_type = ModelVarType.get_vartype_from_key(model_var_type)
+
     # If we add model variance type, modify this also.
     return model_var_type == ModelVarType.LEARNED_RANGE
 
@@ -111,6 +118,49 @@ def get_beta_schedule(strategy, num_timesteps):
     return betas
 
 
+def respace_betas(betas, use_timesteps):
+    """
+    Given betas and use_timestpes, returns respaced betas.
+
+    Args:
+        betas (np.array): A T elements of array containing beta_t at index t.
+        use_timesteps (tuple):
+            A tuple indicates which timesteps are used for generation process.
+            For example, if use_timestpes = (0, 100, 300, 500, 700, 900, 1000), only ts included in use_timestpes will be used.
+
+    Returns:
+        new_betas (np.array): A respaced betas.
+        timestep_map (np.array): 
+            A list indicating how to map a new index to original index.
+            It will be the same as use_timesteps sorted in increasing order.
+    """
+
+    assert hasattr(
+        use_timesteps, "__iter__"), "use_timesteps must be iterable."
+    use_timesteps = tuple(use_timesteps)
+
+    T = len(betas)
+
+    new_betas = []
+    prev_alphas_cumprod = 1.
+    alphas_cumprod = 1.
+    timestep_map = []
+    first = True
+    for t in range(T):
+        alphas_cumprod *= 1. - betas[t]
+        if t in use_timesteps:
+            if first:
+                alphas_cumprod = 1. - betas[t]
+                first = False
+
+            new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
+            new_betas.append(new_beta)
+            timestep_map.append(t)
+            prev_alphas_cumprod = alphas_cumprod
+
+    return np.asarray(new_betas, dtype=np.float64), np.asarray(timestep_map, dtype=int)
+
+
 def const_var(np_array):
     """
     Create constant nn.Variable from numpy array.
@@ -145,10 +195,27 @@ class GaussianDiffusion(object):
             Assume this is created by get_beta_schedule() defined above.
     """
 
-    def __init__(self,
-                 betas,
-                 model_var_type=ModelVarType.FIXED_SMALL):
-        self.model_var_type = model_var_type
+    def __init__(self, conf: DiffusionConfig):
+        self.model_var_type = ModelVarType.get_vartype_from_key(
+            conf.model_var_type)
+
+        # generate betas from strategy and max timesteps
+        betas = get_beta_schedule(conf.beta_strategy, conf.max_timesteps)
+
+        # setup respacing
+        self.timestep_map = None
+
+        if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
+            # create a list containing timesteps used in generation
+            use_timesteps = list(
+                range(0, conf.t_start, conf.respacing_step))  # sampling interval
+
+            if use_timesteps[-1] != conf.t_start:
+                # The last step (= most noisy data) should be included always.
+                use_timesteps.append(conf.t_start)
+
+            betas, timestep_map = respace_betas(betas, use_timesteps)
+            self.timestep_map = const_var(timestep_map)
 
         # check input betas
         assert (isinstance(betas, np.ndarray))
@@ -220,6 +287,15 @@ class GaussianDiffusion(object):
         out_shape = np.array(list(x_shape))
         out_shape[1:] = 1
         return F.reshape(out, out_shape)
+
+    def _rescale_timestep(self, t):
+        if self.timestep_map is None:
+            return t
+
+        assert isinstance(self.timestep_map, nn.Variable)
+
+        # revert t to the original timestep
+        return self._extract(self.timestep_map, t)
 
     @force_float
     def q_sample(self, x_start, t, noise=None):
@@ -305,6 +381,7 @@ class GaussianDiffusion(object):
         return posterior_mean, posterior_var, posterior_log_var_clipped
 
     def _vlb_in_bits_per_dims(self, model, x_start, x_t, t, *,
+                              model_kwargs=None,
                               clip_denoised=True, channel_last=False):
         """
         Calculate variational lower bound in bits/dims.
@@ -317,8 +394,10 @@ class GaussianDiffusion(object):
         mean, _, log_var_clipped = self.q_posterior(x_start, x_t, t)
 
         # pred parameters
-        preds = self.p_mean_var(
-            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
+        preds = self.p_mean_var(model, x_t, t,
+                                model_kwargs=model_kwargs,
+                                clip_denoised=clip_denoised,
+                                channel_last=channel_last)
 
         from nnabla.ext_utils import get_extension_context
         cur_ctx = nn.get_current_context()
@@ -344,7 +423,7 @@ class GaussianDiffusion(object):
         # Return nll at t = 0, otherwise KL(q(x_{t-1}|x_t,x_0)||p(x_{t-1}|x_t))
         return F.where(F.equal_scalar(t, 0), nll_bits, kl_bits)
 
-    def train_loss(self, model, x_start, t, *, noise=None, channel_last=False):
+    def train_loss(self, *, model, x_start, t, model_kwargs=None, noise=None, channel_last=False):
         """
         Calculate training loss for given data and model.
 
@@ -353,8 +432,9 @@ class GaussianDiffusion(object):
                 A trainable model to predict noise in data conditioned by timestep.
                 This function should perform like pred_noise = model(x_noisy, t).
                 If self.model_var_type is the one that requires prediction for sigma, model has to output them as well.
-            x_start (nn.Variable): The (B, C, ...) tensor of x_0.
+            x_start (nn.Variable): A (B, C, ...) tensor of x_0.
             t (nn.Variable): A 1-D tensor of timesteps.
+            model_kwargs (Dict): Additional model arguments. 
             noise (callable or None): A noise generator. If None, F.randn(shape=x_start.shape) will be used.
             channel_last (boolean): Whether channel axis is the last axis of an array or not.
 
@@ -371,6 +451,7 @@ class GaussianDiffusion(object):
                 Therefore, you should take average for returned Variable over batch dim to train the model.
         """
         B = x_start.shape[0]
+        c_axis = 3 if channel_last else 1
         assert t.shape == (B, )
 
         if noise is None:
@@ -384,12 +465,13 @@ class GaussianDiffusion(object):
         # Predict noise.
         # According to the original DDPM, this is superior than reconstructing x_0.
         # If model_var_type requires to learn sigma, model must output pred_sigma as well.
-        pred = model(x_noisy, t)
+        if model_kwargs is None:
+            model_kwargs = {}
+        pred = model(x_noisy, t, **model_kwargs)
 
         # Calculate losses
         ret = AttrDict()
 
-        c_axis = 3 if channel_last else 1
         if is_learn_sigma(self.model_var_type):
             assert pred.shape[c_axis] == x_start.shape[c_axis] * 2
 
@@ -402,9 +484,10 @@ class GaussianDiffusion(object):
             # Use dummy function as model, since we already got prediction from model.
             var = F.concatenate(pred_noise.get_unlinked_variable(
                 need_grad=False), pred_sigma, axis=3 if channel_last else 1)
-            ret.vlb = self._vlb_in_bits_per_dims(model=lambda x_t, t: var,
+            ret.vlb = self._vlb_in_bits_per_dims(model=lambda x_t, t, **kwargs: var,
                                                  x_start=x_start,
                                                  x_t=x_noisy,
+                                                 model_kwargs=model_kwargs,
                                                  t=t,
                                                  channel_last=channel_last)
         else:
@@ -423,7 +506,7 @@ class GaussianDiffusion(object):
 
         return ret
 
-    def p_mean_var(self, model, x_t, t, clip_denoised=True, channel_last=False):
+    def p_mean_var(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, channel_last=False):
         """
         Compute mean and var of p(x_{t-1}|x_t) from model.
 
@@ -444,11 +527,13 @@ class GaussianDiffusion(object):
         B, C, H, W = Shape4D(
             x_t.shape, channel_last=channel_last).get_as_tuple("bchw")
         assert t.shape == (B, )
-        pred = model(x_t, t)
+
+        if model_kwargs is None:
+            model_kwargs = {}
+
+        pred = model(x_t, t, **model_kwargs)
 
         if self.model_var_type == ModelVarType.LEARNED_RANGE:
-            assert pred.shape == (
-                B, H, W, 2 * C) if channel_last else (B, 2 * C, H, W)
             pred_noise, pred_var_coeff = chunk(
                 pred, num_chunk=2, axis=3 if channel_last else 1)
 
@@ -484,7 +569,7 @@ class GaussianDiffusion(object):
 
         model_mean, _, _ = self.q_posterior(x_start=x_recon, x_t=x_t, t=t)
 
-        assert model_mean.shape == x_recon.shape == x_t.shape
+        assert model_mean.shape == x_recon.shape
 
         assert model_mean.shape == model_var.shape == model_log_var.shape or \
             (model_mean.shape[0] == model_var.shape[0] == model_log_var.shape[0] and model_var.shape[1:] == (
@@ -504,6 +589,7 @@ class GaussianDiffusion(object):
                  x_t,
                  t,
                  *,
+                 model_kwargs=None,
                  clip_denoised=True,
                  noise_function=F.randn,
                  repeat_noise=False,
@@ -513,8 +599,12 @@ class GaussianDiffusion(object):
         Sample from the model for one step.
         Also return predicted x_start.
         """
-        preds = self.p_mean_var(model=model, x_t=x_t,
-                                t=t, clip_denoised=clip_denoised, channel_last=channel_last)
+        preds = self.p_mean_var(model=model,
+                                x_t=x_t,
+                                t=t,
+                                model_kwargs=model_kwargs,
+                                clip_denoised=clip_denoised,
+                                channel_last=channel_last)
 
         # no noise when t == 0
         if no_noise:
@@ -532,6 +622,7 @@ class GaussianDiffusion(object):
                     x_t,
                     t,
                     *,
+                    model_kwargs=None,
                     clip_denoised=True,
                     noise_function=F.randn,
                     repeat_noise=False,
@@ -543,8 +634,10 @@ class GaussianDiffusion(object):
         Also return predicted x_start.
         """
 
-        preds = self.p_mean_var(
-            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
+        preds = self.p_mean_var(model, x_t, t,
+                                model_kwargs=model_kwargs,
+                                clip_denoised=clip_denoised,
+                                channel_last=channel_last)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
 
@@ -570,13 +663,15 @@ class GaussianDiffusion(object):
             noise = noise_like(x_t.shape, noise_function, repeat_noise)
             return mean_pred + sigma * noise, preds.xstart
 
-    def ddim_rev_sample(self, model, x_t, t, clip_denoised=True, eta=0.0, channel_last=False):
+    def ddim_rev_sample(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, eta=0.0, channel_last=False):
         """
         sample x_{t+1} from x_{t} by the model using DDIM reverse ODE.
         """
         assert eta == 0.0, "ReverseODE only for deterministic path"
-        preds = self.p_mean_var(
-            model, x_t, t, clip_denoised=clip_denoised, channel_last=channel_last)
+        preds = self.p_mean_var(model, x_t, t,
+                                model_kwargs=model_kwargs,
+                                clip_denoised=clip_denoised,
+                                channel_last=channel_last)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
         alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
@@ -591,6 +686,7 @@ class GaussianDiffusion(object):
     def sample_loop(self, model, shape, sampler, *,
                     noise=None,
                     x_start=None,
+                    model_kwargs=None,
                     dump_interval=-1,
                     progress=False,
                     without_auto_forward=False):
@@ -626,6 +722,10 @@ class GaussianDiffusion(object):
             from tqdm.auto import tqdm
             indices = tqdm(indices)
 
+        # update model to enable respacing if needed
+        def timestep_rescaled_model(x, t, **kwargs):
+            return model(x, self._rescale_timestep(t), **kwargs)
+
         if without_auto_forward:
             if noise is None:
                 noise = np.random.randn(*shape)
@@ -638,20 +738,29 @@ class GaussianDiffusion(object):
                 x_t = self.q_sample(x_start,
                                     F.constant(T - 1, shape=(shape[0], )),
                                     noise=nn.Variable.from_numpy_array(noise))
+                x_t.forward(clear_buffer=True)
+                x_t = x_t.get_unlinked_variable(need_grad=False)
             else:
                 x_t = nn.Variable.from_numpy_array(noise)
 
             t = nn.Variable.from_numpy_array([T - 1 for _ in range(shape[0])])
 
             # build graph
-            y, pred_x_start = sampler(model, x_t, t)
+            y, pred_x_start = sampler(timestep_rescaled_model,
+                                      x_t,
+                                      t,
+                                      model_kwargs=model_kwargs)
             up_x_t = F.assign(x_t, y)
             up_t = F.assign(t, t - 1)
             update = F.sink(up_x_t, up_t)
 
+            # make y and pred_x_0 persistent for dumping
+            if dump_interval > 0:
+                y.persistent = True
+                pred_x_start.persistent = True
+
             cnt = 0
             for step in indices:
-                y.forward(clear_buffer=True)
                 update.forward(clear_buffer=True)
 
                 cnt += 1
@@ -659,6 +768,22 @@ class GaussianDiffusion(object):
                     samples.append((step, y.d.copy()))
                     pred_x_starts.append((step, pred_x_start.d.copy()))
         else:
+            # make sure input_cond is already computed
+            if model_kwargs is not None:
+                assert isinstance(
+                    model_kwargs, dict), f"model_kwargs must be dict but `{type(model_kwargs)}` is given"
+
+                for x in model_kwargs.values():
+                    if not isinstance(x, nn.Variable):
+                        continue
+
+                    if x.parent is None:
+                        continue
+
+                    # clear_buffer=True is maybe unsafe.
+                    x.apply(persistent=True)
+                    x.forward(clear_buffer=True)
+
             with nn.auto_forward():
                 if noise is None:
                     noise = np.random.randn(*shape)
@@ -676,8 +801,12 @@ class GaussianDiffusion(object):
                 cnt = 0
                 for step in indices:
                     t = F.constant(step, shape=(shape[0], ))
-                    x_t, pred_x_start = sampler(
-                        model, x_t, t, no_noise=step == 0)
+
+                    x_t, pred_x_start = sampler(timestep_rescaled_model,
+                                                x_t,
+                                                t,
+                                                model_kwargs=model_kwargs,
+                                                no_noise=step == 0)
 
                     cnt += 1
                     if dump_interval > 0 and cnt % dump_interval == 0:

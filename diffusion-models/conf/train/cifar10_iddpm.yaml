@@ -1,0 +1,27 @@
+defaults:
+  - /proto_configs/train@_here_
+
+## batch size
+# Assumes 8 GPU. 
+# According to the paper, total batch size should be 256.
+batch_size: 32
+accum: 1
+n_iters: 500000
+
+## dump
+# progress: False
+output_dir: ./logdir/cifar10_iddpm/
+# save_interval: 10000
+# show_interval: 10
+# gen_interval: 20000
+# dump_grad_norm: True
+
+## checkpointing
+# resume: False
+
+## loss
+lr: 1e-4
+# loss_scaling: 1.0
+# clip_grad: 1.0
+lr_scheduler: null
+

@@ -23,8 +23,11 @@ from nnabla import logger
 from nnabla.utils.data_iterator import data_iterator
 
 from neu.datasets import _get_sliced_data_source
+from neu.comm import CommunicatorWrapper
 
 from .common import SimpleDatasource
+
+from config import DatasetConfig
 
 # ImagenetDataIterator uses label_wordnetid.csv, label_words.csv, and validation_data_label.txt
 DEFAULT_RESOURCE_DIR = os.path.join(os.path.dirname(__file__),  # nnabla-examples/diffusion-models/dataset
@@ -39,16 +42,15 @@ def _info(msg):
     logger.info(f"{prefix} {msg}")
 
 
-def ImagenetDataIterator(batch_size, root_dir, *,
-                         image_size=(256, 256),
-                         fix_aspect_ratio=True,
-                         random_crop=False,
-                         comm=None, shuffle=True, rng=None, train=True, channel_last=False,
+def ImagenetDataIterator(conf: DatasetConfig,
+                         comm: CommunicatorWrapper = None,
+                         rng=None,
+                         train=True,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils
 
-    if not os.path.exists(root_dir):
-        raise ValueError(f"[ImagenetDataIterator] '{root_dir}' is not found. "
+    if not os.path.exists(conf.dataset_root_dir):
+        raise ValueError(f"[ImagenetDataIterator] '{conf.dataset_root_dir}' is not found. "
                          "Please make sure that you specify the correct directory path.")
 
     # extract label id
@@ -63,7 +65,7 @@ def ImagenetDataIterator(batch_size, root_dir, *,
     # get all files
     if train:
         # ilsvrcYYYY/train/{label id}/*.JPEG
-        root_dir = pathlib.Path(os.path.join(root_dir, "train"))
+        root_dir = pathlib.Path(os.path.join(conf.dataset_root_dir, "train"))
         _info(f"load train data and label from {root_dir}.")
 
         raw_paths = sorted(root_dir.rglob('*.JPEG'))
@@ -82,21 +84,21 @@ def ImagenetDataIterator(batch_size, root_dir, *,
 
     else:
         # ilsvrsYYYY/val/*.JPEG
-        root_dir = os.path.join(root_dir, "val")
+        root_dir = os.path.join(conf.dataset_root_dir, "val")
         _info(f"load validation data from {root_dir}.")
         raise NotImplementedError("val is not supported now.")
 
-    ds = SimpleDatasource(img_paths=paths, img_size=image_size, labels=labels,
-                          rng=rng, on_memory=False,
-                          fix_aspect_ratio=fix_aspect_ratio,
-                          random_crop=random_crop,
-                          channel_last=channel_last)
+    ds = SimpleDatasource(conf,
+                          img_paths=paths,
+                          labels=labels,
+                          rng=rng)
 
     _info(f"Loaded imagenet dataset. # of images: {ds.size}.")
 
-    ds = _get_sliced_data_source(ds, comm, shuffle)
+    ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, batch_size,
+    return data_iterator(ds,
+                         conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,
                          with_file_cache=False)

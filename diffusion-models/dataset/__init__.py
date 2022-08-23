@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from random import random
 from .cifar10 import Cifar10DataIterator
 from .imagenet import ImagenetDataIterator
 from .common import SimpleDataIterator
+
+from config import DatasetConfig
+from neu.comm import CommunicatorWrapper
 
 # avoid an error for loading trancated image with pillow
 try:
@@ -25,43 +27,17 @@ except:
     pass
 
 
-def get_dataset(args, comm):
-    assert hasattr(args, "dataset")
-    assert hasattr(args, "image_shape")
-    assert len(args.image_shape) == 4
-    assert hasattr(args, "data_dir")
-    assert hasattr(args, "channel_last")
-
-    # refine
-    if not hasattr(args, "fix_aspect_ratio"):
-        args.fix_aspect_ratio = True
-
-    if not hasattr(args, "random_crop"):
-        args.random_crop = False
-
-    if not hasattr(args, "shuffle_dataset"):
-        args.shuffle_dataset = True
-
-    if args.dataset == "cifar10":
-        data_iterator = Cifar10DataIterator(
-            args.batch_size, comm=comm, channel_last=args.channel_last)
-    elif args.dataset.startswith("imagenet"):
-        data_iterator = ImagenetDataIterator(args.batch_size,
-                                             args.dataset_root_dir,
-                                             image_size=args.image_shape[-2:],
-                                             fix_aspect_ratio=args.fix_aspect_ratio,
-                                             random_crop=args.random_crop,
+def get_dataset(conf: DatasetConfig, comm: CommunicatorWrapper):
+    if conf.name == "cifar10":
+        data_iterator = Cifar10DataIterator(conf,
+                                            comm=comm,
+                                            train=True)
+    elif conf.name == "imagenet":
+        data_iterator = ImagenetDataIterator(conf,
                                              comm=comm,
-                                             channel_last=args.channel_last,
-                                             shuffle=args.shuffle_dataset)
+                                             train=True)
     else:
-        data_iterator = SimpleDataIterator(args.batch_size,
-                                           args.dataset_root_dir,
-                                           image_size=args.image_shape[-2:],
-                                           comm=comm, on_memory=args.dataset_on_memory,
-                                           fix_aspect_ratio=args.fix_aspect_ratio,
-                                           random_crop=args.random_crop,
-                                           channel_last=args.channel_last,
-                                           shuffle=args.shuffle_dataset)
+        data_iterator = SimpleDataIterator(conf,
+                                           comm=comm)
 
     return data_iterator

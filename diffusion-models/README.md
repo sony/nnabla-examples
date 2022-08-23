@@ -33,44 +33,36 @@ Please munualy download them from the following list.
 
 | Model | Dataset | Resolution | download link | FID | Iterations |
 | :---: | :---: | :---: | :---: | :---: |  :---: |
-| Improved DDPM | Cifar10 | 32 x 32 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/cifar10_32/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/cifar10_32/params.h5)| 3.49 | 500K |
-| Improved DDPM | Imagenet | 64 x 64 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/params.h5) | 19.80 | 500K |
-| Improved DDPM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/params.h5) | 30.73 | 300K |
-| ADM | Imagenet | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/params.h5) | 43.80 | 300K |
-| ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/config.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
+| Improved DDPM | Cifar10 | 32 x 32 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_cifar10_32x32.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/cifar10_32/params.h5)| 3.49 | 500K |
+| Improved DDPM | Imagenet | 64 x 64 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_imagenet_64x64.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/params.h5) | 19.80 | 500K |
+| Improved DDPM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/params.h5) | 30.73 | 300K |
+| ADM | Imagenet | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_ADM_imagenet_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/params.h5) | 43.80 | 300K |
+| ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/config_ADM_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
 
 Note that the FID scores shown on the list are computed by 10K generated images against training data for all datasets except 50K generated images for cifar10.
 
 After downloading them, you can generate images as follows:
 ```bash
-python generate.py --config <your config file path> --param <your h5 file path>
+python generate.py generate.config=<your config file path> generate.h5=<your h5 file path>
 ```
 You can see generated results in `./outs` directory as default.
 Running inference with above pretrained models on a single nvidia A100 GPU takes about 1 min for cifar10, 3 min for Imagenet 64x64, and 30 min for CelebA-HQ, respectively. 
-You can also specify the sampling interval for generation by `--sampling-interval (or -s) x`. In this case, only T / x sampling steps are performed and inference time will be x times faster.
+You can also specify the sampling interval for generation by `generate.respacing_step={x}`. In this case, only T / x sampling steps are performed and inference time will be x times faster.
 
-We also support DDIM sampler that enabls deterministic sampling. If you would like to use it, try `--ddim` option.
+We also support DDIM sampler that enabls deterministic sampling. If you would like to use it, try `generate.ddim=True` option.
 For more details about DDIM, please see the [original paper](http://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf).
 
 ## Download data for training
 
 ### cifar-10
 The data iterator for Cifar-10 dataset will automatically download the dataset.
-All you have to do is specifying `cifar10` as dataset name like `python train.py --dataset cifar10`.
+All you have to do is specifying `cifar10` as dataset name like `python train.py dataset=cifar10`.
 
 ### imagenet
 To download the original ILSVRC2012 dataset, please follow [the instruction for the imagenet classification examples](https://github.com/sony/nnabla-examples/tree/master/image-classification/imagenet#preparing-imagenet-dataset).
 After downloading it, you will have `<your data dir>/ilsvrc2012/train` and `<your data dir>/ilsvrc2012/val`.
-You can train your model on imagenet with 256x256 resolution by specifying your dataset path as `python train.py --dataset imagenet_256 --data_dir <your data dir>`.
+You can train your model on imagenet with 256x256 resolution by specifying your dataset path as `python train.py dataset=imagenet dataset.data_dir=<your data dir>`.
 (You should specify the parent directory having `train` as sub-directory.)
-
-### imagenet-64
-For a resolution lower than 64x64, we use the imagenet dataset already downsampled.
-You can download 64x64 version of ILSVRC from the same imagenet download link (registration is required).
-
-After downloading it, we assume the dataset is saved as `<your data dir>/train_64x64` and `<your data dir>/val_64x64`.
-Then you can train your model on low-resolution imagenet by `python train.py --dataset imagenet64 --data_dir <your data dir>`.
-(You should specify the parent directory having `train_64x64` as sub-directory.)
 
 ### CelebA-HQ
 To download CelebA-HQ dataset, please follow [the official github](https://github.com/tkarras/progressive_growing_of_gans#preparing-datasets-for-training).
@@ -78,7 +70,7 @@ To download CelebA-HQ dataset, please follow [the official github](https://githu
 After creating dataset, you will have the directory named `<your data dir>/celeba-hq-{resolution}/images` which has all images as jpg format.
 Note that you should use the same resolution as or larger resolution than the one you would like to train (e.g. if you train your model with 256x256, you should use 256x256 or larger).
 
-Then, you can train your model on CelebA-HQ by `python train.py --dataset celebahq --data_dir <your data dir>/celeba-hq-{resolution}`.
+Then, you can train your model on CelebA-HQ by `python train.py dataset=celebahq dataset.data_dir <your data dir>/celeba-hq-{resolution}`.
 (You should specify the parent directory having `images` as sub-directory.)
 
 ## Training
@@ -88,7 +80,7 @@ See `scripts/` directory for more detail.
 Note that all scripts assume multi-GPU training with 4 GPU.
 If you would like to train your model with a single GPU, please remove `mpirun -N 4` from each script.
 
-As for the dataset path, `./data` is used as `--data_dir` as default.
+As for the dataset path, `./data` is used as `dataset.data_dir` as default.
 In other words, we assume `./data` is a symbolic link for the path we describe in `Download data for training` section above.
-If you have some errors related to dataset, please check your dataset path is correct.
+If you get some errors related to dataset, please check your dataset path is correct.
 

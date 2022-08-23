@@ -13,35 +13,59 @@
 # limitations under the License.
 
 
+import fnmatch
 import os
+import queue
 import sys
 
-import fnmatch
-
-import click
+import hydra
 import nnabla as nn
 import nnabla.solvers as S
-from nnabla.logger import logger
 import numpy as np
-
+from hydra.core.config_store import ConfigStore
 from neu.checkpoint_util import load_checkpoint, save_checkpoint
-from neu.misc import AttrDict, get_current_time, init_nnabla
-from neu.reporter import KVReporter, save_tiled_image
-from neu.yaml_wrapper import write_yaml
+from neu.misc import get_current_time, init_nnabla
 from neu.mixed_precision import MixedPrecisionManager
+from neu.reporter import KVReporter, save_tiled_image
+from nnabla.logger import logger
+from omegaconf import OmegaConf
 
+import config
 from dataset import get_dataset
+from diffusion import is_learn_sigma
+from layers import adaptive_pooling_2d
 from model import Model
-from utils import get_warmup_lr, sum_grad_norm, create_ema_op
-from config import refine_args_by_dataset
-from diffusion import ModelVarType, is_learn_sigma
+from utils import (create_ema_op, get_lr_scheduler, init_checkpoint_queue,
+                   sum_grad_norm)
+
+
+def refine_monitor_files(dir_path, start_iter):
+    for filename in os.listdir(dir_path):
+        if filename.endswith(("series.txt", "timer.txt")):
+            contents = []
+            with open(os.path.join(dir_path, filename), "r") as f:
+                for line in f.readlines():
+                    iter = line.strip().split(" ")[0]
+                    if int(iter) >= start_iter:
+                        break
+
+                    contents.append(line)
+
+            with open(os.path.join(dir_path, filename), "w") as f:
+                f.write("".join(contents))
 
 
 def setup_resume(output_dir, dataset, solvers, is_master=False):
     # return
     start_iter = 0
+    new_output_dir = output_dir
 
     parent = os.path.dirname(os.path.abspath(output_dir))
+
+    if not os.path.exists(parent):
+        # no previous checkpoint, train from scratch.
+        return start_iter, output_dir
+
     all_logs = sorted(fnmatch.filter(
         os.listdir(parent), "*{}*".format(dataset)))
     if len(all_logs):
@@ -62,12 +86,10 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
                     slv.zero_grad()
 
                 if is_master:
-                    # copy loaded checkpoint to the current output_dir so that the current output_dir has at least one checkpoint
-                    os.makedirs(output_dir, exist_ok=True)
+                    refine_monitor_files(latest_dir, start_iter)
+                    init_checkpoint_queue(latest_dir)
 
-                    import shutil
-                    shutil.copy(cp_path, output_dir)
-
+                new_output_dir = latest_dir
                 logger.info(f"Load checkpoint from {cp_path}")
 
                 break
@@ -77,129 +99,99 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
         else:
             logger.warning("No valid checkpoint. Train from scratch")
 
-    return start_iter
+    return start_iter, new_output_dir
 
 
 def get_output_dir_name(org, dataset):
     return os.path.join(org, f"{get_current_time()}_{dataset}")
 
 
-def str_as_integer_list(ctx, param, value):
-    if value is None or len(value) == 0 or value.lower() == "none":
-        return None
+def augmentation(x, channel_last, random_flip=True):
+    import nnabla.functions as F
+    aug = x
 
-    return tuple(int(x) for x in value.split(","))
+    if random_flip:
+        aug = F.random_flip(aug, axes=[2, ] if channel_last else None)
+
+    return aug
 
 
-@click.command()
-# configs for training process
-@click.option("--accum", default=1, help="# of gradient accumulation.", show_default=True)
-@click.option("--type-config", default="float", type=str, help="Type configuration.", show_default=True)
-@click.option("--device-id", default='0', help="Device id.", show_default=True)
-@click.option("--batch-size", default=4, help="Batch size to train.", show_default=True)
-@click.option("--n-iters", default=int(5e5), help="# of training iterations.", show_default=True)
-@click.option("--progress/--no-progress", default=False, help="Use tqdm to show progress.")
-@click.option("--resume/--no-resume", default=False, help="Resume training from the latest params saved at the same output_dir.")
-@click.option("--loss-scaling", default=1.0, type=float, help="Loss scaling factor.", show_default=True)
-@click.option("--lr", default=None, type=float, help="Learning rate.")
-# model configs
-@click.option("--beta-strategy", default="linear", help="Strategy to create betas.", show_default=True,
-              type=click.Choice(["linear", "cosine"], case_sensitive=False), show_choices=True)
-@click.option("--num-diffusion-timesteps", default=1000, help="Number of diffusion timesteps.", show_default=True)
-@click.option("--ssn/--no-ssn", default=True, type=bool, help="use scale shift norm or not.")
-@click.option("--resblock-resample/--no-resblock-resample", default=False, type=bool, help="Use resblock for down/up sampling.")
-@click.option("--num-attention-heads", default=4, type=int, help="Number of multihead attention heads", show_default=True)
-@click.option("--attention-resolutions", default="16,8", type=str, callback=str_as_integer_list,
-              help="Resolutions which attention is applied. Comma separated string should be passed. If None, use default for dataset.")
-@click.option("--num-attention-head-channels", default=None, type=int,
-              help="Number of channels of each attention head."
-                   "If specified, # of heads for each attention layer is automatically calculated and num-attention-heads will be ignored.", show_default=True)
-@click.option("--base-channels", default=None, type=int, help="Base channel size. If None, use default for dataset.")
-@click.option("--channel-mult", default=None, type=str, callback=str_as_integer_list,
-              help="Channel multipliers for each block. Comma separated string should be passed. If None, use default for dataset.")
-@click.option("--num-res-blocks", default=None, type=int, help="# of residual blocks. If None, use default for dataset.")
-@click.option("--dropout", default=0.0, type=float, help="Dropout prob.", show_default=True)
-@click.option("--model-var-type", type=click.Choice(ModelVarType.get_supported_keys(), case_sensitive=False),
-              default="fixed_small", help="A type of the model variance.", show_default=True, show_choices=True)
-@click.option("--channel-last/--no-channel-last", default=False, type=bool,
-              help="Use channel last layout.", show_default=True)
-# data related configs
-@click.option("--dataset", default="custum", help="Dataset name to train model on.",
-              type=click.Choice(["celebahq", "cifar10", "imagenet", "custom"], case_sensitive=False), show_choices=True)
-@click.option("--image-size", default=None,
-              type=int, help="Image size. Should be a integer and used for both height and width.")
-@click.option("--data-dir", default="./data", help="The path for data directory.", show_default=True)
-@click.option("--dataset-root-dir", default=None,
-              help="The path for dataset root directory.", show_default=True)
-@click.option("--dataset-on-memory/--no-dataset-on-memory", default=False,
-              help="If True, the data once loaded will be kept on Host memory.", show_default=True)
-@click.option("--fix-aspect-ratio/--no-fix-aspect-ratio", default=True,
-              help="Whether keep aspect ratio or not for loaded training images.", show_default=True)
-# configs for logging
-@click.option("--output-dir", default="./logdir", help="output dir", show_default=True)
-@click.option("--save-interval", default=int(1e4), help="Number of iters between saves.", show_default=True)
-@click.option("--gen-interval", default=int(1e4), help="Number of iters between each generation.", show_default=True)
-@click.option("--show-interval", default=10, help="Number of iters between showing current logging values.", show_default=True)
-@click.option("--dump-grad-norm/--no-dump-grap-norm",
-              default=False, help="Show sum of gradient norm of all params for each iteration.")
-def main(**kwargs):
-    # set training args
-    args = AttrDict(kwargs)
-    refine_args_by_dataset(args)
+# config
+cs = ConfigStore.instance()
+cs.store(name="base_config", node=config.TrainScriptConfig)
 
-    args.output_dir = get_output_dir_name(args.output_dir, args.dataset)
+config.register_configs()
 
-    comm = init_nnabla(ext_name="cudnn", device_id=args.device_id,
-                       type_config=args.type_config, random_pseed=True)
 
-    data_iterator = get_dataset(args, comm)
+def create_gen_config(conf: config.TrainScriptConfig,
+                      respacing_step: int) -> config.GenScriptConfig:
+    conf_gen: config.GenScriptConfig \
+         = OmegaConf.masked_copy(conf, ["diffusion", "model"])
 
-    model = Model(beta_strategy=args.beta_strategy,
-                  num_diffusion_timesteps=args.num_diffusion_timesteps,
-                  model_var_type=ModelVarType.get_vartype_from_key(
-                      args.model_var_type),
-                  attention_num_heads=args.num_attention_heads,
-                  attention_head_channels=args.num_attention_head_channels,
-                  attention_resolutions=args.attention_resolutions,
-                  scale_shift_norm=args.ssn,
-                  base_channels=args.base_channels,
-                  channel_mult=args.channel_mult,
-                  num_res_blocks=args.num_res_blocks,
-                  resblock_resample=args.resblock_resample,
-                  channel_last=args.channel_last)
+    # setup respacing
+    conf_gen.diffusion.respacing_step = respacing_step
 
-    use_timesteps = list(
-        range(0, args.num_diffusion_timesteps, 4))  # sampling interval
-    if use_timesteps[-1] != args.num_diffusion_timesteps - 1:
-        # The last step should be included always.
-        use_timesteps.append(args.num_diffusion_timesteps - 1)
+    # disable dropout
+    conf_gen.model.dropout = 0
 
-    gen_model = Model(beta_strategy=args.beta_strategy,
-                      use_timesteps=use_timesteps,
-                      model_var_type=model.model_var_type,
-                      num_diffusion_timesteps=args.num_diffusion_timesteps,
-                      attention_num_heads=args.num_attention_heads,
-                      attention_head_channels=args.num_attention_head_channels,
-                      attention_resolutions=args.attention_resolutions,
-                      scale_shift_norm=args.ssn,
-                      base_channels=args.base_channels,
-                      channel_mult=args.channel_mult,
-                      num_res_blocks=args.num_res_blocks,
-                      resblock_resample=args.resblock_resample,
-                      channel_last=args.channel_last)
+    OmegaConf.set_readonly(conf_gen, True)
+
+    return conf_gen
+
+
+@hydra.main(version_base=None, config_path="conf", config_name="config_train")
+def main(conf: config.TrainScriptConfig):
+    # setup output dir
+    conf.train.output_dir = get_output_dir_name(conf.train.output_dir,
+                                                conf.dataset.name)
+
+    # initialize nnabla runtime and get communicator
+    comm = init_nnabla(ext_name="cudnn",
+                       device_id=conf.runtime.device_id,
+                       type_config=conf.runtime.type_config,
+                       random_pseed=True)
+
+    # create data iterator
+    data_iterator = get_dataset(conf.dataset, comm)
 
     # build graph
-    x = nn.Variable(args.image_shape)  # assume data_iterator returns [0, 255]
+    model = Model(diffusion_conf=conf.diffusion,
+                  model_conf=conf.model)
+
+    # setup input image
+    # assume data_iterator returns [0, 255]
+    x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)
     x_rescaled = x / 127.5 - 1  # rescale to [-1, 1]
+    x_rescaled = augmentation(
+        x_rescaled, conf.model.channel_last, random_flip=True)
+
+    # create low-resolution image
+    model_kwargs = {}
+    if conf.model.low_res_size is not None:
+        assert len(conf.model.low_res_size) == 2
+        x_low_res = adaptive_pooling_2d(x_rescaled,
+                                        conf.model.low_res_size,
+                                        mode="average",
+                                        channel_last=conf.model.channel_last)
+
+        # create model_kwargs
+        model_kwargs["input_cond"] = x_low_res
+
+    if conf.model.class_cond:
+        model_kwargs["class_label"] = nn.Variable((conf.train.batch_size, ))
+        model_kwargs["class_cond_drop_rate"] = conf.model.class_cond_drop_rate
+
     loss_dict, t = model.build_train_graph(x_rescaled,
-                                           dropout=args.dropout,
-                                           loss_scaling=None if args.loss_scaling == 1.0 else args.loss_scaling)
-    assert loss_dict.batched_loss.shape == (args.batch_size, )
-    assert t.shape == (args.batch_size, )
+                                           loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling,
+                                           model_kwargs=model_kwargs)
+    assert loss_dict.batched_loss.shape == (conf.train.batch_size, )
+    assert t.shape == (conf.train.batch_size, )
 
     # optimizer
     solver = S.Adam()
     solver.set_parameters(nn.get_parameters())
+
+    lr_scheduler = get_lr_scheduler(conf.train)
 
     # for ema update
     # Note: this should be defined after solver.set_parameters() to avoid update by solver.
@@ -217,140 +209,217 @@ def main(**kwargs):
     }
 
     start_iter = 0  # exclusive
-    if args.resume:
-        start_iter = setup_resume(
-            args.output_dir, args.dataset, solvers, is_master=comm.rank == 0)
+    if conf.train.resume:
+        # when resume, use the previous output_dir having the last checkpoint.
+        start_iter, output_dir = setup_resume(conf.train.output_dir,
+                                              conf.dataset.name,
+                                              solvers, is_master=comm.rank == 0)
+        conf.train.output_dir = output_dir
 
-    image_dir = os.path.join(args.output_dir, "image")
+    image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:
         os.makedirs(image_dir, exist_ok=True)
 
     comm.barrier()
 
     # Reporter
-    reporter = KVReporter(comm, save_path=args.output_dir,
+    reporter = KVReporter(comm, save_path=conf.train.output_dir,
                           skip_kv_to_monitor=False)
     # set all keys before to prevent synchronization error
     for i in range(4):
         reporter.set_key(f"loss_q{i}")
-        if is_learn_sigma(model.model_var_type):
+        if is_learn_sigma(conf.model.model_var_type):
             reporter.set_key(f"vlb_q{i}")
 
-    if args.progress:
+    if conf.train.progress:
         from tqdm import trange
-        piter = trange(start_iter + 1, args.n_iters + 1,
+        piter = trange(start_iter + 1, conf.train.n_iters + 1,
                        disable=comm.rank > 0, ncols=0)
     else:
-        piter = range(start_iter + 1, args.n_iters + 1)
+        piter = range(start_iter + 1, conf.train.n_iters + 1)
+
+    # freeze config to disable setting or updating values in conf.
+    OmegaConf.resolve(conf)
+    OmegaConf.set_readonly(conf, True)
+
+    # setup model for generation
+    conf_gen = create_gen_config(conf, respacing_step=4)
+    gen_model = Model(diffusion_conf=conf_gen.diffusion,
+                      model_conf=conf_gen.model)
 
     # dump config
     if comm.rank == 0:
-        args.dump()
-        write_yaml(os.path.join(args.output_dir, "config.yaml"), args)
+        # show configs in stdout
+        logger.info("===== configs =====")
+        print(OmegaConf.to_yaml(conf))
+
+        # save configs
+        OmegaConf.save(conf, os.path.join(
+            conf.train.output_dir, "config_train.yaml"))
+        OmegaConf.save(conf_gen, os.path.join(
+            conf.train.output_dir, "config_gen.yaml"))
 
     comm.barrier()
 
     mpm = MixedPrecisionManager(
-        use_fp16=args.type_config == "half", initial_log_loss_scale=15)
+        use_fp16=conf.runtime.type_config == "half",
+        initial_log_loss_scale=10)
+
+    # Queue to keep data instances for input_cond during sampling
+    num_gen = 16
+    data_queue = queue.Queue(maxsize=num_gen)
 
     for i in piter:
-        # update solver's lr
-        # cur_lr = get_warmup_lr(lr, args.n_warmup, i)
-        solver.set_learning_rate(args.lr)
+        # update learning rate
+        if lr_scheduler is not None:
+            cur_lr = lr_scheduler._get_lr(i, None)
+        else:
+            cur_lr = conf.train.lr
+
+        # rescale lr to cancel backward accumulation
+        solver.set_learning_rate(cur_lr / conf.train.accum)
 
         # evaluate graph
         dummy_solver_ema.zero_grad()  # just in case
         solver.zero_grad()
 
         retry_cnt = 0
-
-        for accum_iter in range(args.accum):  # accumelate
+        accum_cnt = 0
+        while accum_cnt < conf.train.accum:
             data, label = data_iterator.next()
-            x.d = data.copy()
+            x.d = data
+
+            if conf.model.class_cond:
+                model_kwargs["class_label"].d = label
+
+            # keep data for input_condition in generation step
+            for data_instance in data:
+                if data_queue.full():
+                    break
+                data_queue.put(data_instance)
 
             loss_dict.loss.forward(clear_no_need_grad=True)
-
-            all_reduce_cb = None
-            # if accum_iter == args.accum - 1:
-            #     all_reduce_cb = comm.get_all_reduce_callback(
-            #         params=solver.get_parameters().values())
-
             is_overflow = mpm.backward(loss_dict.loss, solver,
-                                       clear_buffer=True, communicator_callbacks=all_reduce_cb)
+                                       clear_buffer=True)
 
+            # Retry from the first accumulation step if overflow happens.
             if is_overflow:
                 retry_cnt += 1
-                if retry_cnt == 20:
+
+                # Raise if retry happens too many times.
+                if retry_cnt == 100:
                     raise ValueError("Overflow happens too many times.")
 
-                accum_iter = 0
+                # mpm.backward resets grad of all params to zero in this case.
+                accum_cnt = 0
                 continue
 
-            if accum_iter == args.accum - 1:
-                comm.all_reduce(
-                    [x.grad for x in nn.get_parameters().values()], division=True, inplace=False)
+            # fwd/bwd successes. Count up accum_cnt.
+            accum_cnt += 1
 
+            # reporting
             reporter.kv_mean("loss", loss_dict.loss)
 
-            if is_learn_sigma(model.model_var_type):
+            if is_learn_sigma(conf.model.model_var_type):
                 reporter.kv_mean("vlb", loss_dict.vlb)
 
             # loss for each quantile
-            for j in range(args.batch_size):
+            for j in range(conf.train.batch_size):
                 ti = t.d[j]
-                q_level = int(ti) * 4 // args.num_diffusion_timesteps
+                q_level = int(ti) * 4 // conf.diffusion.max_timesteps
                 assert q_level in (
                     0, 1, 2, 3), f"q_level should be one of [0, 1, 2, 3], but {q_level} is given."
                 reporter.kv_mean(f"loss_q{q_level}", float(
                     loss_dict.batched_loss.d[j]))
 
-                if is_learn_sigma(model.model_var_type):
+                if is_learn_sigma(conf.model.model_var_type):
                     reporter.kv_mean(f"vlb_q{q_level}", loss_dict.vlb.d[j])
 
+        # gradient accumulation
+        assert accum_cnt == conf.train.accum
+
         # update
-        is_overflow = mpm.update(solver, clip_grad=args.clip_grad)
+        is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
+
+        # check all processes not to have overflow.
+        overflow_cnt = nn.NdArray.from_numpy_array(
+            np.array([int(is_overflow)]))
+        comm.all_reduce([overflow_cnt], division=False, inplace=True)
+
+        if overflow_cnt.data > 0.5:
+            # If even a single process has overflow, stop update and retry fwd/bwd again.
+
+            # Basically overflow_cnt should be 0 or comm.n_procs
+            # since allreduce over grads of all parmas has been performed above.
+            assert comm.n_procs - int(overflow_cnt.data) < 1e-5, \
+                "Some but not all nodes successfully update params without overflow. This is unintentional."
+
+            continue
 
         # update ema params
-        if is_overflow:
-            i -= 1
-            continue
-        else:
-            ema_op.forward(clear_no_need_grad=True)
+        ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
-        if args.dump_grad_norm:
+        if conf.train.dump_grad_norm:
             gnorm = sum_grad_norm(solver.get_parameters().values())
             reporter.kv_mean("grad", gnorm)
 
         # samples
-        reporter.kv("samples", i * args.batch_size * comm.n_procs * args.accum)
+        reporter.kv("samples", i * conf.train.batch_size *
+                    comm.n_procs * conf.train.accum)
 
         # iteration (only for no-progress)
-        if not args.progress:
+        if not conf.train.progress:
             reporter.kv("iteration", i)
 
-        if i % args.show_interval == 0:
-            if args.progress:
+        if i % conf.train.show_interval == 0:
+            if conf.train.progress:
                 desc = reporter.desc(
-                    reset=True, sync=True if args.type_config == "float" else False)
+                    reset=True, sync=True if conf.runtime.type_config == "float" else False)
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True if args.type_config == "float" else False)
+                              0 else None, reset=True, sync=True if conf.runtime.type_config == "float" else False)
 
             reporter.flush_monitor(i)
 
-        if i > 0 and i % args.save_interval == 0:
+        if i % conf.train.save_interval == 0:
             if comm.rank == 0:
-                save_checkpoint(args.output_dir, i, solvers, n_keeps=3)
+                save_checkpoint(conf.train.output_dir, i, solvers, n_keeps=3)
 
             comm.barrier()
 
-        if i > 0 and args.gen_interval > 0 and i % args.gen_interval == 0:
+        if conf.train.gen_interval > 0 and i % conf.train.gen_interval == 0:
             # sampling
-            sample_out, _, _ = gen_model.sample(shape=(16, ) + x.shape[1:],
+            gen_model_kwargs = {}
+            if conf.model.low_res_size is not None:
+                # create lowres input from training dataset
+                assert data_queue.qsize() == num_gen, \
+                     f"queue size is smaller than expected. ({data_queue.qsize()} < {num_gen})"
+                data_list = []
+                for _ in range(num_gen):
+                    data_list.append(data_queue.get())
+
+                input_cond = nn.Variable.from_numpy_array(
+                    np.stack(data_list) / 127.5 - 1)
+
+                input_cond_lowres = adaptive_pooling_2d(input_cond, conf.model.low_res_size,
+                                                        mode="average",
+                                                        channel_last=conf.model.channel_last)
+                input_cond_lowres.forward(clear_buffer=True)
+
+                gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(
+                    need_grad=False)
+
+            if conf.model.class_cond:
+                gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
+                                                                                                 size=(num_gen, )))
+                gen_model_kwargs["class_cond_drop_rate"] = 0
+
+            sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
+                                                model_kwargs=gen_model_kwargs,
                                                 use_ema=True, progress=False)
-            assert sample_out.shape == (16, ) + args.image_shape[1:]
+            assert sample_out.shape == (num_gen, ) + x.shape[1:]
 
             # scale back to [0, 255]
             sample_out = (sample_out + 1) * 127.5
@@ -358,7 +427,7 @@ def main(**kwargs):
             save_path = os.path.join(image_dir, f"gen_{i}_{comm.rank}.png")
 
             save_tiled_image(sample_out.astype(np.uint8),
-                             save_path, channel_last=args.channel_last)
+                             save_path, channel_last=conf.model.channel_last)
 
 
 if __name__ == "__main__":

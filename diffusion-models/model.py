@@ -12,182 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
 import nnabla as nn
 import nnabla.functions as F
-from functools import partial
 
-from diffusion import ModelVarType, is_learn_sigma, get_beta_schedule, const_var, GaussianDiffusion
+from diffusion import is_learn_sigma, GaussianDiffusion
 from unet import UNet
-from utils import Shape4D
+from config import DiffusionConfig, ModelConfig
 
 from neu.misc import AttrDict
 
 
-def respace_betas(betas, use_timesteps):
-    """
-    Given betas and use_timestpes, returns respaced betas.
-
-    Args:
-        betas (np.array): A T elements of array containing beta_t at index t.
-        use_timesteps (tuple):
-            A tuple indicates which timesteps are used for generation process.
-            For example, if use_timestpes = (0, 100, 300, 500, 700, 900, 1000), only ts included in use_timestpes will be used.
-
-    Returns:
-        new_betas (np.array): A respaced betas.
-        timestep_map (np.array): 
-            A list indicating how to map a new index to original index.
-            It will be the same as use_timesteps sorted in increasing order.
-    """
-
-    if isinstance(use_timesteps, list):
-        use_timesteps = tuple(use_timesteps)
-
-    assert isinstance(use_timesteps, tuple)
-
-    T = len(betas)
-
-    new_betas = []
-    prev_alphas_cumprod = 1.
-    alphas_cumprod = 1.
-    timestep_map = []
-    first = True
-    for t in range(T):
-        alphas_cumprod *= 1. - betas[t]
-        if t in use_timesteps:
-            if first:
-                alphas_cumprod = 1. - betas[t]
-                first = False
-
-            new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
-            new_betas.append(new_beta)
-            timestep_map.append(t)
-            prev_alphas_cumprod = alphas_cumprod
-
-    return np.asarray(new_betas, dtype=np.float64), np.asarray(timestep_map, dtype=int)
-
-
 class Model(object):
     def __init__(self,
-                 beta_strategy,
-                 num_diffusion_timesteps,
-                 *,
-                 use_timesteps=None,
-                 num_classes=1,
-                 model_var_type: ModelVarType = ModelVarType.FIXED_SMALL,
-                 randflip=True,
-                 attention_num_heads=1,
-                 attention_head_channels=None,
-                 attention_resolutions=(16, 8),
-                 base_channels=None,
-                 channel_mult=None,
-                 num_res_blocks=None,
-                 scale_shift_norm=True,
-                 resblock_resample=False,
-                 channel_last=False):
+                 diffusion_conf: DiffusionConfig,
+                 model_conf: ModelConfig):
+        self.diffusion = GaussianDiffusion(diffusion_conf)
 
-        betas = get_beta_schedule(
-            beta_strategy, num_timesteps=num_diffusion_timesteps)
-        self.original_timesteps = len(betas)
-        self.timestep_map = None
+        # todo: need refactor so as to instantiate model here.
+        self.model_conf = model_conf
 
-        if use_timesteps is not None:
-            betas, timestep_map = respace_betas(betas, use_timesteps)
-            self.timestep_map = const_var(timestep_map)
-
-        self.model_var_type = model_var_type
-        self.diffusion: GaussianDiffusion = GaussianDiffusion(betas=betas,
-                                                              model_var_type=model_var_type)
-        self.num_classes = num_classes
-        self.randflip = randflip
-        self.attention_num_heads = attention_num_heads
-        self.attention_head_channels = attention_head_channels
-        self.attention_resolutions = attention_resolutions
-        self.base_channels = base_channels
-        self.channel_mult = channel_mult
-        self.num_res_blocks = num_res_blocks
-        self.scale_shift_norm = scale_shift_norm
-        self.resblock_resample = resblock_resample
-        self.channel_last = channel_last
-
-    def _define_model(self, input_shape, dropout):
-        assert isinstance(input_shape, (tuple, list))
-        assert len(input_shape) == 4
-
-        B, C, H, W = Shape4D(
-            input_shape, channel_last=self.channel_last).get_as_tuple("bchw")
-
-        output_channels = C
-        if is_learn_sigma(self.model_var_type):
-            output_channels *= 2
-
-        unet = UNet(num_classes=self.num_classes,
-                    model_channels=self.base_channels,
-                    output_channels=output_channels,
-                    num_res_blocks=self.num_res_blocks,
-                    attention_resolutions=self.attention_resolutions,
-                    attention_head_channels=self.attention_head_channels,
-                    attention_num_heads=self.attention_num_heads,
-                    channel_mult=self.channel_mult,
-                    dropout=dropout,
-                    scale_shift_norm=self.scale_shift_norm,
-                    conv_resample=True,
-                    resblock_resample=self.resblock_resample,
-                    channel_last=self.channel_last)
-
+    def _define_model(self):
+        unet = UNet(self.model_conf)
         return unet
 
-    def rescale_timestep(self, t):
-        if self.timestep_map is None:
-            return t
-
-        assert isinstance(self.timestep_map, nn.Variable)
-
-        # revert t to the original timestep
-        return self.diffusion._extract(self.timestep_map, t)
-
-    def _denoise(self, x, t, dropout):
-        assert x.shape[0] == t.shape[0]
-
-        unet = self._define_model(x.shape, dropout)
-
-        out = unet(x, self.rescale_timestep(t))
-
-        if is_learn_sigma(self.model_var_type):
-            B, C, H, W = Shape4D(
-                x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
-            assert out.shape == (
-                B, H, W, 2 * C) if self.channel_last else (B, 2 * C, H, W)
-        else:
-            assert out.shape == x.shape
-        return out
-
-    def get_denoise_net_intermediates(self, x, t, dropout):
-        assert x.shape[0] == t.shape[0]
-
-        unet = self._define_model(x.shape, dropout)
-
-        return unet.get_intermediates(x, self.rescale_timestep(t))
-
-    def build_denoise_graph(self, shape):
-        """just create parameters for inference."""
-        B, _, _, _ = shape
-        x_dummy = nn.Variable(shape)
-        t_dummy = nn.Variable((B, ))
-
-        out = self._denoise(x_dummy, t_dummy, dropout=0)
-
-        return out
-
-    def build_train_graph(self, x, t=None, dropout=0, noise=None, loss_scaling=None):
-        B, C, H, W = Shape4D(
-            x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
-        if self.randflip:
-            x = F.random_flip(x, axes=[2, ] if self.channel_last else None)
-            assert Shape4D((B, C, H, W)) == Shape4D(
-                x.shape, channel_last=self.channel_last)
+    def build_train_graph(self,
+                          x,
+                          t=None,
+                          noise=None,
+                          loss_scaling=None,
+                          model_kwargs=None):
+        # get input shape before condition
+        B = x.shape[0]
 
         if t is None:
             t = F.randint(
@@ -195,13 +50,17 @@ class Model(object):
             # F.randint could return high with very low prob. Workaround to avoid this.
             t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
 
-        loss_dict = self.diffusion.train_loss(model=partial(self._denoise, dropout=dropout),
-                                              x_start=x, t=t, noise=noise, channel_last=self.channel_last)
+        loss_dict = self.diffusion.train_loss(model=self._define_model(),
+                                              x_start=x,
+                                              t=t,
+                                              model_kwargs=model_kwargs,
+                                              noise=noise,
+                                              channel_last=self.model_conf.channel_last)
         assert isinstance(loss_dict, AttrDict)
 
         # setup training loss
         loss_dict.batched_loss = loss_dict.mse
-        if is_learn_sigma(self.model_var_type):
+        if is_learn_sigma(self.model_conf.model_var_type):
             assert "vlb" in loss_dict
             loss_dict.batched_loss += loss_dict.vlb * 1e-3
             # todo: implement loss aware sampler
@@ -220,14 +79,25 @@ class Model(object):
 
         return loss_dict, t
 
-    def sample(self, shape, dump_interval=-1, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
+    def sample(self,
+               shape,
+               *,
+               noise=None,
+               x_start=None,
+               model_kwargs=None,
+               use_ema=True,
+               dump_interval=-1,
+               progress=False,
+               use_ddim=False):
+
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,
-                                   dump_interval=dump_interval,
                                    noise=noise,
                                    x_start=x_start,
+                                   model_kwargs=model_kwargs,
                                    use_ema=False,
+                                   dump_interval=dump_interval,
                                    progress=progress,
                                    use_ddim=use_ddim)
 
@@ -235,20 +105,22 @@ class Model(object):
 
         with nn.no_grad():
             return loop_func(
-                model=partial(self._denoise, dropout=0),
-                channel_last=self.channel_last,
+                model=self._define_model(),
+                channel_last=self.model_conf.channel_last,
                 shape=shape,
                 noise=noise,
                 x_start=x_start,
+                model_kwargs=model_kwargs,
                 dump_interval=dump_interval,
                 progress=progress
             )
 
-    def sample_trajectory(self, shape, noise=None, x_start=None, use_ema=True, progress=False, use_ddim=False):
+    def sample_trajectory(self, shape, noise=None, x_start=None, model_kwargs=None, use_ema=True, progress=False, use_ddim=False):
         return self.sample(shape,
                            dump_interval=100,
                            noise=noise,
                            x_start=x_start,
+                           model_kwargs=model_kwargs,
                            use_ema=use_ema,
                            progress=progress,
                            use_ddim=use_ddim)

@@ -1,0 +1,21 @@
+defaults:
+  - adm_256
+  - _self_
+
+class_cond: True
+class_cond_drop_rate: 0.1
+
+# input
+low_res_size:
+  - 64 # height
+  - 64 # width
+
+# model arch.
+base_channels: 192
+
+# attention
+num_attention_heads: 4
+num_attention_head_channels: null
+
+# output
+model_var_type: learned_range

@@ -1,0 +1,30 @@
+defaults:
+  - /proto_configs/train@_here_
+  - _self_
+
+
+## batch size
+# Assumes 8 GPU. 
+# According to the paper, total batch size should be 2048.
+# For faster training, we use 256 batch size in total.
+batch_size: 16
+accum: 2
+n_iters: 540000
+
+## dump
+# progress: False
+output_dir: ./logdir/imagenet_64_adm
+# save_interval: 10000
+# show_interval: 10
+# gen_interval: 20000
+# dump_grad_norm: True
+
+## checkpointing
+# resume: False
+
+## loss
+lr: 3.75e-5 # 3e-4 for bs=2048
+# loss_scaling: 1.0
+# clip_grad: 1.0
+lr_scheduler: null
+

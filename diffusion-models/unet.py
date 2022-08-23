@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import math
+from config import ModelConfig
 import numpy as np
 import click
 
 import nnabla as nn
 import nnabla.functions as F
+import nnabla.parametric_functions as PF
+import nnabla.initializer as I
+from nnabla.logger import logger
 
 from layers import *
 from utils import Shape4D
@@ -75,12 +79,10 @@ class ResidualBlock(object):
 
     def shortcut(self, x):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
-        if self.out_channels == x_shape.c:
-            return x
-        elif self.conv_shortcut:
-            return conv(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
-        else:
+        if self.conv_shortcut or self.out_channels != x_shape.c:
             return nin(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
+
+        return x
 
     def __call__(self, x, temb, name):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
@@ -165,7 +167,7 @@ def attn_block(x, name, *, num_heads=4, num_head_channels=None, channel_last=Fal
 
         num_heads = C // num_head_channels
 
-    assert C % num_heads == 0, \
+    assert num_heads is not None and C % num_heads == 0, \
         f"input channels (= {C}) is not divisible by num_heads (= {num_heads})"
 
     num_head_channels = x_shape.c // num_heads
@@ -210,247 +212,234 @@ def attn_block(x, name, *, num_heads=4, num_head_channels=None, channel_last=Fal
 
 
 class UNet(object):
-    def __init__(self,
-                 num_classes,
-                 model_channels,
-                 output_channels,
-                 num_res_blocks,
-                 attention_num_heads,
-                 attention_head_channels,
-                 attention_resolutions,
-                 channel_mult=(1, 2, 4, 8),
-                 dropout=0.,
-                 scale_shift_norm=False,
-                 conv_resample=True,
-                 resblock_resample=False,
-                 channel_last=False):
-        self.num_classes = num_classes
-        self.model_channels = model_channels
-        self.output_channels = output_channels
-        self.num_res_blocks = num_res_blocks
-        self.attention_num_heads = attention_num_heads
-        self.attention_head_channels = attention_head_channels
-        self.attention_resolutions = attention_resolutions
-        self.channel_mult = channel_mult
-        self.dropout = dropout
-        self.scale_shift_norm = scale_shift_norm
-        self.conv_resample = conv_resample
-        self.resblock_resample = resblock_resample
-        self.channel_last = channel_last
+    def __init__(self, conf: ModelConfig):
+        # check args
+        assert hasattr(conf.channel_mult, "__iter__"), \
+            f"channel_mult must be an iterable object, but '{type(conf.channel_mult)}' is given."
+
+        # (2022/07/14) omegaconf doesn't support Union for typing. Thus, cannot overwrite conf.num_res_blocks.
+        if isinstance(conf.num_res_blocks, int):
+            self.num_res_blocks = [
+                conf.num_res_blocks for _ in range(len(conf.channel_mult))]
+        else:
+            assert isinstance(conf.num_res_blocks, "__iter__") \
+                   and len(conf.num_res_blocks) == len(conf.channel_mult), \
+                    f"length of num_res_blocks and channel_mult must be the same (num_res_block: {conf.num_res_blocks}, channel_mult: {conf.channel_mult})"
+            self.num_res_blocks = conf.num_res_blocks
+
+        self.conf: ModelConfig = conf
+        self.emb_dims = 4 * self.conf.base_channels
+
+    def concat_input_cond(self, x, input_cond):
+        if input_cond is None:
+            return x
+
+        assert isinstance(input_cond, (nn.Variable, nn.NdArray)
+                          ), "input_cond must be nn.Variable or nn,NdArray."
+        assert x.shape[0] == input_cond.shape[0], "batch size must be the same between x and input_cond"
+
+        return F.concatenate(x,
+                             interp_like(input_cond, x,
+                                         channel_last=self.conf.channel_last),
+                             axis=3 if self.conf.channel_last else 1)
 
     def timestep_embedding(self, t):
         with nn.parameter_scope('timestep_embedding'):
             # sinusoidal embedding
-            emb = sinusoidal_embedding(t, self.model_channels)
+            emb = sinusoidal_embedding(t, self.conf.base_channels)
 
             # reshape to use conv rather than affine
-            if self.channel_last:
+            if self.conf.channel_last:
                 emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
             else:
                 emb = F.reshape(emb, emb.shape + (1, 1))
 
             # linear transforms
-            emb = nin(emb, self.model_channels * 4, name='dense0',
-                      channel_last=self.channel_last)
+            emb = nin(emb, self.emb_dims, name='dense0',
+                      channel_last=self.conf.channel_last)
             emb = nonlinearity(emb)
 
-            emb = nin(emb, self.model_channels * 4, name='dense1',
-                      channel_last=self.channel_last)
+            emb = nin(emb, self.emb_dims, name='dense1',
+                      channel_last=self.conf.channel_last)
+
+        return emb
+
+    def class_embedding(self, class_label, class_cond_drop_rate):
+        assert len(
+            class_label.shape) == 1, f"Invalid shape for class_label: {class_label.shape}."
+        assert 0 <= class_cond_drop_rate <= 1, "class_cond_drop_rate must be in the range of [0, 1]."
+
+        with nn.parameter_scope("class_embedding"):
+            emb = PF.embed(inp=class_label,
+                           n_inputs=self.conf.num_classes,
+                           n_features=self.emb_dims,
+                           initializer=I.NormalInitializer())  # align init with pytorch
+
+            # dropout for unconditional generation
+            if class_cond_drop_rate > 0:
+                mask = F.rand_binomial(p=1-class_cond_drop_rate,
+                                       shape=class_label.shape + (1, ))
+                emb = emb * mask
+
+            # reshape to use conv rather than affine
+            if self.conf.channel_last:
+                emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
+            else:
+                emb = F.reshape(emb, emb.shape + (1, 1))
+
+            # post process
+            if self.conf.class_cond_emb_type == "simple":
+                pass
+            elif self.conf.class_cond_emb_type == "MLP":
+                # linear transforms
+                emb = nin(emb, self.emb_dims, name='dense0',
+                          channel_last=self.conf.channel_last)
+                emb = nonlinearity(emb)
+
+                emb = nin(emb, self.emb_dims, name='dense1',
+                          channel_last=self.conf.channel_last)
 
         return emb
 
     def resblock_with_attention(self, h, emb, out_channels, name):
         with nn.parameter_scope(name):
             block = ResidualBlock(out_channels,
-                                  scale_shift_norm=self.scale_shift_norm,
-                                  dropout=self.dropout,
-                                  channel_last=self.channel_last)
+                                  scale_shift_norm=self.conf.scale_shift_norm,
+                                  dropout=self.conf.dropout,
+                                  channel_last=self.conf.channel_last)
 
             h = block(h, emb, "res_block")
 
-            res = h.shape[-1]
-            if self.attention_resolutions is not None and res in self.attention_resolutions:
+            res = Shape4D(
+                h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            if self.conf.attention_resolutions is not None \
+                    and res in self.conf.attention_resolutions:
                 h = attn_block(h, "attention",
-                               num_heads=self.attention_num_heads,
-                               num_head_channels=self.attention_head_channels,
-                               channel_last=self.channel_last)
+                               num_heads=self.conf.num_attention_heads,
+                               num_head_channels=self.conf.num_attention_head_channels,
+                               channel_last=self.conf.channel_last)
 
         return h
 
-    def downsample_blocks(self, h, emb, out_channels, level, down):
+    def downsample_blocks(self, h, emb, out_channels, level, down, num_res_block):
         hs = []
         with nn.parameter_scope(f"block_{level}"):
-            for i in range(self.num_res_blocks):
+            for i in range(num_res_block):
                 h = self.resblock_with_attention(
                     h, emb, out_channels, name=f"resblock_{i}")
                 hs.append(h)
 
         if down:
-            if self.resblock_resample:
-                h = ResidualBlockDown(out_channels=out_channels,
-                                      scale_shift_norm=self.scale_shift_norm,
-                                      dropout=self.dropout,
-                                      channel_last=self.channel_last)(h, emb, name=f"downsample_{level}")
+            if self.conf.resblock_resample:
+                resblock_down = ResidualBlockDown(out_channels=out_channels,
+                                                  scale_shift_norm=self.conf.scale_shift_norm,
+                                                  dropout=self.conf.dropout,
+                                                  channel_last=self.conf.channel_last)
+                h = resblock_down(h, emb, name=f"downsample_{level}")
             else:
                 h = downsample(h,
                                name=f"downsample_{level}",
-                               with_conv=self.conv_resample,
-                               channel_last=self.channel_last)
+                               with_conv=self.conf.conv_resample,
+                               channel_last=self.conf.channel_last)
 
             hs.append(h)
 
         return hs
 
-    def upsample_blocks(self, h, emb, hs_down, out_channels, level, up):
-        hs_up = []
+    def upsample_blocks(self, h, emb, hs_down, out_channels, level, up, num_res_block):
         with nn.parameter_scope(f"output_{level}"):
-            for i in range(self.num_res_blocks + 1):
+            for i in range(num_res_block + 1):
                 # concat skip
-                h = F.concatenate(h, hs_down.pop(),
-                                  axis=3 if self.channel_last else 1)
+                skip = hs_down.pop()
+                h = F.concatenate(h, skip,
+                                  axis=3 if self.conf.channel_last else 1)
                 h = self.resblock_with_attention(
                     h, emb, out_channels, name=f"resblock_{i}")
-                hs_up.append(h)
 
         if up:
-            if self.resblock_resample:
-                h = ResidualBlockUp(out_channels=out_channels,
-                                    scale_shift_norm=self.scale_shift_norm,
-                                    dropout=self.dropout,
-                                    channel_last=self.channel_last)(h, emb, name=f"upsample_{level}")
+            if self.conf.resblock_resample:
+                resblock_up = ResidualBlockUp(out_channels=out_channels,
+                                              scale_shift_norm=self.conf.scale_shift_norm,
+                                              dropout=self.conf.dropout,
+                                              channel_last=self.conf.channel_last)
+                h = resblock_up(h, emb, name=f"upsample_{level}")
             else:
                 h = upsample(h,
                              name=f"upsample_{level}",
-                             with_conv=self.conv_resample,
-                             channel_last=self.channel_last)
+                             with_conv=self.conf.conv_resample,
+                             channel_last=self.conf.channel_last)
 
-            hs_up.pop()  # align with improved-diffusion
-            hs_up.append(h)
-
-        return hs_up
+        return h
 
     def middle_block(self, h, emb):
-        ch = h.shape[-1 if self.channel_last else 1]
+        ch = h.shape[-1 if self.conf.channel_last else 1]
         block = ResidualBlock(ch,
-                              scale_shift_norm=self.scale_shift_norm,
-                              dropout=self.dropout,
-                              channel_last=self.channel_last)
+                              scale_shift_norm=self.conf.scale_shift_norm,
+                              dropout=self.conf.dropout,
+                              channel_last=self.conf.channel_last)
 
         h = block(h, emb, name="resblock_0")
 
-        res = h.shape[1 if self.channel_last else -1]
-        if self.attention_resolutions is not None and res in self.attention_resolutions:
+        res = Shape4D(h.shape, self.conf.channel_last).get_as_tuple("h")
+        if self.conf.attention_resolutions is not None \
+                and res in self.conf.attention_resolutions:
             h = attn_block(h, "attention",
-                           num_heads=self.attention_num_heads,
-                           channel_last=self.channel_last)
+                           num_heads=self.conf.num_attention_heads,
+                           num_head_channels=self.conf.num_attention_head_channels,
+                           channel_last=self.conf.channel_last)
 
         h = block(h, emb, name="resblock_1")
 
         return h
 
     def output_block(self, h):
-        h = normalize(h, "last_norm",
-                      channel_axis=3 if self.channel_last else 1)
+        h = normalize(h,
+                      name="last_norm",
+                      channel_axis=3 if self.conf.channel_last else 1)
         h = nonlinearity(h)
-        h = conv(h, self.output_channels, name="last_conv",
-                 zeroing_w=True, channel_last=self.channel_last)
+        h = conv(h,
+                 self.conf.output_channels,
+                 name="last_conv",
+                 zeroing_w=True,
+                 channel_last=self.conf.channel_last)
 
         return h
 
-    def get_intermediates(self, x, t, name=None):
-        ret = dict()
+    def __call__(self, x, t, *, name=None, input_cond=None, class_label=None, class_cond_drop_rate=0):
+        # concat input condition
+        x = self.concat_input_cond(x, input_cond)
 
-        with nn.auto_forward(True):
-            ch = self.model_channels
-            with nn.parameter_scope('UNet' if name is None else name):
-                if self.channel_last:
-                    # todo: If we allow tf32, might be better to apply pad even if chennel_first.
-                    # But, to do that, we have to care obsolete parameters.
-                    x = pad_for_faster_conv(x, channel_last=self.channel_last)
-
-                h = conv(x, ch, name="first_conv",
-                         channel_last=self.channel_last)
-
-                emb = self.timestep_embedding(t)
-                ret["emb"] = emb
-                emb = nonlinearity(emb)
-
-                hs = [h]
-                # downsample block
-                with nn.parameter_scope("downsample_block"):
-                    for level, mult in enumerate(self.channel_mult):
-                        # downsample to lower resolution except last
-                        is_last_block = level == len(self.channel_mult) - 1
-
-                        # apply resblock and attention for this resolution
-                        outs = self.downsample_blocks(h, emb, ch * mult,
-                                                      level=level,
-                                                      down=not is_last_block)
-                        hs += outs
-                        h = outs[-1]
-
-                ret["down"] = hs.copy()
-
-                # middle block
-                with nn.parameter_scope("middle_block"):
-                    h = self.middle_block(h, emb)
-
-                ret["middle"] = h
-
-                # upsample block
-                hs_up = []
-                with nn.parameter_scope("upsample_block"):
-                    for level, mult in enumerate(reversed(self.channel_mult)):
-                        # upsample to larger resolution except last
-                        is_last_block = level == len(self.channel_mult) - 1
-
-                        # apply resblock and attention for this resolution
-                        outs = self.upsample_blocks(h, emb, hs, ch * mult,
-                                                    level=level,
-                                                    up=not is_last_block)
-                        h = outs[-1]
-                        hs_up += outs
-
-                assert len(hs) == 0
-
-                ret["up"] = hs_up.copy()
-
-                # output block
-                with nn.parameter_scope("output_block"):
-                    out = self.output_block(h)
-
-            ret["out"] = out
-
-            out_shape = Shape4D(x.shape, channel_last=self.channel_last)
-            out_shape.c = self.output_channels
-            assert Shape4D(
-                out.shape, channel_last=self.channel_last) == out_shape
-
-        return ret
-
-    def __call__(self, x, t, name=None):
-        ch = self.model_channels
+        ch = self.conf.base_channels
         with nn.parameter_scope('UNet' if name is None else name):
-            if self.channel_last:
+            if self.conf.channel_last:
                 # todo: If we allow tf32, might be better to apply pad even if chennel_first.
                 # But, to do that, we have to care obsolete parameters.
-                x = pad_for_faster_conv(x, channel_last=self.channel_last)
+                x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
 
-            h = conv(x, ch, name="first_conv", channel_last=self.channel_last)
+            h = conv(x, ch, name="first_conv",
+                     channel_last=self.conf.channel_last)
             emb = self.timestep_embedding(t)
+
+            if self.conf.class_cond:
+                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
+                emb = emb + \
+                    self.class_embedding(class_label, class_cond_drop_rate)
+
             emb = nonlinearity(emb)
 
             hs = [h]
             # downsample block
             with nn.parameter_scope("downsample_block"):
-                for level, mult in enumerate(self.channel_mult):
+                for level, (mult, num_res_block) in enumerate(zip(self.conf.channel_mult,
+                                                                  self.num_res_blocks)):
                     # downsample to lower resolution except last
-                    is_last_block = level == len(self.channel_mult) - 1
+                    is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
                     outs = self.downsample_blocks(h, emb, ch * mult,
                                                   level=level,
-                                                  down=not is_last_block)
+                                                  down=not is_last_block,
+                                                  num_res_block=num_res_block)
                     hs += outs
                     h = outs[-1]
 
@@ -459,17 +448,17 @@ class UNet(object):
                 h = self.middle_block(h, emb)
 
             # upsample block
-            hs_up = []
             with nn.parameter_scope("upsample_block"):
-                for level, mult in enumerate(reversed(self.channel_mult)):
+                for level, (mult, num_res_block) in enumerate(zip(reversed(self.conf.channel_mult),
+                                                                  reversed(self.num_res_blocks))):
                     # upsample to larger resolution except last
-                    is_last_block = level == len(self.channel_mult) - 1
+                    is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
-                    outs = self.upsample_blocks(h, emb, hs, ch * mult,
-                                                level=level,
-                                                up=not is_last_block)
-                    h = outs[-1]
+                    h = self.upsample_blocks(h, emb, hs, ch * mult,
+                                             level=level,
+                                             up=not is_last_block,
+                                             num_res_block=num_res_block)
 
             assert len(hs) == 0
 
@@ -477,10 +466,10 @@ class UNet(object):
             with nn.parameter_scope("output_block"):
                 out = self.output_block(h)
 
-            out_shape = Shape4D(x.shape, channel_last=self.channel_last)
-            out_shape.c = self.output_channels
-            assert Shape4D(
-                out.shape, channel_last=self.channel_last) == out_shape
+            out_shape = Shape4D(x.shape, channel_last=self.conf.channel_last)
+            out_shape.c = self.conf.output_channels
+            assert Shape4D(out.shape,
+                           channel_last=self.conf.channel_last) == out_shape
 
         return out
 
@@ -493,11 +482,15 @@ def test_simple_loop():
     x = nn.Variable.from_numpy_array(np.random.randn(10, 3, 128, 128))
     t = nn.Variable.from_numpy_array(np.random.randint(0, 100, (10, )))
 
-    unet = UNet(num_classes=1, model_channels=128, output_channels=3,
-                num_res_blocks=2,
-                attention_resolutions=(16, 8),
-                attention_num_heads=4,
-                channel_mult=(1, 1, 2, 2, 4, 4))
+    conf = ModelConfig(num_classes=1,
+                       base_channels=128,
+                       output_channels=3,
+                       num_res_blocks=2,
+                       attention_resolutions=(16, 8),
+                       num_attention_heads=4,
+                       channel_mult=(1, 1, 2, 2, 4, 4))
+
+    unet = UNet(conf)
     y = unet(x, t)
 
     loss = F.mean(F.squared_error(y, x))
@@ -515,97 +508,6 @@ def test_simple_loop():
         solver.update()
 
         tr.set_description(f"diff: {loss.d.copy():.5f}")
-
-
-def test_intermediate(conf=None, h5=None):
-    import os
-
-    os.environ["NNABLA_CUDNN_DETERMINISTIC"] = '1'
-
-    nn.clear_parameters()
-
-    if conf is None:
-        from neu.misc import AttrDict
-        conf = AttrDict({
-            "image_shape": (1, 3, 256, 256),
-            "base_channels": 128,
-            "num_diffusion_timesteps": 1000,
-            "num_res_blocks": 3,
-            "num_attention_heads": 4,
-            "attention_resolutions": (16, 8),
-            "channel_mult": (1, 1, 2, 2, 4, 4),
-            "ssn": False,
-        })
-
-    # refinement
-    from diffusion import ModelVarType
-    if "model_var_type" in conf:
-        conf.model_var_type = ModelVarType.get_vartype_from_key(
-            conf.model_var_type)
-    else:
-        conf.model_var_type = ModelVarType.FIXED_SMALL
-
-    if "channel_last" not in conf:
-        conf.channel_last = False
-
-    if "num_attention_head_channels" not in conf:
-        conf.num_attention_head_channels = None
-
-    if "resblock_resample" not in conf:
-        conf.resblock_resample = False
-
-    if h5 is not None:
-        nn.load_parameters(h5)
-
-    np.random.seed(803)
-    x = nn.Variable.from_numpy_array(
-        np.random.randn(*((1, ) + conf.image_shape[1:])))
-    t = nn.Variable.from_numpy_array(np.random.randint(
-        low=0, high=conf.num_diffusion_timesteps, size=1))
-    print(x.d.sum(), t.d)
-
-    # x = nn.Variable.from_numpy_array(np.full((1, ) + conf.image_shape[1:], 0.1))
-    # t = nn.Variable.from_numpy_array([803])
-
-    # define output channel
-    from diffusion import is_learn_sigma
-    output_channels = x.shape[-1] if conf.channel_last else x.shape[1]
-    if is_learn_sigma(conf.model_var_type):
-        output_channels *= 2
-
-    unet = UNet(num_classes=1,
-                model_channels=conf.base_channels,
-                output_channels=output_channels,
-                num_res_blocks=conf.num_res_blocks,
-                attention_num_heads=conf.num_attention_heads,
-                attention_head_channels=conf.num_attention_head_channels,
-                attention_resolutions=conf.attention_resolutions,
-                channel_mult=conf.channel_mult,
-                dropout=0.,
-                scale_shift_norm=conf.ssn,
-                resblock_resample=conf.resblock_resample,
-                channel_last=conf.channel_last)
-    res = unet.get_intermediates(x, t)
-
-    print("[emb]")
-    dump(res["emb"])
-    print("")
-
-    print("[down]")
-    dump(res["down"])
-    print("")
-
-    print("[middle]")
-    dump(res["middle"])
-    print("")
-
-    print("[up]")
-    dump(res["up"])
-    print("")
-
-    print("[out]")
-    dump(res["out"])
-    print("")
 
 
 def dump(var):
@@ -659,8 +561,6 @@ def test(loop, intermediate, config, h5):
         if h5 is not None:
             assert os.path.exists(h5), f"config file `{h5}` is not found."
             logger.info(f"... with h5={h5}")
-
-        test_intermediate(conf, h5)
 
 
 if __name__ == "__main__":
