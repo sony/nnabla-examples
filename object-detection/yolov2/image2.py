@@ -78,7 +78,7 @@ def distort_image(im, hue, sat, val):
 
 def rand_scale(s):
     scale = random.uniform(1, s)
-    if(random.randint(1, 10000) % 2):
+    if (random.randint(1, 10000) % 2):
         return scale
     return 1./scale
 

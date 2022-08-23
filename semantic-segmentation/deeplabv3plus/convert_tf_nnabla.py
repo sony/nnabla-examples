@@ -81,7 +81,7 @@ def parse_tf_ckpt(ckpt_file, h5_file):
             weight = numpy.transpose(weight, (2, 0, 1))
 
         else:
-            if(weight.ndim == 4):
+            if (weight.ndim == 4):
                 weight = numpy.transpose(weight, (3, 2, 0, 1))
 
         if 'BatchNorm' in key:

@@ -69,7 +69,7 @@ def unit(x, depth_list, stride, end_point, act_fn=True, atrous_conv=False, atrou
 def shortcut(x, f, stride=True, test=False, fix_params=False):
 
     with nn.parameter_scope("shortcut"):
-        if(stride == False):
+        if (stride == False):
             h = PF.convolution(x, f, (1, 1), with_bias=False,
                                fix_parameters=fix_params)
         else:
@@ -83,10 +83,10 @@ def shortcut(x, f, stride=True, test=False, fix_params=False):
 def separable_conv_with_bn(x, f, stride=False, aspp=False, atrous_rate=1, act_fn=True, last_block=False, end_point=False, eps=1e-03, out=False, test=False, fix_params=False):
 
     with nn.parameter_scope("depthwise"):
-        if(stride == True):
+        if (stride == True):
             h = PF.depthwise_convolution(x, (3, 3), stride=(2, 2), pad=(
                 1, 1), with_bias=False, fix_parameters=fix_params)
-        elif(aspp == True):
+        elif (aspp == True):
             h = PF.depthwise_convolution(x, (3, 3), pad=(atrous_rate, atrous_rate), stride=(
                 1, 1), dilation=(atrous_rate, atrous_rate), with_bias=False, fix_parameters=fix_params)
 

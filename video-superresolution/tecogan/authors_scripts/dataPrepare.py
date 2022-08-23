@@ -173,7 +173,7 @@ for keys in video_data_dict:
     # get training frames
     for start_fr in video_data_dict[keys]:
         tar_dir = os.path.join(Flags.disk_path, "scene_%04d/" % cur_id)
-        if(saveframes):
+        if (saveframes):
             os.path.isdir(tar_dir) or os.makedirs(tar_dir)
         gen_frames(tar_vid_output, tar_dir,
                    info_dict["width"], info_dict["height"], start_fr, Flags.duration, saveframes)
