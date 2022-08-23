@@ -35,19 +35,22 @@ cs = ConfigStore.instance()
 cs.store(name="base_config", node=config.GenScriptConfig)
 config.register_configs()
 
+
 @hydra.main(version_base=None,
-            config_path="conf", 
+            config_path="conf",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     assert conf.generate.x_start_path is not None, "generate.x_start_path must be supecified for sdedit.py."
-    assert os.path.exists(conf.generate.x_start_path), f"{conf.generate.x_start_path} is not found."
+    assert os.path.exists(
+        conf.generate.x_start_path), f"{conf.generate.x_start_path} is not found."
 
     # load diffusion and model config
-    loaded_conf: config.LoadedConfig = config.load_saved_conf(conf.generate.config)
+    loaded_conf: config.LoadedConfig = config.load_saved_conf(
+        conf.generate.config)
 
     comm = init_nnabla(ext_name="cudnn", device_id=conf.runtime.device_id,
                        type_config=conf.runtime.type_config, random_pseed=True)
-    
+
     if comm.n_procs > 1:
         raise ValueError("Currentely sdedit.py doesn't support multiGPU.")
 
@@ -71,14 +74,15 @@ def main(conf: config.GenScriptConfig):
     if loaded_conf.model.channel_last:
         h, w = loaded_conf.model.image_shape[:-1]
     else:
-        h, w = loaded_conf.model.image_shape[1:]  
-    x0 = imread(conf.generate.x_start_path, size=(w, h), channel_first=not loaded_conf.model.channel_last)
+        h, w = loaded_conf.model.image_shape[1:]
+    x0 = imread(conf.generate.x_start_path, size=(w, h),
+                channel_first=not loaded_conf.model.channel_last)
     x0 = x0[np.newaxis]
 
     # setup output dir
     os.makedirs(conf.generate.output_dir, exist_ok=True)
 
-    # dump configs       
+    # dump configs
     logger.info("===== script config =====")
     print(OmegaConf.to_yaml(conf))
 

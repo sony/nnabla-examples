@@ -80,7 +80,7 @@ class MixedPrecisionManager(object):
             return True
 
         return False
-    
+
     def update(self, solver: Solver, comm: CommunicatorWrapper, *, clip_grad=None, **kwargs) -> bool:
         """
         Return True if overflow.
@@ -88,10 +88,10 @@ class MixedPrecisionManager(object):
         if not self.use_fp16:
             solver.update(**kwargs)
             return False
-        
+
         # rescale grad before all_reduce along GPUs.
         solver.scale_grad(1. / (2 ** self.log_loss_scale))
-        
+
         if comm is not None and comm.n_procs > 1:
             comm.all_reduce([x.grad for x in solver.get_parameters().values()],
                             division=True,
@@ -106,7 +106,8 @@ class MixedPrecisionManager(object):
             return True
 
         if clip_grad is not None:
-            assert isinstance(clip_grad, float), "clip_grad must be None or float."
+            assert isinstance(
+                clip_grad, float), "clip_grad must be None or float."
             solver.clip_grad_by_norm(clip_grad)
 
         solver.update(**kwargs)

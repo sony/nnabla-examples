@@ -81,8 +81,8 @@ class ResidualBlock(object):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
         if self.conv_shortcut or self.out_channels != x_shape.c:
             return nin(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
-        
-        return x        
+
+        return x
 
     def __call__(self, x, temb, name):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
@@ -219,27 +219,29 @@ class UNet(object):
 
         # (2022/07/14) omegaconf doesn't support Union for typing. Thus, cannot overwrite conf.num_res_blocks.
         if isinstance(conf.num_res_blocks, int):
-            self.num_res_blocks = [conf.num_res_blocks for _ in range(len(conf.channel_mult))]
+            self.num_res_blocks = [
+                conf.num_res_blocks for _ in range(len(conf.channel_mult))]
         else:
             assert isinstance(conf.num_res_blocks, "__iter__") \
                    and len(conf.num_res_blocks) == len(conf.channel_mult), \
                     f"length of num_res_blocks and channel_mult must be the same (num_res_block: {conf.num_res_blocks}, channel_mult: {conf.channel_mult})"
             self.num_res_blocks = conf.num_res_blocks
-        
+
         self.conf: ModelConfig = conf
         self.emb_dims = 4 * self.conf.base_channels
 
     def concat_input_cond(self, x, input_cond):
         if input_cond is None:
             return x
-        
-        assert isinstance(input_cond, (nn.Variable, nn.NdArray)), "input_cond must be nn.Variable or nn,NdArray."
+
+        assert isinstance(input_cond, (nn.Variable, nn.NdArray)
+                          ), "input_cond must be nn.Variable or nn,NdArray."
         assert x.shape[0] == input_cond.shape[0], "batch size must be the same between x and input_cond"
 
-        return F.concatenate(x, 
-                             interp_like(input_cond, x, channel_last=self.conf.channel_last),
+        return F.concatenate(x,
+                             interp_like(input_cond, x,
+                                         channel_last=self.conf.channel_last),
                              axis=3 if self.conf.channel_last else 1)
-
 
     def timestep_embedding(self, t):
         with nn.parameter_scope('timestep_embedding'):
@@ -263,38 +265,39 @@ class UNet(object):
         return emb
 
     def class_embedding(self, class_label, class_cond_drop_rate):
-        assert len(class_label.shape) == 1, f"Invalid shape for class_label: {class_label.shape}."
+        assert len(
+            class_label.shape) == 1, f"Invalid shape for class_label: {class_label.shape}."
         assert 0 <= class_cond_drop_rate <= 1, "class_cond_drop_rate must be in the range of [0, 1]."
 
         with nn.parameter_scope("class_embedding"):
             emb = PF.embed(inp=class_label,
                            n_inputs=self.conf.num_classes,
                            n_features=self.emb_dims,
-                           initializer=I.NormalInitializer()) # align init with pytorch
+                           initializer=I.NormalInitializer())  # align init with pytorch
 
-            # dropout for unconditional generation                
+            # dropout for unconditional generation
             if class_cond_drop_rate > 0:
                 mask = F.rand_binomial(p=1-class_cond_drop_rate,
-                                    shape=class_label.shape + (1, ))
+                                       shape=class_label.shape + (1, ))
                 emb = emb * mask
-            
+
             # reshape to use conv rather than affine
             if self.conf.channel_last:
                 emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
             else:
                 emb = F.reshape(emb, emb.shape + (1, 1))
-            
+
             # post process
             if self.conf.class_cond_emb_type == "simple":
                 pass
             elif self.conf.class_cond_emb_type == "MLP":
                 # linear transforms
                 emb = nin(emb, self.emb_dims, name='dense0',
-                        channel_last=self.conf.channel_last)
+                          channel_last=self.conf.channel_last)
                 emb = nonlinearity(emb)
 
                 emb = nin(emb, self.emb_dims, name='dense1',
-                        channel_last=self.conf.channel_last)                
+                          channel_last=self.conf.channel_last)
 
         return emb
 
@@ -307,9 +310,10 @@ class UNet(object):
 
             h = block(h, emb, "res_block")
 
-            res = Shape4D(h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            res = Shape4D(
+                h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None \
-                and res in self.conf.attention_resolutions:
+                    and res in self.conf.attention_resolutions:
                 h = attn_block(h, "attention",
                                num_heads=self.conf.num_attention_heads,
                                num_head_channels=self.conf.num_attention_head_channels,
@@ -378,7 +382,7 @@ class UNet(object):
 
         res = Shape4D(h.shape, self.conf.channel_last).get_as_tuple("h")
         if self.conf.attention_resolutions is not None \
-             and res in self.conf.attention_resolutions:
+                and res in self.conf.attention_resolutions:
             h = attn_block(h, "attention",
                            num_heads=self.conf.num_attention_heads,
                            num_head_channels=self.conf.num_attention_head_channels,
@@ -389,18 +393,17 @@ class UNet(object):
         return h
 
     def output_block(self, h):
-        h = normalize(h, 
+        h = normalize(h,
                       name="last_norm",
                       channel_axis=3 if self.conf.channel_last else 1)
         h = nonlinearity(h)
-        h = conv(h, 
-                 self.conf.output_channels, 
+        h = conv(h,
+                 self.conf.output_channels,
                  name="last_conv",
                  zeroing_w=True,
                  channel_last=self.conf.channel_last)
 
         return h
-
 
     def __call__(self, x, t, *, name=None, input_cond=None, class_label=None, class_cond_drop_rate=0):
         # concat input condition
@@ -413,12 +416,14 @@ class UNet(object):
                 # But, to do that, we have to care obsolete parameters.
                 x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
 
-            h = conv(x, ch, name="first_conv", channel_last=self.conf.channel_last)
+            h = conv(x, ch, name="first_conv",
+                     channel_last=self.conf.channel_last)
             emb = self.timestep_embedding(t)
 
             if self.conf.class_cond:
                 assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
-                emb = emb + self.class_embedding(class_label, class_cond_drop_rate)
+                emb = emb + \
+                    self.class_embedding(class_label, class_cond_drop_rate)
 
             emb = nonlinearity(emb)
 
@@ -448,13 +453,13 @@ class UNet(object):
                                                                   reversed(self.num_res_blocks))):
                     # upsample to larger resolution except last
                     is_last_block = level == len(self.conf.channel_mult) - 1
-                    
+
                     # apply resblock and attention for this resolution
                     h = self.upsample_blocks(h, emb, hs, ch * mult,
                                              level=level,
                                              up=not is_last_block,
                                              num_res_block=num_res_block)
-                    
+
             assert len(hs) == 0
 
             # output block

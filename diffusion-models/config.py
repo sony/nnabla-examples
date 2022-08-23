@@ -21,12 +21,16 @@ from omegaconf import MISSING, OmegaConf
 # todo: using config name to access other config group is unsafe
 
 # nnabla runtime definition
+
+
 @dataclass
 class RuntimeConfig:
     type_config: str = "half"
     device_id: str = "0"
 
 # Dataset Definition
+
+
 @dataclass
 class DatasetConfig:
     name: str = MISSING
@@ -37,7 +41,7 @@ class DatasetConfig:
     random_crop: bool = False
     shuffle_dataset: bool = True
     num_classes: int = 1
-    
+
     # from other configs
     channel_last: bool = "${model.channel_last}"
     batch_size: int = "${train.batch_size}"
@@ -47,15 +51,18 @@ class DatasetConfig:
 
 # set resolvers
 
+
 def get_output_channels(input_channels, var_type) -> int:
     # calc output channels from input and vartype
     from diffusion import is_learn_sigma
     if is_learn_sigma(var_type):
         return input_channels * 2
-    
+
     return input_channels
 
+
 OmegaConf.register_new_resolver("get_oc", get_output_channels)
+
 
 def get_image_shape(image_size, input_channels, channel_last):
     if image_size is None:
@@ -67,7 +74,9 @@ def get_image_shape(image_size, input_channels, channel_last):
 
     return (input_channels, ) + image_size
 
+
 OmegaConf.register_new_resolver("get_is", get_image_shape)
+
 
 @dataclass
 class ModelConfig:
@@ -76,16 +85,16 @@ class ModelConfig:
     image_size: List[int] = MISSING
     low_res_size: Union[None, List[int]] = None
     image_shape: List[int] = \
-     "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
+        "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
     low_res_shape: Union[None, List[int]] = \
-     "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
+        "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
 
     # arch.
     scale_shift_norm: bool = True
     resblock_resample: bool = False
     resblock_rescale_skip: bool = False
     num_res_blocks: int = 3
-    channel_mult: List[int] = MISSING    
+    channel_mult: List[int] = MISSING
     base_channels: int = 128
     dropout: float = 0.
     class_cond: bool = False
@@ -96,8 +105,9 @@ class ModelConfig:
     conv_resample: bool = True
 
     # attention
-    attention_resolutions: List[int] = field(default_factory=lambda: [8, 16, 32])
-    num_attention_head_channels: Union[None, int] = 64 
+    attention_resolutions: List[int] = field(
+        default_factory=lambda: [8, 16, 32])
+    num_attention_head_channels: Union[None, int] = 64
     num_attention_heads: Union[None, int] = None
     # num_attention_head_channels is prioritized over num_attention_heads if both are specified.
 
@@ -115,6 +125,7 @@ class DiffusionConfig:
     t_start: int = "${diffusion.max_timesteps}"
     respacing_step: int = 1
     model_var_type: str = "${model.model_var_type}"
+
 
 @dataclass
 class TrainConfig:
@@ -137,7 +148,7 @@ class TrainConfig:
     loss_scaling: float = 1.0
     lr: float = 1e-4
     clip_grad: Union[None, float] = None
-    lr_scheduler: Union[None, str] = None 
+    lr_scheduler: Union[None, str] = None
 
 
 @dataclass
@@ -149,13 +160,14 @@ class GenerateConfig:
     # generation configuration
     ema: bool = True
     ddim: bool = False
+    # todo: add seed to fix ddim sampling
     samples: int = 1024
     batch_size: int = 32
 
     # for refinement
     respacing_step: int = 4
     t_start: Union[None, int] = None
- 
+
     # nstep
     base_samples_dir: Union[None, str] = None
 
@@ -163,7 +175,7 @@ class GenerateConfig:
     gen_class_id: Union[None, int] = None
 
     # for SDEidt
-    x_start_path: Union[None, str] = None 
+    x_start_path: Union[None, str] = None
 
     # dump
     output_dir: str = "./outs"
@@ -171,6 +183,8 @@ class GenerateConfig:
     save_xstart: bool = False
 
 # Config for training scripts
+
+
 @dataclass
 class TrainScriptConfig:
     runtime: RuntimeConfig = MISSING
@@ -180,22 +194,27 @@ class TrainScriptConfig:
     train: TrainConfig = MISSING
 
 # Config for generation scripts
+
+
 @dataclass
 class GenScriptConfig:
     runtime: RuntimeConfig = MISSING
     generate: GenerateConfig = MISSING
 
 # for loading config file
+
+
 @dataclass
 class LoadedConfig:
     diffusion: DiffusionConfig
     model: ModelConfig
 
+
 def load_saved_conf(config_path: str) -> LoadedConfig:
     import os
     assert os.path.exists(config_path), \
         f"config file {config_path} is not found."
-    
+
     base_conf = OmegaConf.structured(LoadedConfig)
     loaded_conf = OmegaConf.load(config_path)
 
@@ -203,10 +222,12 @@ def load_saved_conf(config_path: str) -> LoadedConfig:
         f"config file must have a `diffusion` entry."
     assert hasattr(loaded_conf, "model"), \
         f"config file must have a `model` entry."
-    
+
     return OmegaConf.merge(base_conf, loaded_conf)
 
 # config register
+
+
 def register_configs() -> None:
     cs = ConfigStore.instance()
     cs.store(

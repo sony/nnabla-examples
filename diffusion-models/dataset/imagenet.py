@@ -43,8 +43,8 @@ def _info(msg):
 
 
 def ImagenetDataIterator(conf: DatasetConfig,
-                         comm: CommunicatorWrapper=None,
-                         rng=None, 
+                         comm: CommunicatorWrapper = None,
+                         rng=None,
                          train=True,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils
@@ -89,7 +89,7 @@ def ImagenetDataIterator(conf: DatasetConfig,
         raise NotImplementedError("val is not supported now.")
 
     ds = SimpleDatasource(conf,
-                          img_paths=paths, 
+                          img_paths=paths,
                           labels=labels,
                           rng=rng)
 
@@ -97,7 +97,7 @@ def ImagenetDataIterator(conf: DatasetConfig,
 
     ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, 
+    return data_iterator(ds,
                          conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,

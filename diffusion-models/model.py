@@ -21,6 +21,7 @@ from config import DiffusionConfig, ModelConfig
 
 from neu.misc import AttrDict
 
+
 class Model(object):
     def __init__(self,
                  diffusion_conf: DiffusionConfig,
@@ -28,17 +29,17 @@ class Model(object):
         self.diffusion = GaussianDiffusion(diffusion_conf)
 
         # todo: need refactor so as to instantiate model here.
-        self.model_conf = model_conf  
+        self.model_conf = model_conf
 
     def _define_model(self):
         unet = UNet(self.model_conf)
         return unet
 
-    def build_train_graph(self, 
+    def build_train_graph(self,
                           x,
                           t=None,
                           noise=None,
-                          loss_scaling=None, 
+                          loss_scaling=None,
                           model_kwargs=None):
         # get input shape before condition
         B = x.shape[0]
@@ -79,16 +80,16 @@ class Model(object):
         return loss_dict, t
 
     def sample(self,
-               shape, 
+               shape,
                *,
                noise=None,
                x_start=None,
-               model_kwargs=None, 
-               use_ema=True, 
-               dump_interval=-1, 
-               progress=False, 
+               model_kwargs=None,
+               use_ema=True,
+               dump_interval=-1,
+               progress=False,
                use_ddim=False):
-        
+
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,

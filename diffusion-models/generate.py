@@ -33,16 +33,18 @@ cs = ConfigStore.instance()
 cs.store(name="base_config", node=config.GenScriptConfig)
 config.register_configs()
 
+
 @hydra.main(version_base=None,
-            config_path="conf", 
+            config_path="conf",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     # load diffusion and model config
-    loaded_conf: config.LoadedConfig = config.load_saved_conf(conf.generate.config)
+    loaded_conf: config.LoadedConfig = config.load_saved_conf(
+        conf.generate.config)
 
     comm = init_nnabla(ext_name="cudnn", device_id=conf.runtime.device_id,
                        type_config=conf.runtime.type_config, random_pseed=True)
-    
+
     # update respacing parameter based on given config
     loaded_conf.diffusion.respacing_step = conf.generate.respacing_step
 
@@ -66,30 +68,34 @@ def main(conf: config.GenScriptConfig):
                                          root_dir=conf.generate.base_samples_dir,
                                          image_size=loaded_conf.model.low_res_size,
                                          comm=comm,
-                                         shuffle=False, 
-                                         on_memory=False, 
+                                         shuffle=False,
+                                         on_memory=False,
                                          channel_last=loaded_conf.model.channel_last)
 
         # setup input condition
-        model_kwargs["input_cond"] = nn.Variable((B, ) + loaded_conf.model.low_res_shape)
-        
+        model_kwargs["input_cond"] = nn.Variable(
+            (B, ) + loaded_conf.model.low_res_shape)
+
         # calculate number of iterations based on number of lowres samples.
         num_iter = (data_lowres.size + B - 1) // B
-   
+
     else:
         num_samples_per_iter = B * comm.n_procs
-        num_iter = (conf.generate.samples + num_samples_per_iter - 1) // num_samples_per_iter
-    
+        num_iter = (conf.generate.samples +
+                    num_samples_per_iter - 1) // num_samples_per_iter
+
     if loaded_conf.model.class_cond:
         if conf.generate.gen_class_id is None:
             # random class
             import nnabla.functions as F
-            model_kwargs["class_label"] = F.randint(low=0, high=loaded_conf.model.num_classes, shape=(B, ))
+            model_kwargs["class_label"] = F.randint(
+                low=0, high=loaded_conf.model.num_classes, shape=(B, ))
         else:
             assert conf.generate.gen_class_id in list(range(0, loaded_conf.model.num_classes)), \
                 f"invalid class_id: '{conf.generate_gen_class_id}'. Must be an integer in [0, {loaded_conf.model.num_classes})."
             # deterministic class
-            model_kwargs["class_label"] = nn.Variable.from_numpy_array([conf.generate.gen_class_id for _ in range(B)])
+            model_kwargs["class_label"] = nn.Variable.from_numpy_array(
+                [conf.generate.gen_class_id for _ in range(B)])
 
     # sampling
     local_saved_cnt = 0
@@ -98,8 +104,9 @@ def main(conf: config.GenScriptConfig):
     if comm.rank == 0:
         os.makedirs(conf.generate.output_dir, exist_ok=True)
         if is_upsample:
-            os.makedirs(os.path.join(conf.generate.output_dir, "base"), exist_ok=True)
-        
+            os.makedirs(os.path.join(
+                conf.generate.output_dir, "base"), exist_ok=True)
+
         logger.info("===== script config =====")
         print(OmegaConf.to_yaml(conf))
 

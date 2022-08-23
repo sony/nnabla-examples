@@ -134,8 +134,9 @@ def respace_betas(betas, use_timesteps):
             A list indicating how to map a new index to original index.
             It will be the same as use_timesteps sorted in increasing order.
     """
-    
-    assert hasattr(use_timesteps, "__iter__"), "use_timesteps must be iterable."
+
+    assert hasattr(
+        use_timesteps, "__iter__"), "use_timesteps must be iterable."
     use_timesteps = tuple(use_timesteps)
 
     T = len(betas)
@@ -195,7 +196,8 @@ class GaussianDiffusion(object):
     """
 
     def __init__(self, conf: DiffusionConfig):
-        self.model_var_type = ModelVarType.get_vartype_from_key(conf.model_var_type)
+        self.model_var_type = ModelVarType.get_vartype_from_key(
+            conf.model_var_type)
 
         # generate betas from strategy and max timesteps
         betas = get_beta_schedule(conf.beta_strategy, conf.max_timesteps)
@@ -207,7 +209,7 @@ class GaussianDiffusion(object):
             # create a list containing timesteps used in generation
             use_timesteps = list(
                 range(0, conf.t_start, conf.respacing_step))  # sampling interval
-            
+
             if use_timesteps[-1] != conf.t_start:
                 # The last step (= most noisy data) should be included always.
                 use_timesteps.append(conf.t_start)
@@ -744,7 +746,7 @@ class GaussianDiffusion(object):
             t = nn.Variable.from_numpy_array([T - 1 for _ in range(shape[0])])
 
             # build graph
-            y, pred_x_start = sampler(timestep_rescaled_model, 
+            y, pred_x_start = sampler(timestep_rescaled_model,
                                       x_t,
                                       t,
                                       model_kwargs=model_kwargs)
@@ -752,9 +754,13 @@ class GaussianDiffusion(object):
             up_t = F.assign(t, t - 1)
             update = F.sink(up_x_t, up_t)
 
+            # make y and pred_x_0 persistent for dumping
+            if dump_interval > 0:
+                y.persistent = True
+                pred_x_start.persistent = True
+
             cnt = 0
             for step in indices:
-                y.forward(clear_buffer=True)
                 update.forward(clear_buffer=True)
 
                 cnt += 1
@@ -762,17 +768,18 @@ class GaussianDiffusion(object):
                     samples.append((step, y.d.copy()))
                     pred_x_starts.append((step, pred_x_start.d.copy()))
         else:
-            # make sure input_cond is already computed 
+            # make sure input_cond is already computed
             if model_kwargs is not None:
-                assert isinstance(model_kwargs, dict), f"model_kwargs must be dict but `{type(model_kwargs)}` is given"
-            
+                assert isinstance(
+                    model_kwargs, dict), f"model_kwargs must be dict but `{type(model_kwargs)}` is given"
+
                 for x in model_kwargs.values():
                     if not isinstance(x, nn.Variable):
                         continue
 
                     if x.parent is None:
                         continue
-                    
+
                     # clear_buffer=True is maybe unsafe.
                     x.apply(persistent=True)
                     x.forward(clear_buffer=True)
@@ -794,8 +801,8 @@ class GaussianDiffusion(object):
                 cnt = 0
                 for step in indices:
                     t = F.constant(step, shape=(shape[0], ))
-                    
-                    x_t, pred_x_start = sampler(timestep_rescaled_model, 
+
+                    x_t, pred_x_start = sampler(timestep_rescaled_model,
                                                 x_t,
                                                 t,
                                                 model_kwargs=model_kwargs,

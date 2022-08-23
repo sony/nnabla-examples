@@ -48,12 +48,12 @@ def refine_monitor_files(dir_path, start_iter):
                     iter = line.strip().split(" ")[0]
                     if int(iter) >= start_iter:
                         break
-                        
+
                     contents.append(line)
-                
+
             with open(os.path.join(dir_path, filename), "w") as f:
                 f.write("".join(contents))
-                
+
 
 def setup_resume(output_dir, dataset, solvers, is_master=False):
     # return
@@ -63,7 +63,8 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
     parent = os.path.dirname(os.path.abspath(output_dir))
 
     if not os.path.exists(parent):
-        return start_iter, output_dir # no previous checkpoint, train from scratch.
+        # no previous checkpoint, train from scratch.
+        return start_iter, output_dir
 
     all_logs = sorted(fnmatch.filter(
         os.listdir(parent), "*{}*".format(dataset)))
@@ -87,7 +88,7 @@ def setup_resume(output_dir, dataset, solvers, is_master=False):
                 if is_master:
                     refine_monitor_files(latest_dir, start_iter)
                     init_checkpoint_queue(latest_dir)
-                
+
                 new_output_dir = latest_dir
                 logger.info(f"Load checkpoint from {cp_path}")
 
@@ -108,11 +109,12 @@ def get_output_dir_name(org, dataset):
 def augmentation(x, channel_last, random_flip=True):
     import nnabla.functions as F
     aug = x
-    
+
     if random_flip:
         aug = F.random_flip(aug, axes=[2, ] if channel_last else None)
 
     return aug
+
 
 # config
 cs = ConfigStore.instance()
@@ -120,11 +122,12 @@ cs.store(name="base_config", node=config.TrainScriptConfig)
 
 config.register_configs()
 
+
 def create_gen_config(conf: config.TrainScriptConfig,
                       respacing_step: int) -> config.GenScriptConfig:
     conf_gen: config.GenScriptConfig \
          = OmegaConf.masked_copy(conf, ["diffusion", "model"])
-    
+
     # setup respacing
     conf_gen.diffusion.respacing_step = respacing_step
 
@@ -135,12 +138,13 @@ def create_gen_config(conf: config.TrainScriptConfig,
 
     return conf_gen
 
+
 @hydra.main(version_base=None, config_path="conf", config_name="config_train")
 def main(conf: config.TrainScriptConfig):
-    # setup output dir 
+    # setup output dir
     conf.train.output_dir = get_output_dir_name(conf.train.output_dir,
                                                 conf.dataset.name)
-    
+
     # initialize nnabla runtime and get communicator
     comm = init_nnabla(ext_name="cudnn",
                        device_id=conf.runtime.device_id,
@@ -152,25 +156,27 @@ def main(conf: config.TrainScriptConfig):
 
     # build graph
     model = Model(diffusion_conf=conf.diffusion,
-                model_conf=conf.model)
+                  model_conf=conf.model)
 
     # setup input image
-    x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)  # assume data_iterator returns [0, 255]
+    # assume data_iterator returns [0, 255]
+    x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)
     x_rescaled = x / 127.5 - 1  # rescale to [-1, 1]
-    x_rescaled = augmentation(x_rescaled, conf.model.channel_last, random_flip=True)
+    x_rescaled = augmentation(
+        x_rescaled, conf.model.channel_last, random_flip=True)
 
     # create low-resolution image
     model_kwargs = {}
     if conf.model.low_res_size is not None:
         assert len(conf.model.low_res_size) == 2
-        x_low_res = adaptive_pooling_2d(x_rescaled, 
-                                        conf.model.low_res_size, 
+        x_low_res = adaptive_pooling_2d(x_rescaled,
+                                        conf.model.low_res_size,
                                         mode="average",
                                         channel_last=conf.model.channel_last)
 
         # create model_kwargs
         model_kwargs["input_cond"] = x_low_res
-    
+
     if conf.model.class_cond:
         model_kwargs["class_label"] = nn.Variable((conf.train.batch_size, ))
         model_kwargs["class_cond_drop_rate"] = conf.model.class_cond_drop_rate
@@ -204,12 +210,12 @@ def main(conf: config.TrainScriptConfig):
 
     start_iter = 0  # exclusive
     if conf.train.resume:
-        # when resume, use the previous output_dir having the last checkpoint. 
+        # when resume, use the previous output_dir having the last checkpoint.
         start_iter, output_dir = setup_resume(conf.train.output_dir,
                                               conf.dataset.name,
                                               solvers, is_master=comm.rank == 0)
         conf.train.output_dir = output_dir
-    
+
     image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:
         os.makedirs(image_dir, exist_ok=True)
@@ -235,7 +241,7 @@ def main(conf: config.TrainScriptConfig):
     # freeze config to disable setting or updating values in conf.
     OmegaConf.resolve(conf)
     OmegaConf.set_readonly(conf, True)
-    
+
     # setup model for generation
     conf_gen = create_gen_config(conf, respacing_step=4)
     gen_model = Model(diffusion_conf=conf_gen.diffusion,
@@ -246,10 +252,12 @@ def main(conf: config.TrainScriptConfig):
         # show configs in stdout
         logger.info("===== configs =====")
         print(OmegaConf.to_yaml(conf))
-        
+
         # save configs
-        OmegaConf.save(conf, os.path.join(conf.train.output_dir, "config_train.yaml"))
-        OmegaConf.save(conf_gen, os.path.join(conf.train.output_dir, "config_gen.yaml"))
+        OmegaConf.save(conf, os.path.join(
+            conf.train.output_dir, "config_train.yaml"))
+        OmegaConf.save(conf_gen, os.path.join(
+            conf.train.output_dir, "config_gen.yaml"))
 
     comm.barrier()
 
@@ -267,7 +275,7 @@ def main(conf: config.TrainScriptConfig):
             cur_lr = lr_scheduler._get_lr(i, None)
         else:
             cur_lr = conf.train.lr
-        
+
         # rescale lr to cancel backward accumulation
         solver.set_learning_rate(cur_lr / conf.train.accum)
 
@@ -297,7 +305,7 @@ def main(conf: config.TrainScriptConfig):
             # Retry from the first accumulation step if overflow happens.
             if is_overflow:
                 retry_cnt += 1
-                
+
                 # Raise if retry happens too many times.
                 if retry_cnt == 100:
                     raise ValueError("Overflow happens too many times.")
@@ -305,10 +313,10 @@ def main(conf: config.TrainScriptConfig):
                 # mpm.backward resets grad of all params to zero in this case.
                 accum_cnt = 0
                 continue
-            
+
             # fwd/bwd successes. Count up accum_cnt.
             accum_cnt += 1
-        
+
             # reporting
             reporter.kv_mean("loss", loss_dict.loss)
 
@@ -326,7 +334,7 @@ def main(conf: config.TrainScriptConfig):
 
                 if is_learn_sigma(conf.model.model_var_type):
                     reporter.kv_mean(f"vlb_q{q_level}", loss_dict.vlb.d[j])
-        
+
         # gradient accumulation
         assert accum_cnt == conf.train.accum
 
@@ -334,19 +342,20 @@ def main(conf: config.TrainScriptConfig):
         is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
 
         # check all processes not to have overflow.
-        overflow_cnt = nn.NdArray.from_numpy_array(np.array([int(is_overflow)]))
+        overflow_cnt = nn.NdArray.from_numpy_array(
+            np.array([int(is_overflow)]))
         comm.all_reduce([overflow_cnt], division=False, inplace=True)
 
         if overflow_cnt.data > 0.5:
             # If even a single process has overflow, stop update and retry fwd/bwd again.
-            
+
             # Basically overflow_cnt should be 0 or comm.n_procs
             # since allreduce over grads of all parmas has been performed above.
             assert comm.n_procs - int(overflow_cnt.data) < 1e-5, \
                 "Some but not all nodes successfully update params without overflow. This is unintentional."
-            
+
             continue
-        
+
         # update ema params
         ema_op.forward(clear_no_need_grad=True)
 
@@ -356,7 +365,8 @@ def main(conf: config.TrainScriptConfig):
             reporter.kv_mean("grad", gnorm)
 
         # samples
-        reporter.kv("samples", i * conf.train.batch_size * comm.n_procs * conf.train.accum)
+        reporter.kv("samples", i * conf.train.batch_size *
+                    comm.n_procs * conf.train.accum)
 
         # iteration (only for no-progress)
         if not conf.train.progress:
@@ -389,16 +399,18 @@ def main(conf: config.TrainScriptConfig):
                 data_list = []
                 for _ in range(num_gen):
                     data_list.append(data_queue.get())
-                
-                input_cond = nn.Variable.from_numpy_array(np.stack(data_list) / 127.5 - 1)
-                
-                input_cond_lowres = adaptive_pooling_2d(input_cond, conf.model.low_res_size, 
+
+                input_cond = nn.Variable.from_numpy_array(
+                    np.stack(data_list) / 127.5 - 1)
+
+                input_cond_lowres = adaptive_pooling_2d(input_cond, conf.model.low_res_size,
                                                         mode="average",
                                                         channel_last=conf.model.channel_last)
                 input_cond_lowres.forward(clear_buffer=True)
-                
-                gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(need_grad=False)
-            
+
+                gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(
+                    need_grad=False)
+
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
                                                                                                  size=(num_gen, )))

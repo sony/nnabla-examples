@@ -80,8 +80,8 @@ def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
 
 
 class SimpleDatasource(DataSource):
-    def __init__(self, 
-                 conf: DatasetConfig, 
+    def __init__(self,
+                 conf: DatasetConfig,
                  img_paths: List[str],
                  *,
                  labels=None,
@@ -99,7 +99,7 @@ class SimpleDatasource(DataSource):
         # check resolution
         assert len(conf.image_size) == 2, \
             "the length of image_size must be 2 (height, width)"
-        
+
         self.im_size = conf.image_size
         self._variables = ["image", "label"]
         self._size = len(self.img_paths)
@@ -175,7 +175,7 @@ SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 
 def SimpleDataIterator(conf: DatasetConfig,
-                       comm: CommunicatorWrapper=None,
+                       comm: CommunicatorWrapper = None,
                        rng=None):
     # get all files
     paths = [os.path.join(conf.dataset_root_dir, x)
@@ -193,7 +193,7 @@ def SimpleDataIterator(conf: DatasetConfig,
 
     ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, 
+    return data_iterator(ds,
                          conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,

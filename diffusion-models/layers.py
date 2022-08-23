@@ -122,7 +122,7 @@ def upsample(x, name, with_conv, *, channel_last=False, recompute=False):
             x = conv(x, C, "upsample_conv", channel_last=channel_last)
 
         assert Shape4D(x.shape, channel_last=channel_last) == \
-             Shape4D((B, C, H * 2, W * 2), channel_last=False) # reference
+            Shape4D((B, C, H * 2, W * 2), channel_last=False)  # reference
 
     return x
 
@@ -139,7 +139,7 @@ def downsample(x, name, with_conv, *, channel_last=False, recompute=False):
                 2, 2), channel_last=channel_last)
 
         assert Shape4D(x.shape, channel_last=channel_last) == \
-            Shape4D((B, C, H // 2, W // 2), channel_last=False) # reference
+            Shape4D((B, C, H // 2, W // 2), channel_last=False)  # reference
 
     return x
 
@@ -173,13 +173,14 @@ def sqrt(x, recompute=False):
         return x ** 0.5
 
 
-def interp_like(x, arr, channel_last):
+def interp_like(x, arr, channel_last, mode="linear"):
     # interpolate spatial size of `x`` to be the same as `arr`.
 
     # get target shape from arr
     h, w = Shape4D(arr.shape, channel_last=channel_last).get_as_tuple("hw")
 
-    x_interp = F.interpolate(x, output_size=(h, w), mode="linear", channel_last=channel_last)
+    x_interp = F.interpolate(x, output_size=(
+        h, w), mode=mode, channel_last=channel_last)
 
     return x_interp
 
@@ -187,14 +188,14 @@ def interp_like(x, arr, channel_last):
 def adaptive_pooling_2d(x, output_shape, channel_last, mode):
     # output_shape: (hight, width)
     assert len(output_shape) == 2
-    
+
     h, w = Shape4D(x.shape, channel_last=channel_last).get_as_tuple("hw")
     mode = mode.lower()
 
-    stride_h = h / output_shape[0]
-    stride_w = w / output_shape[1]
-    kernel_h = h - (output_shape[0] - 1) * stride_h
-    kernel_w = w - (output_shape[1] - 1) * stride_w
+    stride_h = int(h / output_shape[0])
+    stride_w = int(w / output_shape[1])
+    kernel_h = int(h - (output_shape[0] - 1) * stride_h)
+    kernel_w = int(w - (output_shape[1] - 1) * stride_w)
 
     if mode == "average":
         return F.average_pooling(x, kernel=(kernel_h, kernel_w), stride=(stride_h, stride_w), channel_last=channel_last)

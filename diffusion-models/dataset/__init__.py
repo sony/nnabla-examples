@@ -29,7 +29,7 @@ except:
 
 def get_dataset(conf: DatasetConfig, comm: CommunicatorWrapper):
     if conf.name == "cifar10":
-        data_iterator = Cifar10DataIterator(conf, 
+        data_iterator = Cifar10DataIterator(conf,
                                             comm=comm,
                                             train=True)
     elif conf.name == "imagenet":

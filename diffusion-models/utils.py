@@ -52,7 +52,7 @@ class Shape4D(object):
             ) in "bchw", f"Unknown axis `{s}` is specified. Subscripts must be consist of [`b`,`c`,`h`,`w`]."
             ret.append(getattr(self, s.lower()))
 
-        return ret[0] if len(ret) == 1 else tuple(ret) 
+        return ret[0] if len(ret) == 1 else tuple(ret)
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, (tuple, list)):
@@ -100,7 +100,7 @@ def get_lr_scheduler(conf: TrainConfig):
         return EpochCosineLearningRateScheduler(base_lr=conf.lr,
                                                 epochs=conf.n_iters,
                                                 warmup_epochs=10000)
-    
+
     raise ValueError(f"scheduler name '{conf.lr_scheduler}' is not supported.")
 
 
@@ -151,22 +151,23 @@ def create_ema_op(params, ema_decay=0.9999):
 # todo: move this to neu
 
 def init_checkpoint_queue(path):
-    import re 
+    import re
     import os
     all_files = os.listdir(path)
 
     # get saved iters in ascending order.
     # checkpoint files should be named as "checkpoint_{iter}.json".
     checkpoints = [x for x in all_files if x.startswith("checkpoint")]
-    saved_iters = sorted([int(re.findall("checkpoint_(\d+).json", x)[0]) for x in checkpoints])
-    
+    saved_iters = sorted(
+        [int(re.findall("checkpoint_(\d+).json", x)[0]) for x in checkpoints])
+
     # trace all saved files
     from collections import defaultdict
     saved_paths_per_iter = defaultdict(list)
     for filename in all_files:
         if not filename.endswith(".h5"):
             continue
-        
+
         # filename should be "{identifier}_{iter}.h5".
         filename_wo_ext = os.path.splitext(filename)[0]
         iter = int(filename_wo_ext.split("_")[-1])
@@ -176,7 +177,7 @@ def init_checkpoint_queue(path):
     from neu.checkpoint_util import prev_save_paths
     for iter in saved_iters:
         saved_paths = saved_paths_per_iter[iter]
-        
+
         cp_path = os.path.join(path, f"checkpoint_{iter}.json")
         assert os.path.exists(cp_path), f"{cp_path} doesn't exist."
         saved_paths.append(cp_path)

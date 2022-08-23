@@ -124,8 +124,8 @@ class Cifar10DataSource(DataSource):
 
 
 def Cifar10DataIterator(conf: DatasetConfig,
-                        comm: CommunicatorWrapper=None,
-                        rng=None, 
+                        comm: CommunicatorWrapper = None,
+                        rng=None,
                         train=True):
     ds = Cifar10DataSource(train=train,
                            shuffle=conf.shuffle_dataset,
@@ -134,7 +134,7 @@ def Cifar10DataIterator(conf: DatasetConfig,
 
     ds = _get_sliced_data_source(ds, comm, conf.shuffle_dataset)
 
-    return data_iterator(ds, 
+    return data_iterator(ds,
                          conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,
