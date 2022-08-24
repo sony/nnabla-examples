@@ -37,7 +37,7 @@ Please munualy download them from the following list.
 | Improved DDPM | Imagenet | 64 x 64 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_imagenet_64x64.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/imagenet_64/params.h5) | 19.80 | 500K |
 | Improved DDPM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/params.h5) | 30.73 | 300K |
 | ADM | Imagenet | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_ADM_imagenet_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/params.h5) | 43.80 | 300K |
-| ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/config_ADM_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
+| ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_ADM_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
 
 Note that the FID scores shown on the list are computed by 10K generated images against training data for all datasets except 50K generated images for cifar10.
 
