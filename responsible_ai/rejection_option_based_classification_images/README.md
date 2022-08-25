@@ -8,7 +8,12 @@ Figure: Overview of Rejection Option-based classfication
 </p>
 
 In this demo, we show how to reduce bias at prediction time using a post-processing technique with **Rejection Option-based classification (ROC)**.ROC modifies model predictions by assigning favorable outcomes to unprivileged groups and unfavorable outcomes to privileged groups in a confidence band around the decision boundary with the highest uncertainty.
+# Interactive demo
 
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [Rejection Option-based Classification for image](https://doi.org/10.1109/ICDM.2012.45) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/rejection_option_based_classification_images.ipynb) | Mitigate the bias |<a href="url"><img src="images/roc_workflow_diagram.png" align="center" height="90" ></a>|
+ 
 To run the 'ROC' experiment in NNabla, please follow the steps below:
 
 ### Step 1: Prepare Dataset
