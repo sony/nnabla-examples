@@ -143,4 +143,12 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./rejection_option_based_classification/images/roc_workflow_diagram.png" width="80%">
 </p>
 
+### Rejection Option-Based Classification for images[code](./rejection_option_based_classification_images/)
+> **Decision Theory for Discrimination-Aware Classification**
+> F. Kamiran, A. Karim and X. Zhang.
+> *[IEEE 12th International Conference on Data Mining, 2012, pp. 924-929](https://ieeexplore.ieee.org/document/6413831)* 
+
+<p align="center">
+<img src="./rejection_option_based_classification_images/images/roc_workflow_diagram.png" width="80%">
+</p>
 
