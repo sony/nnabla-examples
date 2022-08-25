@@ -276,7 +276,7 @@ class pascal_voc(imdb):
                     pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
         print(('Mean AP = {:.4f}'.format(np.mean(aps))))
         print('~~~~~~~~')
-        return(np.mean(aps))
+        return (np.mean(aps))
         '''
     print('Results:')
     for ap in aps:

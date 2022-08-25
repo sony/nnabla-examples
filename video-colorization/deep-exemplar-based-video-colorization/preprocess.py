@@ -154,7 +154,7 @@ def standardize(arr, mean, std):
     Returns:
         norm_arr: Normalized Tensor image.
     """
-    if(arr.ndim < 3):
+    if (arr.ndim < 3):
         arr = np.expand_dims(arr, axis=0)
     if arr.shape[0] == 1:
         norm_arr = arr.copy()

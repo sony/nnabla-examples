@@ -201,7 +201,7 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
     if output.ndim == 3:
         output = output.reshape(-1)
     batch = output.shape[0]
-    assert(output.shape[1] == (5+num_classes)*num_anchors)
+    assert (output.shape[1] == (5+num_classes)*num_anchors)
     h = output.shape[2]
     w = output.shape[3]
 

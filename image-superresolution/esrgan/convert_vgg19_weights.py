@@ -49,7 +49,7 @@ def rename_params(param_name, affine):
         if p in py_to_nn_dict.keys():
             p = py_to_nn_dict[p]
             new_param.append(p)
-    return("/".join(new_param))
+    return ("/".join(new_param))
 
 
 def pytorch_to_nnabla(input_file, h5_file):

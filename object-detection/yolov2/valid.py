@@ -64,7 +64,7 @@ def valid(weightfile, outfile, outdir):
     valid_dataset = dataset.data_iterator_yolo(valid_images, args,
                                                train=False,
                                                shape=(args.width, args.height), shuffle=False, batch_size=args.valid_batchsize)
-    assert(args.valid_batchsize > 1)
+    assert (args.valid_batchsize > 1)
 
     fps = [0]*args.num_classes
     if not os.path.exists(outdir):
