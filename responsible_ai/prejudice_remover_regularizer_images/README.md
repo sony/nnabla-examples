@@ -18,6 +18,14 @@ PRR technique involves adding two regularizer terms to cost function:
 Figure: Objective function of Prejudice Remover Regularizer
 </p>
 
+
+### Interactive demo
+
+|Name| Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+ [Prejudice Remover Regularizer Image](https://link.springer.com/chapter/10.1007/978-3-642-33486-3_3) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/prejudice_remover_regularizer_image.ipynb) | Model Bias Check and Mitigation by Prejudice Removal Technique for Images |<a href="url"><img src="images/Prejudice_Remover_Regularizer_workflow_diagram.png" align="center" height="90" ></a>|
+ 
+
 To run the 'PRR' experiment in NNabla, please follow the below steps:
 ### Step 1: Prepare Dataset
 * CelebA dataset is considered for this tutorial. 
