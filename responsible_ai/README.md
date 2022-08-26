@@ -115,8 +115,6 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./prejudice_remover_regularizer/images/Prejudice_Remover_Regularizer_workflow_diagram.png" width="80%">
 </p>
 
-<<<<<<< HEAD
-=======
 ### PRR: Prejudice Remover Regularizer for Images [code](./prejudice_remover_regularizer_images/)
 > **Fairness-aware classifier with prejudice remover regularizer.**
 > Toshihiro Kamishima, Shotaro Akaho, Hideki Asoh & Jun Sakuma.
@@ -126,7 +124,6 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./prejudice_remover_regularizer_images/images/Prejudice_Remover_Regularizer_workflow_diagram.png" width="80%">
 </p>
 
->>>>>>> 0f005b62 (update READMEs)
 ### Adversarial Debiasing [code](./adversarial_debiasing/)
 > **Mitigating Unwanted Biases with Adversarial Learning**
 > Zhang, Brian Hu, Blake Lemoine, and Margaret Mitchell.
