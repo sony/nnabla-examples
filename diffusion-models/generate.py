@@ -128,10 +128,12 @@ def main(conf: config.GenScriptConfig):
                                                         use_ema=conf.generate.ema,
                                                         progress=comm.rank == 0,
                                                         use_ddim=conf.generate.ddim,
+                                                        ode_solver=conf.generate.ode_solver,
                                                         model_kwargs=model_kwargs)
 
         # scale back to [0, 255]
         sample_out = (sample_out + 1) * 127.5
+        sample_out = np.clip(sample_out, 0, 255)
 
         if conf.generate.tiled:
             save_path = os.path.join(
