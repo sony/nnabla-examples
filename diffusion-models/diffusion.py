@@ -1015,7 +1015,6 @@ class GaussianDiffusion(object):
         def _cont_t_lambda(lam):
             if self.beta_strategy == "linear":
                 b0, b1 = 0.0001*self.max_timesteps, 0.02*self.max_timesteps
-                # return 2*math.log(math.exp(-2*lam)+1) / (math.sqrt(b0*b0+2*(b1-b0)*math.log(math.exp(-2*lam)+1))+b0)
                 return 2*math.log1p(math.exp(-2*lam)) / (math.sqrt(b0*b0+2*(b1-b0)*math.log1p(math.exp(-2*lam)))+b0)
             elif self.beta_strategy == "cosine":
                 s = 0.008
@@ -1086,7 +1085,7 @@ class GaussianDiffusion(object):
                     # SDEdit
                     # x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
                     #                     noise=nn.Variable.from_numpy_array(noise))
-                    assert False, "SDEdit with dpm2 is not supported"
+                    raise NotImplementedError()
                 else:
                     x_t = nn.Variable.from_numpy_array(noise)
 
