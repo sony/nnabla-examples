@@ -842,15 +842,14 @@ class GaussianDiffusion(object):
                                     self.ddim_sample, eta=0., channel_last=channel_last),
                                 **kwargs)
 
-
     def plms_sample_loop(self, model, shape, *,
-                    channel_last=False,
-                    noise=None,
-                    x_start=None,
-                    model_kwargs=None,
-                    dump_interval=-1,
-                    progress=False,
-                    without_auto_forward=False):
+                         channel_last=False,
+                         noise=None,
+                         x_start=None,
+                         model_kwargs=None,
+                         dump_interval=-1,
+                         progress=False,
+                         without_auto_forward=False):
         """
         Sample data from x_T ~ N(0, I) by "Pseudo Numerical Methods for Diffusion Models on Manifolds".
         Iteratively sample data from model from t=T to t=0.
@@ -931,26 +930,33 @@ class GaussianDiffusion(object):
                                             clip_denoised=True,
                                             channel_last=channel_last)
 
-                    pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
+                    pred_noise = self.predict_noise_from_xstart(
+                        x_t, t, preds.xstart)
 
                     if len(old_eps) == 0:
                         pred_noise_prime = pred_noise
                     elif len(old_eps) == 1:
                         pred_noise_prime = (3 * pred_noise - old_eps[-1]) / 2
                     elif len(old_eps) == 2:
-                        pred_noise_prime = (23 * pred_noise - 16 * old_eps[-1] + 5 * old_eps[-2]) / 12
+                        pred_noise_prime = (
+                            23 * pred_noise - 16 * old_eps[-1] + 5 * old_eps[-2]) / 12
                     elif len(old_eps) == 3:
-                        pred_noise_prime = (55 * pred_noise - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
+                        pred_noise_prime = (
+                            55 * pred_noise - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
                     old_eps.append(pred_noise)
                     if len(old_eps) > 3:
                         old_eps.pop(0)
 
                     from layers import sqrt
-                    alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
+                    alpha_bar_prev = self._extract(
+                        self.alphas_cumprod_prev, t, x_t.shape)
                     with float_context_scope():
                         # re-predict x_0 using pred_noise_prime
-                        pred_x_start = self.predict_xstart_from_noise(x_t=x_t, t=t, noise=pred_noise_prime)
-                        x_t = pred_x_start * sqrt(alpha_bar_prev) + sqrt(1 - alpha_bar_prev) * pred_noise_prime
+                        pred_x_start = self.predict_xstart_from_noise(
+                            x_t=x_t, t=t, noise=pred_noise_prime)
+                        x_t = pred_x_start * \
+                            sqrt(alpha_bar_prev) + \
+                            sqrt(1 - alpha_bar_prev) * pred_noise_prime
 
                     cnt += 1
                     if dump_interval > 0 and cnt % dump_interval == 0:
@@ -960,15 +966,14 @@ class GaussianDiffusion(object):
         assert x_t.shape == shape
         return x_t.d.copy(), samples, pred_x_starts
 
-
     def dpm2_sample_loop(self, model, shape, *,
-                    channel_last=False,
-                    noise=None,
-                    x_start=None,
-                    model_kwargs=None,
-                    dump_interval=-1,
-                    progress=False,
-                    without_auto_forward=False):
+                         channel_last=False,
+                         noise=None,
+                         x_start=None,
+                         model_kwargs=None,
+                         dump_interval=-1,
+                         progress=False,
+                         without_auto_forward=False):
         """
         Sample data from x_T ~ N(0, I) by "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps".
         Iteratively sample data from model from t=T to t=0 by using DPM-solver-2.
@@ -996,13 +1001,13 @@ class GaussianDiffusion(object):
         def _cont_log_alpha_t(t):
             if self.beta_strategy == "linear":
                 b0, b1 = 0.0001*self.max_timesteps, 0.02*self.max_timesteps
-                return -(b1-b0)/4*math.pow(t,2) - b0/2*t
+                return -(b1-b0)/4*math.pow(t, 2) - b0/2*t
             elif self.beta_strategy == "cosine":
                 s = 0.008
                 return math.log(math.cos(math.pi/2*(t+s)/(1+s))) - math.log(math.cos(math.pi/2*s/(1+s)))
             else:
                 raise NotImplementedError()
-        
+
         def _cont_log_sigma_t(t):
             return 0.5 * math.log(1 - math.exp(2*_cont_log_alpha_t(t)))
 
@@ -1024,7 +1029,7 @@ class GaussianDiffusion(object):
                 raise NotImplementedError()
 
         def _t_cont_to_disc(t):
-            ## Type-1 described in the appendix of the paper
+            # Type-1 described in the appendix of the paper
             return self.max_timesteps * max([0, t - 1/self.max_timesteps])
 
         def _pred_noise(model, x, t, channel_last, model_kwargs):
@@ -1093,31 +1098,44 @@ class GaussianDiffusion(object):
                     model_kwargs = {}
                 for i, t_cont in enumerate(t_cont_list):
                     with float_context_scope():
-                        t = F.constant(_t_cont_to_disc(t_cont), shape=(shape[0], ))
-                        s_cont = _cont_t_lambda((_cont_lambda_t(t_cont) + _cont_lambda_t(t_cont_next_list[i])) / 2.0)
-                        s = F.constant(_t_cont_to_disc(s_cont), shape=(shape[0], ))
-                        h = _cont_lambda_t(t_cont_next_list[i]) - _cont_lambda_t(t_cont)
-                        expm1_h = F.constant(math.expm1(h), shape=(shape[0],1,1,1))
-                        expm1_h2 = F.constant(math.expm1(h/2), shape=(shape[0],1,1,1))
+                        t = F.constant(_t_cont_to_disc(
+                            t_cont), shape=(shape[0], ))
+                        s_cont = _cont_t_lambda(
+                            (_cont_lambda_t(t_cont) + _cont_lambda_t(t_cont_next_list[i])) / 2.0)
+                        s = F.constant(_t_cont_to_disc(
+                            s_cont), shape=(shape[0], ))
+                        h = _cont_lambda_t(
+                            t_cont_next_list[i]) - _cont_lambda_t(t_cont)
+                        expm1_h = F.constant(math.expm1(
+                            h), shape=(shape[0], 1, 1, 1))
+                        expm1_h2 = F.constant(math.expm1(
+                            h/2), shape=(shape[0], 1, 1, 1))
 
-                    pred_noise = _pred_noise(model, x_t, t, channel_last, model_kwargs)
+                    pred_noise = _pred_noise(
+                        model, x_t, t, channel_last, model_kwargs)
 
                     with float_context_scope():
-                        u = math.exp(_cont_log_alpha_t(s_cont) - _cont_log_alpha_t(t_cont)) * x_t
+                        u = math.exp(_cont_log_alpha_t(s_cont) -
+                                     _cont_log_alpha_t(t_cont)) * x_t
                         u = u - _cont_sigma_t(s_cont) * expm1_h2 * pred_noise
 
-                    pred_noise = _pred_noise(model, u, s, channel_last, model_kwargs)
+                    pred_noise = _pred_noise(
+                        model, u, s, channel_last, model_kwargs)
 
                     with float_context_scope():
-                        x_t = math.exp(_cont_log_alpha_t(t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
-                        x_t = x_t - _cont_sigma_t(t_cont_next_list[i]) * expm1_h * pred_noise
+                        x_t = math.exp(_cont_log_alpha_t(
+                            t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
+                        x_t = x_t - \
+                            _cont_sigma_t(
+                                t_cont_next_list[i]) * expm1_h * pred_noise
 
                     if dump_interval > 0 and i % dump_interval == 0:
                         samples.append((t_cont, x_t.d.copy()))
                         # compute pred_x_start
-                        pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * x_t - math.exp(-_cont_lambda_t(t_cont)) * pred_noise
+                        pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * \
+                            x_t - math.exp(-_cont_lambda_t(t_cont)
+                                           ) * pred_noise
                         pred_x_starts.append((t_cont, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
         return x_t.d.copy(), samples, pred_x_starts
-
