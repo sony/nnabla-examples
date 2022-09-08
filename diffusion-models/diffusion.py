@@ -889,7 +889,7 @@ class GaussianDiffusion(object):
             return model(x, self._rescale_timestep(t), **kwargs)
 
         if without_auto_forward:
-            assert False, "not implemented"
+            raise NotImplementedError()
         else:
             # make sure input_cond is already computed
             if model_kwargs is not None:
@@ -1001,7 +1001,7 @@ class GaussianDiffusion(object):
                 s = 0.008
                 return math.log(math.cos(math.pi/2*(t+s)/(1+s))) - math.log(math.cos(math.pi/2*s/(1+s)))
             else:
-                assert False, "not implemented to compute alpha"
+                raise NotImplementedError()
         
         def _cont_log_sigma_t(t):
             return 0.5 * math.log(1 - math.exp(2*_cont_log_alpha_t(t)))
@@ -1015,13 +1015,14 @@ class GaussianDiffusion(object):
         def _cont_t_lambda(lam):
             if self.beta_strategy == "linear":
                 b0, b1 = 0.0001*self.max_timesteps, 0.02*self.max_timesteps
-                return 2*math.log(math.exp(-2*lam)+1) / (math.sqrt(b0*b0+2*(b1-b0)*math.log(math.exp(-2*lam)+1))+b0)
+                # return 2*math.log(math.exp(-2*lam)+1) / (math.sqrt(b0*b0+2*(b1-b0)*math.log(math.exp(-2*lam)+1))+b0)
+                return 2*math.log1p(math.exp(-2*lam)) / (math.sqrt(b0*b0+2*(b1-b0)*math.log1p(math.exp(-2*lam)))+b0)
             elif self.beta_strategy == "cosine":
                 s = 0.008
-                f_lambda = -0.5 * math.log(math.exp(-2*lam)+1)
+                f_lambda = -0.5 * math.log1p(math.exp(-2*lam))
                 return 2*(1+s)/math.pi * math.acos(math.exp(f_lambda + math.log(math.cos(math.pi*s/2/(1+s))))) - s
             else:
-                assert False, "not implemented to compute lambda"
+                raise NotImplementedError()
 
         def _t_cont_to_disc(t):
             ## Type-1 described in the appendix of the paper
@@ -1056,7 +1057,7 @@ class GaussianDiffusion(object):
             t_cont_list = tqdm(t_cont_list)
 
         if without_auto_forward:
-            assert False, "not implemented"
+            raise NotImplementedError()
         else:
             # make sure input_cond is already computed
             if model_kwargs is not None:
@@ -1112,10 +1113,10 @@ class GaussianDiffusion(object):
                         x_t = math.exp(_cont_log_alpha_t(t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
                         x_t = x_t - _cont_sigma_t(t_cont_next_list[i]) * expm1_h * pred_noise
 
-                    if dump_interval > 0 and cnt % dump_interval == 0:
+                    if dump_interval > 0 and i % dump_interval == 0:
                         samples.append((t_cont, x_t.d.copy()))
                         # compute pred_x_start
-                        pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * x_t - math.exp(_cont_log_sigma_t(t_cont) - _cont_log_alpha_t(t_cont)) * pred_noise
+                        pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * x_t - math.exp(-_cont_lambda_t(t_cont)) * pred_noise
                         pred_x_starts.append((t_cont, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
