@@ -88,7 +88,8 @@ class Model(object):
                use_ema=True,
                dump_interval=-1,
                progress=False,
-               use_ddim=False):
+               use_ddim=False,
+               ode_solver=None):
 
         if use_ema:
             with nn.parameter_scope("ema"):
@@ -99,9 +100,14 @@ class Model(object):
                                    use_ema=False,
                                    dump_interval=dump_interval,
                                    progress=progress,
-                                   use_ddim=use_ddim)
+                                   use_ddim=use_ddim,
+                                   ode_solver=ode_solver)
 
         loop_func = self.diffusion.ddim_sample_loop if use_ddim else self.diffusion.p_sample_loop
+        if ode_solver == "plms":
+            loop_func = self.diffusion.plms_sample_loop
+        elif ode_solver == "dpm2":
+            loop_func = self.diffusion.dpm2_sample_loop
 
         with nn.no_grad():
             return loop_func(

@@ -161,6 +161,8 @@ class GenerateConfig:
     ema: bool = True
     ddim: bool = False
     # todo: add seed to fix ddim sampling
+    ode_solver: Union[None, str] = None
+    # currently supporting "plms" and "dpm2"
     samples: int = 1024
     batch_size: int = 32
 

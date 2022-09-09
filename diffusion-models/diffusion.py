@@ -201,6 +201,8 @@ class GaussianDiffusion(object):
 
         # generate betas from strategy and max timesteps
         betas = get_beta_schedule(conf.beta_strategy, conf.max_timesteps)
+        self.beta_strategy = conf.beta_strategy
+        self.max_timesteps = conf.max_timesteps
 
         # setup respacing
         self.timestep_map = None
@@ -839,3 +841,301 @@ class GaussianDiffusion(object):
                                 sampler=partial(
                                     self.ddim_sample, eta=0., channel_last=channel_last),
                                 **kwargs)
+
+    def plms_sample_loop(self, model, shape, *,
+                         channel_last=False,
+                         noise=None,
+                         x_start=None,
+                         model_kwargs=None,
+                         dump_interval=-1,
+                         progress=False,
+                         without_auto_forward=False):
+        """
+        Sample data from x_T ~ N(0, I) by "Pseudo Numerical Methods for Diffusion Models on Manifolds".
+        Iteratively sample data from model from t=T to t=0.
+        T is specified as the length of betas given to __init__().
+
+        Args:
+            model (collable): 
+                A callable that takes x_t and t and predict noise (and sigma related parameters).
+            shape (list like object): A data shape.
+            channel_last (boolean): If True, the data shape is assumed to represent NHWC.
+            noise (collable): A noise generator. If None, F.randn(shape) will be used.
+            x_start (nn.Variable): 
+                A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
+            interval (int): 
+                If > 0, all intermediate results at every `interval` step will be returned as a list.
+                e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
+            progress (boolean): If True, tqdm will be used to show the sampling progress.
+
+        Returns:
+            - x_0 (nn.Variable): the final sampled result of x_0
+            - samples (a list of nn.Variable): the sampled results at every `interval`
+            - pred_x_starts (a list of nn.Variable): the predicted x_0 from each x_t at every `interval`: 
+        """
+        T = self.num_timesteps
+        indices = list(range(T))[::-1]
+
+        samples = []
+        pred_x_starts = []
+
+        if progress:
+            from tqdm.auto import tqdm
+            indices = tqdm(indices)
+
+        # update model to enable respacing if needed
+        def timestep_rescaled_model(x, t, **kwargs):
+            return model(x, self._rescale_timestep(t), **kwargs)
+
+        if without_auto_forward:
+            raise NotImplementedError()
+        else:
+            # make sure input_cond is already computed
+            if model_kwargs is not None:
+                assert isinstance(
+                    model_kwargs, dict), f"model_kwargs must be dict but `{type(model_kwargs)}` is given"
+
+                for x in model_kwargs.values():
+                    if not isinstance(x, nn.Variable):
+                        continue
+
+                    if x.parent is None:
+                        continue
+
+                    # clear_buffer=True is maybe unsafe.
+                    x.apply(persistent=True)
+                    x.forward(clear_buffer=True)
+
+            with nn.auto_forward():
+                if noise is None:
+                    noise = np.random.randn(*shape)
+                else:
+                    assert isinstance(noise, np.ndarray)
+                    assert noise.shape == shape
+
+                if x_start is not None:
+                    # SDEdit
+                    x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
+                                        noise=nn.Variable.from_numpy_array(noise))
+                else:
+                    x_t = nn.Variable.from_numpy_array(noise)
+
+                cnt = 0
+                old_eps = []
+                for step in indices:
+                    t = F.constant(step, shape=(shape[0], ))
+
+                    preds = self.p_mean_var(timestep_rescaled_model, x_t, t,
+                                            model_kwargs=model_kwargs,
+                                            clip_denoised=True,
+                                            channel_last=channel_last)
+
+                    pred_noise = self.predict_noise_from_xstart(
+                        x_t, t, preds.xstart)
+
+                    if len(old_eps) == 0:
+                        pred_noise_prime = pred_noise
+                    elif len(old_eps) == 1:
+                        pred_noise_prime = (3 * pred_noise - old_eps[-1]) / 2
+                    elif len(old_eps) == 2:
+                        pred_noise_prime = (
+                            23 * pred_noise - 16 * old_eps[-1] + 5 * old_eps[-2]) / 12
+                    elif len(old_eps) == 3:
+                        pred_noise_prime = (
+                            55 * pred_noise - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
+                    old_eps.append(pred_noise)
+                    if len(old_eps) > 3:
+                        old_eps.pop(0)
+
+                    from layers import sqrt
+                    alpha_bar_prev = self._extract(
+                        self.alphas_cumprod_prev, t, x_t.shape)
+                    with float_context_scope():
+                        # re-predict x_0 using pred_noise_prime
+                        pred_x_start = self.predict_xstart_from_noise(
+                            x_t=x_t, t=t, noise=pred_noise_prime)
+                        x_t = pred_x_start * \
+                            sqrt(alpha_bar_prev) + \
+                            sqrt(1 - alpha_bar_prev) * pred_noise_prime
+
+                    cnt += 1
+                    if dump_interval > 0 and cnt % dump_interval == 0:
+                        samples.append((step, x_t.d.copy()))
+                        pred_x_starts.append((step, pred_x_start.d.copy()))
+
+        assert x_t.shape == shape
+        return x_t.d.copy(), samples, pred_x_starts
+
+    def dpm2_sample_loop(self, model, shape, *,
+                         channel_last=False,
+                         noise=None,
+                         x_start=None,
+                         model_kwargs=None,
+                         dump_interval=-1,
+                         progress=False,
+                         without_auto_forward=False):
+        """
+        Sample data from x_T ~ N(0, I) by "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps".
+        Iteratively sample data from model from t=T to t=0 by using DPM-solver-2.
+        T is specified as the length of betas given to __init__().
+
+        Args:
+            model (collable): 
+                A callable that takes x_t and t and predict noise (and sigma related parameters).
+            shape (list like object): A data shape.
+            channel_last (boolean): If True, the data shape is assumed to represent NHWC.
+            noise (collable): A noise generator. If None, F.randn(shape) will be used.
+            x_start (nn.Variable): 
+                A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
+            interval (int): 
+                If > 0, all intermediate results at every `interval` step will be returned as a list.
+                e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
+            progress (boolean): If True, tqdm will be used to show the sampling progress.
+
+        Returns:
+            - x_0 (nn.Variable): the final sampled result of x_0
+            - samples (a list of nn.Variable): the sampled results at every `interval`
+            - pred_x_starts (a list of nn.Variable): the predicted x_0 from each x_t at every `interval`: 
+        """
+
+        def _cont_log_alpha_t(t):
+            if self.beta_strategy == "linear":
+                b0, b1 = 0.0001*self.max_timesteps, 0.02*self.max_timesteps
+                return -(b1-b0)/4*math.pow(t, 2) - b0/2*t
+            elif self.beta_strategy == "cosine":
+                s = 0.008
+                return math.log(math.cos(math.pi/2*(t+s)/(1+s))) - math.log(math.cos(math.pi/2*s/(1+s)))
+            else:
+                raise NotImplementedError()
+
+        def _cont_log_sigma_t(t):
+            return 0.5 * math.log(1 - math.exp(2*_cont_log_alpha_t(t)))
+
+        def _cont_sigma_t(t):
+            return math.sqrt(1 - math.exp(2*_cont_log_alpha_t(t)))
+
+        def _cont_lambda_t(t):
+            return _cont_log_alpha_t(t) - _cont_log_sigma_t(t)
+
+        def _cont_t_lambda(lam):
+            if self.beta_strategy == "linear":
+                b0, b1 = 0.0001*self.max_timesteps, 0.02*self.max_timesteps
+                return 2*math.log1p(math.exp(-2*lam)) / (math.sqrt(b0*b0+2*(b1-b0)*math.log1p(math.exp(-2*lam)))+b0)
+            elif self.beta_strategy == "cosine":
+                s = 0.008
+                f_lambda = -0.5 * math.log1p(math.exp(-2*lam))
+                return 2*(1+s)/math.pi * math.acos(math.exp(f_lambda + math.log(math.cos(math.pi*s/2/(1+s))))) - s
+            else:
+                raise NotImplementedError()
+
+        def _t_cont_to_disc(t):
+            # Type-1 described in the appendix of the paper
+            return self.max_timesteps * max([0, t - 1/self.max_timesteps])
+
+        def _pred_noise(model, x, t, channel_last, model_kwargs):
+            pred = model(x, t, **model_kwargs)
+            if self.model_var_type == ModelVarType.LEARNED_RANGE:
+                pred_noise, _ = chunk(
+                    pred, num_chunk=2, axis=3 if channel_last else 1)
+            else:
+                # Model only predicts noise
+                pred_noise = pred
+            return pred_noise
+
+        T = self.num_timesteps
+        lam0 = _cont_lambda_t(1e-3)
+        if self.beta_strategy == "cosine":
+            lam1 = _cont_lambda_t(0.9946)
+        else:
+            lam1 = _cont_lambda_t(1.0)
+        lam_cont_list = np.linspace(lam1, lam0, T+1, dtype=np.float64).tolist()
+        t_cont_list = [_cont_t_lambda(lam_cont_list[i]) for i in range(T+1)]
+        t_cont_next_list = t_cont_list[1:]
+        t_cont_list = t_cont_list[:-1]
+
+        samples = []
+        pred_x_starts = []
+
+        if progress:
+            from tqdm.auto import tqdm
+            t_cont_list = tqdm(t_cont_list)
+
+        if without_auto_forward:
+            raise NotImplementedError()
+        else:
+            # make sure input_cond is already computed
+            if model_kwargs is not None:
+                assert isinstance(
+                    model_kwargs, dict), f"model_kwargs must be dict but `{type(model_kwargs)}` is given"
+
+                for x in model_kwargs.values():
+                    if not isinstance(x, nn.Variable):
+                        continue
+
+                    if x.parent is None:
+                        continue
+
+                    # clear_buffer=True is maybe unsafe.
+                    x.apply(persistent=True)
+                    x.forward(clear_buffer=True)
+
+            with nn.auto_forward():
+                if noise is None:
+                    noise = np.random.randn(*shape)
+                else:
+                    assert isinstance(noise, np.ndarray)
+                    assert noise.shape == shape
+
+                if x_start is not None:
+                    # SDEdit
+                    # x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
+                    #                     noise=nn.Variable.from_numpy_array(noise))
+                    raise NotImplementedError()
+                else:
+                    x_t = nn.Variable.from_numpy_array(noise)
+
+                if model_kwargs is None:
+                    model_kwargs = {}
+                for i, t_cont in enumerate(t_cont_list):
+                    with float_context_scope():
+                        t = F.constant(_t_cont_to_disc(
+                            t_cont), shape=(shape[0], ))
+                        s_cont = _cont_t_lambda(
+                            (_cont_lambda_t(t_cont) + _cont_lambda_t(t_cont_next_list[i])) / 2.0)
+                        s = F.constant(_t_cont_to_disc(
+                            s_cont), shape=(shape[0], ))
+                        h = _cont_lambda_t(
+                            t_cont_next_list[i]) - _cont_lambda_t(t_cont)
+                        expm1_h = F.constant(math.expm1(
+                            h), shape=(shape[0], 1, 1, 1))
+                        expm1_h2 = F.constant(math.expm1(
+                            h/2), shape=(shape[0], 1, 1, 1))
+
+                    pred_noise = _pred_noise(
+                        model, x_t, t, channel_last, model_kwargs)
+
+                    with float_context_scope():
+                        u = math.exp(_cont_log_alpha_t(s_cont) -
+                                     _cont_log_alpha_t(t_cont)) * x_t
+                        u = u - _cont_sigma_t(s_cont) * expm1_h2 * pred_noise
+
+                    pred_noise = _pred_noise(
+                        model, u, s, channel_last, model_kwargs)
+
+                    with float_context_scope():
+                        x_t = math.exp(_cont_log_alpha_t(
+                            t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
+                        x_t = x_t - \
+                            _cont_sigma_t(
+                                t_cont_next_list[i]) * expm1_h * pred_noise
+
+                    if dump_interval > 0 and i % dump_interval == 0:
+                        samples.append((t_cont, x_t.d.copy()))
+                        # compute pred_x_start
+                        pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * \
+                            x_t - math.exp(-_cont_lambda_t(t_cont)
+                                           ) * pred_noise
+                        pred_x_starts.append((t_cont, pred_x_start.d.copy()))
+
+        assert x_t.shape == shape
+        return x_t.d.copy(), samples, pred_x_starts
