@@ -39,6 +39,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 <p align="center">
 <img src="./eigencam/images/visualization_result.png" width="500px">  
+
+## Attention Branch Network (image data) [code](./attention_branch_network/)
+
+[Hiroshi Fukui, Tsubasa Hirakawa, Takayoshi Yamashita, Hironobu Fujiyoshi. "Attention Branch Network: Learning of Attention Mechanism for Visual Explanation". in 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).](https://openaccess.thecvf.com/content_CVPR_2019/html/Fukui_Attention_Branch_Network_Learning_of_Attention_Mechanism_for_Visual_Explanation_CVPR_2019_paper.html)
+
+<p align="center">
+<img src="./attention_branch_network/images/attention_branch_network.png" width="500px">  
 </p>
 
 </br>

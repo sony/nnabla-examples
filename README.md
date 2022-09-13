@@ -67,6 +67,7 @@ We have prepared interactive demos, where you can play around without having to 
 |:---------------------------------:|:-------------:|:-----:|:------------:|
  [Grad-CAM](https://arxiv.org/abs/1610.02391) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/gradcam.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/gradcam/images/sample.png" align="center" height="90" ></a>|
  [SHAP](https://arxiv.org/abs/1901.10436) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/shap.ipynb) | Visualization |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/responsible_ai/shap/images/sample.png" align="center" height="90" ></a>|
+ [Attention Branch Network](https://openaccess.thecvf.com/content_CVPR_2019/html/Fukui_Attention_Branch_Network_Learning_of_Attention_Mechanism_for_Visual_Explanation_CVPR_2019_paper.html) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](interactive-demos/attention_branch_network.ipynb) | Visualization | <a href="url"><img src="responsible_ai/attention_branch_network/images/attention_branch_network.png" align="center" height="90" ></a>|
 
 ### Fairness of Machine Learning
 |Name| Notebook           | Task  | Example                       |
