@@ -369,9 +369,6 @@ class UNet(object):
         self.emb_dims = 4 * self.conf.base_channels
 
     def concat_input_cond(self, x, input_cond):
-        if input_cond is None:
-            return x
-
         assert isinstance(input_cond, (nn.Variable, nn.NdArray)
                           ), "input_cond must be nn.Variable or nn,NdArray."
         assert x.shape[0] == input_cond.shape[0], "batch size must be the same between x and input_cond"
@@ -380,18 +377,37 @@ class UNet(object):
                              interp_like(input_cond, x,
                                          channel_last=self.conf.channel_last),
                              axis=3 if self.conf.channel_last else 1)
+    
+    @staticmethod
+    def masking(x, mask_prob, axis):
+        if mask_prob == 0:
+            return x
 
-    def timestep_embedding(self, t):
-        with nn.parameter_scope('timestep_embedding'):
-            # sinusoidal embedding
-            emb = sinusoidal_embedding(t, self.conf.base_channels)
+        mask_shape = [1 for _ in range(len(x.shape))]
+        mask_shape[axis] = x.shape[axis]
+        
+        if mask_prob == 1:
+            mask = F.constant(shape=mask_shape)
+        else:
+            mask = F.rand_binomial(p=1-mask_prob,
+                                shape=mask_shape)
+        return x * mask
 
-            # reshape to use conv rather than affine
+
+    def embedding_projection(self, emb, mode: str, to_4d: bool = True):
+        # reshape to use conv rather than affine
+        if to_4d:
             if self.conf.channel_last:
                 emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
             else:
                 emb = F.reshape(emb, emb.shape + (1, 1))
-
+        
+        # post process
+        mode = mode.lower()
+        if mode == "simple":
+            # pass emb as is
+            return emb
+        elif mode == "mlp":
             # linear transforms
             emb = nin(emb, self.emb_dims, name='dense0',
                       channel_last=self.conf.channel_last)
@@ -399,13 +415,33 @@ class UNet(object):
 
             emb = nin(emb, self.emb_dims, name='dense1',
                       channel_last=self.conf.channel_last)
+            return emb
+        elif mode == "ln_mlp":
+            # apply layer norm first.
+            emb = layer_norm(emb, name="ln_0")
+            
+            # fall back to mlp
+            return self.embedding_projection(emb, mode="mlp", to_4d=False)
+        
+        raise NotImplementedError(f"embedding projection mode `{mode}` is not supported.")
+        
+    
+    def timestep_embedding(self, t, name=None):
+        if name is None:
+            name = 'timestep_embedding'
+
+        with nn.parameter_scope(name):
+            # sinusoidal embedding
+            emb = sinusoidal_embedding(t, self.conf.base_channels)
+
+            emb = self.embedding_projection(emb, mode="MLP")
 
         return emb
 
-    def class_embedding(self, class_label, class_cond_drop_rate):
-        assert len(
-            class_label.shape) == 1, f"Invalid shape for class_label: {class_label.shape}."
-        assert 0 <= class_cond_drop_rate <= 1, "class_cond_drop_rate must be in the range of [0, 1]."
+    def class_embedding(self, class_label, drop_rate):
+        assert len(class_label.shape) == 1, \
+             f"Invalid shape for class_label: {class_label.shape}."
+        assert 0 <= drop_rate <= 1, "drop_rate must be in the range of [0, 1]."
 
         with nn.parameter_scope("class_embedding"):
             emb = PF.embed(inp=class_label,
@@ -414,30 +450,35 @@ class UNet(object):
                            initializer=I.NormalInitializer())  # align init with pytorch
 
             # dropout for unconditional generation
-            if class_cond_drop_rate > 0:
-                mask = F.rand_binomial(p=1-class_cond_drop_rate,
-                                       shape=class_label.shape + (1, ))
-                emb = emb * mask
+            emb = self.masking(emb, 
+                               mask_prob=drop_rate,
+                               axis=0)
 
-            # reshape to use conv rather than affine
-            if self.conf.channel_last:
-                emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
-            else:
-                emb = F.reshape(emb, emb.shape + (1, 1))
-
-            # post process
-            if self.conf.class_cond_emb_type == "simple":
-                pass
-            elif self.conf.class_cond_emb_type == "MLP":
-                # linear transforms
-                emb = nin(emb, self.emb_dims, name='dense0',
-                          channel_last=self.conf.channel_last)
-                emb = nonlinearity(emb)
-
-                emb = nin(emb, self.emb_dims, name='dense1',
-                          channel_last=self.conf.channel_last)
+            emb = self.embedding_projection(emb, mode=self.conf.class_cond_emb_type)
 
         return emb
+
+    def text_embedding(self, text_emb, drop_rate):
+        # assume text_emb is already embeded by a pretrained model like t5.
+        # A shape should be (B, L, C), where B is batch, L is length, and C is emb dim.
+        assert len(text_emb.shape) == 3, \
+             f"Invalid shape for text_emb: {text_emb.shape}."
+        assert 0 <= drop_rate <= 1, "drop_rate must be in the range of [0, 1]."
+        
+        with nn.parameter_scope("text_embedding"):
+            # dropout for unconditional generation
+            emb = self.masking(text_emb, 
+                               mask_prob=drop_rate,
+                               axis=0)
+
+            # apply pooling along sequence to get global condition
+            # todo: attention pooling
+            emb_pooled = F.mean(emb, axis=1)
+            
+            # apply transformation
+            emb_pooled = self.embedding_projection(emb_pooled, mode="ln_mlp")
+        
+        return emb, emb_pooled
 
     def resblock_with_attention(self, h, emb, emb_seq, out_channels, name):
         with nn.parameter_scope(name):
@@ -589,7 +630,11 @@ class UNet(object):
                 emb += self.class_embedding(class_label, cond_drop_rate)
 
             # text condition
-            text_emb_seq = None # todo
+            text_emb_seq = None
+            if self.conf.text_cond:
+                assert text_emb is not None, "text_emb must be passed"
+                text_emb_seq, text_emb_pooled = self.text_embedding(text_emb, cond_drop_rate)
+                emb += text_emb_pooled
 
             emb = nonlinearity(emb)
 

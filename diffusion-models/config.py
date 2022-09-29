@@ -113,6 +113,9 @@ class ModelConfig:
     class_cond_emb_type: str = "simple"
     num_classes: int = "${dataset.num_classes}"
 
+    # text condition
+    text_cond: bool = False
+    text_cond_emb_type: str = "ln_mlp"
     # output
     model_var_type: str = "learned_range"
     output_channels: int = \

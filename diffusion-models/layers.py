@@ -112,9 +112,12 @@ def nin(x, c, name, *, zeroing_w=False, channel_last=False, recompute=False):
 
     with nn.recompute(recompute):
         return PF.convolution(x, c,
-                              kernel=(1, 1),
-                              pad=(0, 0), stride=(1, 1), name=name,
-                              w_init=w_init, b_init=b_init,
+                              kernel=(1 for _ in range(x.ndim - 2)),
+                              pad=(0 for _ in range(x.ndim - 2)),
+                              stride=(1 for _ in range(x.ndim - 2)),
+                              name=name,
+                              w_init=w_init,
+                              b_init=b_init,
                               channel_last=channel_last)
 
 
@@ -185,6 +188,10 @@ def interp_like(x, arr, channel_last, mode="linear"):
 
     # get target shape from arr
     h, w = Shape4D(arr.shape, channel_last=channel_last).get_as_tuple("hw")
+
+    # return x if x and arr has the same spatial size.
+    if Shape4D(x.shape, channel_last=channel_last).get_as_tuple("hw") == (h, w):
+        return x
 
     x_interp = F.interpolate(x, output_size=(
         h, w), mode=mode, channel_last=channel_last)
