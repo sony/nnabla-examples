@@ -20,7 +20,7 @@ import nnabla.functions as F
 import numpy as np
 from nnabla.parameter import get_parameter_or_create
 
-from typing import Union
+from typing import Union, List
 
 # Shape handler
 
@@ -145,6 +145,16 @@ def create_ema_op(params, ema_decay=0.9999):
             ema_params = nn.get_parameters(grad_only=False)
 
         return F.sink(*ops), ema_params
+
+def to_cpu(vars: List[nn.Variable]):
+    from nnabla.ext_utils import get_extension_context
+    cpu_ctx = get_extension_context(
+        ext_name="cpu",
+        type_config="float"
+    )
+
+    for var in vars:
+        var.data.cast(float, cpu_ctx)
 
 
 # neu extention
