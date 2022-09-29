@@ -1,0 +1,11 @@
+defaults:
+  - /proto_configs/dataset@_here_
+
+name: laion-400m
+max_text_length: 256
+text_emb_dims: 1024
+
+# path configuration
+# change this if you place a dataset in other directory
+data_dir: ./data 
+dataset_root_dir: ${dataset.data_dir}/laion400m-data

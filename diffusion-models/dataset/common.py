@@ -165,6 +165,9 @@ class SimpleDatasource(DataSource):
             img = imread(
                 self.img_paths[image_idx], channel_first=not self.channel_last, size=self.im_size, num_channels=3)
 
+        # rescale pixel intensity to [-1, 1]
+        img = img / 127.5 - 1
+
         if self.on_memory:
             self.images[image_idx] = img
 

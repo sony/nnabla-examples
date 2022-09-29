@@ -40,8 +40,15 @@ class DatasetConfig:
     fix_aspect_ratio: bool = True
     random_crop: bool = False
     shuffle_dataset: bool = True
+    train: bool = True
+
+    # for class condition
     num_classes: int = 1
 
+    # for text condition
+    max_text_length: int = 0
+    text_emb_dims: int = 0
+    
     # from other configs
     channel_last: bool = "${model.channel_last}"
     batch_size: int = "${train.batch_size}"
@@ -76,6 +83,18 @@ def get_image_shape(image_size, input_channels, channel_last):
 
 
 OmegaConf.register_new_resolver("get_is", get_image_shape)
+
+
+def get_text_emb_shape(max_length, emb_dim, channel_last):
+    if max_length == 0 or emb_dim == 0:
+        return None
+    
+    if channel_last:
+        return (max_length, emb_dim)
+    
+    return (emb_dim, max_length)
+
+OmegaConf.register_new_resolver("get_tes", get_text_emb_shape)
 
 
 @dataclass
@@ -117,6 +136,10 @@ class ModelConfig:
     # text condition
     text_cond: bool = False
     text_cond_emb_type: str = "ln_mlp"
+    max_text_length: int = "${dataset.max_text_length}"
+    text_emb_dims: int = "${dataset.text_emb_dims}"
+    text_emb_shape: Union[None, List[int]] = "${get_tes:${dataset.max_text_length},${dataset.text_emb_dims},${model.channel_last}}"
+
     # output
     model_var_type: str = "learned_range"
     output_channels: int = \

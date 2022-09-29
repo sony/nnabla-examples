@@ -35,8 +35,11 @@ class Cifar10DataSource(DataSource):
     '''
 
     def _get_data(self, position):
-        image = self._images[self._indexes[position]]
+        image = self._images[self._indexes[position]]  # [0, 255]
         label = self._labels[self._indexes[position]]
+
+        # rescale pixel intensity to [-1, 1]
+        image = image / 127.5 - 1
 
         # keep data paths
         if self.data_history.full():
@@ -124,10 +127,9 @@ class Cifar10DataSource(DataSource):
 
 
 def Cifar10DataIterator(conf: DatasetConfig,
-                        comm: CommunicatorWrapper = None,
-                        rng=None,
-                        train=True):
-    ds = Cifar10DataSource(train=train,
+                        comm: CommunicatorWrapper=None,
+                        rng=None):
+    ds = Cifar10DataSource(train=conf.train,
                            shuffle=conf.shuffle_dataset,
                            rng=rng,
                            channel_last=conf.channel_last)
