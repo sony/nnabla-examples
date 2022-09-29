@@ -19,3 +19,5 @@ tmp/
 
 !conf/*.yaml
 !conf/**/*.yaml
+
+params/
