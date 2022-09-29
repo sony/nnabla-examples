@@ -212,7 +212,7 @@ class GenerateConfig:
     ode_solver: Union[None, str] = None
     # currently supporting "plms" and "dpm2"
     samples: int = 1024
-    batch_size: int = 32
+    batch_size: int = 36
 
     # for refinement
     respacing_step: int = 4
@@ -223,6 +223,7 @@ class GenerateConfig:
 
     # class cond
     gen_class_id: Union[None, int] = None
+    classifier_free_guidance_weight: Union[None, float] = None
 
     # for SDEidt
     x_start_path: Union[None, str] = None

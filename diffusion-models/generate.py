@@ -131,6 +131,7 @@ def main(conf: config.GenScriptConfig):
                                                         progress=comm.rank == 0,
                                                         use_ddim=conf.generate.ddim,
                                                         ode_solver=conf.generate.ode_solver,
+                                                        classifier_free_guidance_weight=conf.generate.classifier_free_guidance_weight,
                                                         model_kwargs=model_kwargs)
 
         # scale back to [0, 255]

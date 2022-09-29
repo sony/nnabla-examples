@@ -302,7 +302,7 @@ class GaussianDiffusion(object):
     @force_float
     def q_sample(self, x_start, t, noise=None):
         """
-        Diffuse the data (t == 0 means diffused for 1 step), which samples from q(x_t | x_0).
+        Diffuse the data (t == 0 means diffusing data for 1 step), which samples from q(x_t | x_0).
         xt = sqrt(cumprod(alpha_0, ..., alpha_t)) * x_0 + sqrt(1 - cumprod(alpha_0, ..., alpha_t)) * epsilon
 
         Args:
@@ -508,7 +508,7 @@ class GaussianDiffusion(object):
 
         return ret
 
-    def p_mean_var(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, channel_last=False):
+    def p_mean_var(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, channel_last=False, classifier_free_guidance_weight=None):
         """
         Compute mean and var of p(x_{t-1}|x_t) from model.
 
@@ -518,6 +518,7 @@ class GaussianDiffusion(object):
             t (nn.Variable): A 1-D tensor of timesteps. The first axis represents batchsize.
             clip_denoised (boolean): If True, clip the denoised signal into [-1, 1].
             channel_last (boolean): Whether the channel axis is the last axis of an Array or not.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             An AttrDict containing the following items:
@@ -563,6 +564,21 @@ class GaussianDiffusion(object):
                 )
             }[self.model_var_type]()
 
+        # classifier-free guidance
+        if classifier_free_guidance_weight is not None and classifier_free_guidance_weight > 0:
+            model_kwargs_uncond = model_kwargs.copy()
+            model_kwargs_uncond["cond_drop_rate"] = 1
+            pred_uncond = model(x_t, t, **model_kwargs_uncond)
+
+            if self.model_var_type == ModelVarType.LEARNED_RANGE:
+                pred_noise_uncond = pred_uncond[..., :3] if channel_last else pred_uncond[:, :3]
+            else:
+                pred_noise_uncond = pred_uncond
+            
+            # (1 + w) * eps(t, c) - w * eps(t)
+            w = classifier_free_guidance_weight
+            pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
+
         x_recon = self.predict_xstart_from_noise(
             x_t=x_t, t=t, noise=pred_noise)
 
@@ -596,7 +612,8 @@ class GaussianDiffusion(object):
                  noise_function=F.randn,
                  repeat_noise=False,
                  no_noise=False,
-                 channel_last=False):
+                 channel_last=False,
+                 classifier_free_guidance_weight=None):
         """
         Sample from the model for one step.
         Also return predicted x_start.
@@ -606,7 +623,8 @@ class GaussianDiffusion(object):
                                 t=t,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
-                                channel_last=channel_last)
+                                channel_last=channel_last,
+                                classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         # no noise when t == 0
         if no_noise:
@@ -630,7 +648,8 @@ class GaussianDiffusion(object):
                     repeat_noise=False,
                     no_noise=False,
                     eta=0.,
-                    channel_last=False):
+                    channel_last=False,
+                    classifier_free_guidance_weight=None):
         """
         sample x_{t-1} from x_{t} by the model using DDIM sampler.
         Also return predicted x_start.
@@ -639,7 +658,8 @@ class GaussianDiffusion(object):
         preds = self.p_mean_var(model, x_t, t,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
-                                channel_last=channel_last)
+                                channel_last=channel_last,
+                                classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
 
@@ -818,7 +838,7 @@ class GaussianDiffusion(object):
         assert x_t.shape == shape
         return x_t.d.copy(), samples, pred_x_starts
 
-    def p_sample_loop(self, *args, channel_last=False, **kwargs):
+    def p_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}) proposed by "Denoising Diffusion Probabilistic Models".
         See self.sample_loop for more details about sampling process.
@@ -827,10 +847,12 @@ class GaussianDiffusion(object):
 
         return self.sample_loop(*args,
                                 sampler=partial(
-                                    self.p_sample, channel_last=channel_last),
+                                    self.p_sample,
+                                    channel_last=channel_last, 
+                                    classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
-    def ddim_sample_loop(self, *args, channel_last=False, **kwargs):
+    def ddim_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}, x_{0}) proposed by "Denoising Diffusion Implicit Models".
         See self.sample_loop for more details about sampling process.
@@ -839,7 +861,10 @@ class GaussianDiffusion(object):
 
         return self.sample_loop(*args,
                                 sampler=partial(
-                                    self.ddim_sample, eta=0., channel_last=channel_last),
+                                    self.ddim_sample, 
+                                    eta=0., 
+                                    channel_last=channel_last,
+                                    classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
     def plms_sample_loop(self, model, shape, *,
@@ -849,7 +874,8 @@ class GaussianDiffusion(object):
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
-                         without_auto_forward=False):
+                         without_auto_forward=False,
+                         classifier_free_guidance_weight=None):
         """
         Sample data from x_T ~ N(0, I) by "Pseudo Numerical Methods for Diffusion Models on Manifolds".
         Iteratively sample data from model from t=T to t=0.
@@ -867,6 +893,7 @@ class GaussianDiffusion(object):
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
             progress (boolean): If True, tqdm will be used to show the sampling progress.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -928,7 +955,8 @@ class GaussianDiffusion(object):
                     preds = self.p_mean_var(timestep_rescaled_model, x_t, t,
                                             model_kwargs=model_kwargs,
                                             clip_denoised=True,
-                                            channel_last=channel_last)
+                                            channel_last=channel_last,
+                                            classifier_free_guidance_weight=classifier_free_guidance_weight)
 
                     pred_noise = self.predict_noise_from_xstart(
                         x_t, t, preds.xstart)
@@ -973,7 +1001,8 @@ class GaussianDiffusion(object):
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
-                         without_auto_forward=False):
+                         without_auto_forward=False,
+                         classifier_free_guidance_weight=None):
         """
         Sample data from x_T ~ N(0, I) by "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps".
         Iteratively sample data from model from t=T to t=0 by using DPM-solver-2.
@@ -991,6 +1020,7 @@ class GaussianDiffusion(object):
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
             progress (boolean): If True, tqdm will be used to show the sampling progress.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -1040,6 +1070,22 @@ class GaussianDiffusion(object):
             else:
                 # Model only predicts noise
                 pred_noise = pred
+
+            # classifier-free guidance
+            if classifier_free_guidance_weight is not None and classifier_free_guidance_weight > 0:
+                model_kwargs_uncond = model_kwargs.copy()
+                model_kwargs_uncond["cond_drop_rate"] = 1
+                pred_uncond = model(x_t, t, **model_kwargs_uncond)
+
+                if self.model_var_type == ModelVarType.LEARNED_RANGE:
+                    pred_noise_uncond = pred_uncond[..., :3] if channel_last else pred_uncond[:, :3]
+                else:
+                    pred_noise_uncond = pred_uncond
+                
+                # (1 + w) * eps(t, c) - w * eps(t)
+                w = classifier_free_guidance_weight
+                pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
+            
             return pred_noise
 
         T = self.num_timesteps

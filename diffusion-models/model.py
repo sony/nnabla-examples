@@ -121,7 +121,8 @@ class Model(object):
                dump_interval=-1,
                progress=False,
                use_ddim=False,
-               ode_solver=None):
+               ode_solver=None,
+               classifier_free_guidance_weight=None):
 
         if use_ema:
             with nn.parameter_scope("ema"):
@@ -133,7 +134,8 @@ class Model(object):
                                    dump_interval=dump_interval,
                                    progress=progress,
                                    use_ddim=use_ddim,
-                                   ode_solver=ode_solver)
+                                   ode_solver=ode_solver,
+                                   classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         loop_func = self.diffusion.ddim_sample_loop if use_ddim else self.diffusion.p_sample_loop
         if ode_solver == "plms":
@@ -150,7 +152,8 @@ class Model(object):
                 x_start=x_start,
                 model_kwargs=model_kwargs,
                 dump_interval=dump_interval,
-                progress=progress
+                progress=progress,
+                classifier_free_guidance_weight=classifier_free_guidance_weight
             )
 
     def sample_trajectory(self, shape, noise=None, x_start=None, model_kwargs=None, use_ema=True, progress=False, use_ddim=False):
