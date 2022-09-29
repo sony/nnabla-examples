@@ -19,7 +19,7 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.initializer as I
 
-from utils import Shape4D
+from utils import Shape4D, force_float
 
 
 def pad_for_faster_conv(x, *, channel_last=False):
@@ -42,7 +42,7 @@ def pad_for_faster_conv(x, *, channel_last=False):
     else:
         return F.pad(x, (0, pad_width, 0, 0, 0, 0))
 
-
+@force_float
 def sinusoidal_embedding(timesteps, embedding_dim):
     """
     Sinusoidal embeddings originally proposed in "Attention Is All You Need" (https://arxiv.org/abs/1706.03762).
@@ -68,6 +68,7 @@ def nonlinearity(x, *, recompute=False):
         return F.swish(x)
 
 
+@force_float
 def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.group_normalization(x,
@@ -76,6 +77,7 @@ def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
                                       channel_axis=channel_axis,
                                       batch_axis=batch_axis)
 
+@force_float
 def layer_norm(x, name, *, batch_axis=0, recompute=False):
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.layer_normalization(x,

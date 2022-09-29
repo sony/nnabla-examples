@@ -24,7 +24,7 @@ import nnabla.initializer as I
 from nnabla.logger import logger
 
 from layers import *
-from utils import Shape4D
+from utils import Shape4D, float_context_scope
 
 
 class ResidualBlock(object):
@@ -345,7 +345,8 @@ class QKVAttention(object):
         # create attention weight
         # (B * num_heads, L (for q), L (for k))
         w = F.batch_matmul(q, k, transpose_b=True)
-        w = F.softmax(w, axis=-1)  # take softmax for each query
+        with float_context_scope():
+            w = F.softmax(w, axis=-1)  # take softmax for each query
 
         # attention
         a = F.reshape(F.batch_matmul(w, v), (B, -1, C))
