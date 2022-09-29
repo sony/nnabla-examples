@@ -64,13 +64,18 @@ def main(conf: config.GenScriptConfig):
     model_kwargs = {}
     is_upsample = loaded_conf.model.low_res_size is not None
     if is_upsample:
-        data_lowres = SimpleDataIterator(batch_size=B,
-                                         root_dir=conf.generate.base_samples_dir,
-                                         image_size=loaded_conf.model.low_res_size,
+        lowres_conf = config.DatasetConfig(batch_size=B, 
+                                           dataset_root_dir=conf.generate.base_samples_dir,
+                                           image_size=loaded_conf.model.low_res_size,
+                                           shuffle_dataset=False,
+                                           channel_last=loaded_conf.model.channel_last) 
+        def lowres_label_cb(path):
+            # assume file name is "gen_{class_id}_{image id}_{device_id}_{...}.png
+            return int(os.path.basename(path).split(".")[0].split("_")[1])
+
+        data_lowres = SimpleDataIterator(lowres_conf,
                                          comm=comm,
-                                         shuffle=False,
-                                         on_memory=False,
-                                         channel_last=loaded_conf.model.channel_last)
+                                         label_creator_callback=lowres_label_cb)
 
         # setup input condition
         model_kwargs["input_cond"] = nn.Variable(
@@ -85,7 +90,9 @@ def main(conf: config.GenScriptConfig):
                     num_samples_per_iter - 1) // num_samples_per_iter
 
     if loaded_conf.model.class_cond:
-        if conf.generate.gen_class_id is None:
+        if is_upsample:
+            model_kwargs["class_label"] = nn.Variable(shape=(B, ))
+        elif conf.generate.gen_class_id is None:
             # random class
             import nnabla.functions as F
             model_kwargs["class_label"] = F.randint(
@@ -96,16 +103,15 @@ def main(conf: config.GenScriptConfig):
             # deterministic class
             model_kwargs["class_label"] = nn.Variable.from_numpy_array(
                 [conf.generate.gen_class_id for _ in range(B)])
-
+        
+        model_kwargs["class_label"].persistent = True
+    
     # sampling
     local_saved_cnt = 0
 
     # setup output dir and show config
     if comm.rank == 0:
         os.makedirs(conf.generate.output_dir, exist_ok=True)
-        if is_upsample:
-            os.makedirs(os.path.join(
-                conf.generate.output_dir, "base"), exist_ok=True)
 
         logger.info("===== script config =====")
         print(OmegaConf.to_yaml(conf))
@@ -119,6 +125,12 @@ def main(conf: config.GenScriptConfig):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
 
         if is_upsample:
+            lowres, label = data_lowres.next()
+            model_kwargs["input_cond"].d = lowres
+
+            if loaded_conf.model.class_cond:
+                model_kwargs["class_label"].d = label
+
             if loaded_conf.model.noisy_low_res:
                 # todo: apply arbitrary augmentation for generation
                 # x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
@@ -139,33 +151,28 @@ def main(conf: config.GenScriptConfig):
         sample_out = np.clip(sample_out, 0, 255)
 
         if conf.generate.tiled:
-            save_path = os.path.join(
-                conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
+            if conf.generate.gen_class_id is not None:
+                save_path = os.path.join(
+                    conf.generate.output_dir, f"class_{conf.generate.gen_class_id}_CFG_{conf.generate.classifier_free_guidance_weight}.png")
+            else:
+                save_path = os.path.join(
+                    conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
             save_tiled_image(sample_out.astype(np.uint8),
                              save_path,
                              channel_last=loaded_conf.model.channel_last)
 
-            if is_upsample:
-                save_path_base = os.path.join(
-                    conf.generate.output_dir, "base", f"base_{local_saved_cnt}_{comm.rank}.png")
-                save_tiled_image(lowres.astype(np.uint8),
-                                 save_path_base,
-                                 channel_last=loaded_conf.model.channel_last)
-
             local_saved_cnt += 1
         else:
             for b in range(B):
-                save_path = os.path.join(
-                    conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
+                if loaded_conf.model.class_cond:
+                    class_id = int(model_kwargs["class_label"].d[b])
+                    save_path = os.path.join(
+                        conf.generate.output_dir, f"gen_{class_id}_{local_saved_cnt}_{comm.rank}.png")
+                else:
+                    save_path = os.path.join(
+                        conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
                 imsave(save_path, sample_out[b].astype(
                     np.uint8), channel_first=not loaded_conf.model.channel_last)
-
-                if is_upsample:
-                    save_path_base = os.path.join(
-                        conf.generate.output_dir, "base", f"base_{local_saved_cnt}_{comm.rank}.png")
-                    imsave(save_path_base,
-                           lowres[b].astype(np.uint8),
-                           channel_first=not loaded_conf.model.channel_last)
 
                 local_saved_cnt += 1
 
