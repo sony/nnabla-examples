@@ -97,19 +97,21 @@ class ModelConfig:
     channel_mult: List[int] = MISSING
     base_channels: int = 128
     dropout: float = 0.
-    class_cond: bool = False
-    class_cond_drop_rate: float = 0
-    class_cond_emb_type: str = "simple"
     channel_last: bool = True
-    num_classes: int = "${dataset.num_classes}"
     conv_resample: bool = True
 
     # attention
+    attention_type: str = "self_attention"
     attention_resolutions: List[int] = field(
         default_factory=lambda: [8, 16, 32])
     num_attention_head_channels: Union[None, int] = 64
     num_attention_heads: Union[None, int] = None
     # num_attention_head_channels is prioritized over num_attention_heads if both are specified.
+
+    # class condition
+    class_cond: bool = False
+    class_cond_emb_type: str = "simple"
+    num_classes: int = "${dataset.num_classes}"
 
     # output
     model_var_type: str = "learned_range"
@@ -149,6 +151,9 @@ class TrainConfig:
     lr: float = 1e-4
     clip_grad: Union[None, float] = None
     lr_scheduler: Union[None, str] = None
+
+    # for classifier-free guidance
+    cond_drop_rate: float = 0.1
 
 
 @dataclass

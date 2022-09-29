@@ -3,4 +3,3 @@ defaults:
   - _self_
 
 class_cond: True
-class_cond_drop_rate: 0.1

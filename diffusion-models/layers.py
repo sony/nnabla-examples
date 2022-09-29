@@ -68,11 +68,18 @@ def nonlinearity(x, *, recompute=False):
         return F.swish(x)
 
 
-def normalize(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
+def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.group_normalization(x,
                                       num_groups=32,
+                                      # todo: use more stable eps for float16?
                                       channel_axis=channel_axis,
+                                      batch_axis=batch_axis)
+
+def layer_norm(x, name, *, batch_axis=0, recompute=False):
+    with nn.parameter_scope(name), nn.recompute(recompute):
+        return PF.layer_normalization(x,
+                                      # todo: use more stable eps for float16?
                                       batch_axis=batch_axis)
 
 

@@ -179,7 +179,7 @@ def main(conf: config.TrainScriptConfig):
 
     if conf.model.class_cond:
         model_kwargs["class_label"] = nn.Variable((conf.train.batch_size, ))
-        model_kwargs["class_cond_drop_rate"] = conf.model.class_cond_drop_rate
+        model_kwargs["cond_drop_rate"] = conf.train.cond_drop_rate
 
     loss_dict, t = model.build_train_graph(x_rescaled,
                                            loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling,
@@ -414,7 +414,7 @@ def main(conf: config.TrainScriptConfig):
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
                                                                                                  size=(num_gen, )))
-                gen_model_kwargs["class_cond_drop_rate"] = 0
+                gen_model_kwargs["cond_drop_rate"] = 0 # disable dropping condition for generation
 
             sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
                                                 model_kwargs=gen_model_kwargs,

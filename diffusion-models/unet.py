@@ -41,8 +41,8 @@ class ResidualBlock(object):
         self.channel_last = channel_last
 
     def in_layers(self, x):
-        h = normalize(x, name='norm_in',
-                      channel_axis=3 if self.channel_last else 1)
+        h = group_norm(x, name='norm_in',
+                       channel_axis=3 if self.channel_last else 1)
         h = nonlinearity(h)
         h = conv(h, self.out_channels, name='conv_in',
                  channel_last=self.channel_last)
@@ -60,12 +60,12 @@ class ResidualBlock(object):
         if self.scale_shift_norm:
             scale, shift = chunk(
                 emb, num_chunk=2, axis=3 if self.channel_last else 1)
-            h = normalize(
+            h = group_norm(
                 h, name="norm_out", channel_axis=3 if self.channel_last else 1) * (scale + 1) + shift
         else:
             h += emb
-            h = normalize(h, name="norm_out",
-                          channel_axis=3 if self.channel_last else 1)
+            h = group_norm(h, name="norm_out",
+                           channel_axis=3 if self.channel_last else 1)
 
         h = nonlinearity(h)
 
@@ -110,7 +110,7 @@ class ResidualBlockResampleBase(ResidualBlock):
         raise NotImplementedError("Resample method must be implemented.")
 
     def in_layers_with_resampling(self, x):
-        h = normalize(x, name='norm_in',
+        h = group_norm(x, name='norm_in',
                       channel_axis=3 if self.channel_last else 1)
         h = nonlinearity(h)
 
@@ -154,61 +154,199 @@ class ResidualBlockUp(ResidualBlockResampleBase):
         return upsample(x, name, with_conv=False, channel_last=self.channel_last)
 
 
-def attn_block(x, name, *, num_heads=4, num_head_channels=None, channel_last=False):
-    """Multihead attention block"""
-    x_shape = Shape4D(x.shape, channel_last=channel_last)
-    B, C, H, W = x_shape.get_as_tuple("bchw")
+# Attention
+def self_attention(x,
+                   name,
+                   *,
+                   cond=None,
+                   num_heads=4,
+                   num_head_channels=None,
+                   channel_last=False):
+    
+    assert len(x.shape) == 4, "self_attention only supports 4D tensor for an input."
+    B, C, H, W = Shape4D(x.shape, channel_last=channel_last).get_as_tuple("bchw")
 
-    if num_head_channels is not None:
-        assert isinstance(num_head_channels, int), \
-            f"num_head_channels must be an interger but {type(num_head_channels)}"
-        assert x_shape.c % num_head_channels == 0, \
-            f"input channels (= {C}) is not divisible by num_head_channels (= {num_head_channels})"
-
-        num_heads = C // num_head_channels
-
-    assert num_heads is not None and C % num_heads == 0, \
-        f"input channels (= {C}) is not divisible by num_heads (= {num_heads})"
-
-    num_head_channels = x_shape.c // num_heads
-
+    # apply normalization and projection for inputs
     with nn.parameter_scope(name):
         # Get query, key, value
-        h = normalize(x, name="norm", channel_axis=3 if channel_last else 1)
+        h = group_norm(x, name="norm", channel_axis=3 if channel_last else 1)
         qkv = nin(h, 3 * C, name="qkv", channel_last=channel_last)
 
-        if not channel_last:
-            # (B, 3 * C, H, W) -> (B, H, W, 3 * C)
-            qkv = F.transpose(qkv, (0, 2, 3, 1))
+        # 4D -> 3D
+        if channel_last:
+            # (B, H, W, 3C) -> (B, HW, 3C)
+            qkv = F.reshape(qkv, (B, H * W, 3 * C))
+        else:
+            # (B, 3C, H, W) -> (B, 3C, HW)
+            qkv = F.reshape(qkv, (B, 3 * C, H * W))
 
-        #  always (B, H, W, 3 * C) here
-        q, k, v = chunk(qkv, 3, axis=-1)
+        q, k, v = chunk(qkv, num_chunk=3, axis=2 if channel_last else 1)
 
-        # scale is applied both q and k to avoid large value in dot op.
-        scale = 1 / math.sqrt(math.sqrt(num_head_channels))
+        # if cond is given, concat it to k and v along L axis.
+        if cond is not None:
+            # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
+            assert len(cond.shape) == 3, "A condition for self_attention should be a 3D tensor."
+            with nn.parameter_scope("condition"):
+                # Imagen paper says layer_norm performs better for condition
+                cond = layer_norm(cond, name="norm")
+                cond = nin(cond, 2 * C, name="kv_cond", channel_last=channel_last)
+            
+            kc, vc = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
+            k = F.concatenate(k, kc, axis=1 if channel_last else 2)
+            v = F.concatenate(v, vc, axis=1 if channel_last else 2)
 
-        q = F.reshape(q * scale, (B * num_heads, H * W, -1))
-        k = F.reshape(k * scale, (B * num_heads, H * W, -1))
-        v = F.reshape(v, (B * num_heads, H * W, -1))
+        qkv_attention = QKVAttention(num_heads=num_heads,
+                                     num_head_channels=num_head_channels,
+                                     channel_last=channel_last)
+        out = qkv_attention(q, k, v)
 
-        # create attention weight
-        # (B * num_heads, H * W (for q), H * W (for k))
-        w = F.batch_matmul(q, k, transpose_b=True)
-        w = F.softmax(w, axis=-1)  # take softmax for each query
-
-        # attention
-        a = F.reshape(F.batch_matmul(w, v), (B, H, W, C))
-
-        if not channel_last:
-            # (B, H, W, C) -> (B, C, H, W)
-            a = F.transpose(a, (0, 3, 1, 2))
-
+        # 3D -> 4D
+        if channel_last:
+            # (B, HW, C) -> (B, H, W, C)
+            out = F.reshape(out, (B, H, W, C))
+        else:
+            # (B, C, HW) -> (B, C, H, W)
+            out = F.reshape(out, (B, C, H, W))
+        
         # output projection
-        out = nin(a, C, name='proj_out', zeroing_w=True,
+        out = nin(out, C,
+                  name='proj_out',
+                  zeroing_w=True,
                   channel_last=channel_last)
 
     assert out.shape == x.shape
     return out + x
+
+
+def cross_attention(x,
+                    cond,
+                    name,
+                    *,
+                    num_heads=4,
+                    num_head_channels=None,
+                    channel_last=False):
+    
+    assert len(x.shape) == 4, "corss_attention only supports 4D tensor for an input."
+    B, C, H, W = Shape4D(x, channel_last=channel_last).get_as_tuple("bchw")
+
+    with nn.parameter_scope(name):
+        # Get query, key, value
+        h = group_norm(x, name="norm", channel_axis=3 if channel_last else 1)
+        q = nin(h, C, name="q", channel_last=channel_last)
+
+        # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
+        assert len(cond.shape) == 3, "A condition for cross_attention should be a 3D tensor."
+        with nn.parameter_scope("condition"):
+            # Imagen paper says layer_norm performs better for condition
+            cond = layer_norm(cond, name="norm")
+            cond = nin(cond, 2 * C, name="kv", channel_last=channel_last)
+        
+        k, v = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
+
+        # 4D -> 3D
+        if channel_last:
+            # (B, H, W, 3C) -> (B, HW, 3C)
+            q = F.reshape(q, (B, H * W, 3 * C))
+        else:
+            # (B, 3C, H, W) -> (B, 3C, HW)
+            q = F.reshape(q, (B, 3 * C, H * W))
+
+        qkv_attention = QKVAttention(num_heads=num_heads,
+                                     num_head_channels=num_head_channels,
+                                     channel_last=channel_last)
+        out = qkv_attention(q, k, v, cond=cond)
+
+        # 3D -> 4D
+        if channel_last:
+            # (B, HW, C) -> (B, H, W, C)
+            out = F.reshape(out, (B, H, W, C))
+        else:
+            # (B, C, HW) -> (B, C, H, W)
+            out = F.reshape(out, (B, C, H, W))
+        
+        # output projection
+        out = nin(out, C,
+                  name='proj_out',
+                  zeroing_w=True,
+                  channel_last=channel_last)
+
+    assert out.shape == x.shape
+    return out + x
+
+class QKVAttention(object):
+    def __init__(self, num_heads=4, num_head_channels=None, channel_last=False):
+        self.num_heads = num_heads
+        self.num_head_channels = num_head_channels
+        self.channel_last = channel_last
+    
+    def _validate_input_shape(self, q, k, v):
+        assert q.shape[0]== k.shape[0] == v.shape[0], \
+            "All inputs must have the same batch size."
+        assert k.shape[1] == v.shape[1], \
+            "k and v must have the same length."
+        
+        # strong assumuption that q, k, and v have the same channel dims.
+        assert q.shape[-1] == k.shape[-1] == v.shape[-1], \
+            "All inputs must have the same channel dims."
+
+        C = q.shape[-1]
+
+        # check attention configuration
+        if self.num_head_channels is not None:
+            assert isinstance(self.num_head_channels, int), \
+                f"num_head_channels must be an interger but {type(self.num_head_channels)}"
+            assert C % self.num_head_channels == 0, \
+                f"input channels (= {C}) is not divisible by num_head_channels (= {self.num_head_channels})"
+
+            self.num_heads = C // self.num_head_channels
+
+        assert self.num_heads is not None and C % self.num_heads == 0, \
+            f"input channels (= {C}) is not divisible by num_heads (= {self.num_heads})"
+
+        self.num_head_channels = C // self.num_heads
+
+
+    def __call__(self, q, k, v):
+        """
+        Compute attention based on given q, k, and v.
+        """
+         # check inputs' dims
+        assert len(q.shape) == len(k.shape) == len(v.shape) == 3, \
+            "inputs for QKVAttention must be a 3D tensor."
+        
+
+        if not self.channel_last:
+            # (B, C, L) -> (B, L, C)
+            q = F.transpose(q, (0, 2, 1))
+            k = F.transpose(k, (0, 2, 1))
+            v = F.transpose(v, (0, 2, 1))
+
+        # check input shape
+        self._validate_input_shape(q, k, v)
+
+        # L may vary for q and (k, v).
+        B, _, C = q.shape
+
+        # scale is applied both q and k to avoid large value in dot op.
+        scale = 1 / math.sqrt(math.sqrt(self.num_head_channels))
+
+        q = F.reshape(q * scale, (B * self.num_heads, q.shape[1], -1))
+        k = F.reshape(k * scale, (B * self.num_heads, k.shape[1], -1))
+        v = F.reshape(v, (B * self.num_heads, v.shape[1], -1))
+
+        # create attention weight
+        # (B * num_heads, L (for q), L (for k))
+        w = F.batch_matmul(q, k, transpose_b=True)
+        w = F.softmax(w, axis=-1)  # take softmax for each query
+
+        # attention
+        a = F.reshape(F.batch_matmul(w, v), (B, -1, C))
+
+        if not self.channel_last:
+            # (B, L, C) -> (B, C, L)
+            a = F.transpose(a, (0, 2, 1))
+        
+        return a
 
 
 class UNet(object):
@@ -301,7 +439,7 @@ class UNet(object):
 
         return emb
 
-    def resblock_with_attention(self, h, emb, out_channels, name):
+    def resblock_with_attention(self, h, emb, emb_seq, out_channels, name):
         with nn.parameter_scope(name):
             block = ResidualBlock(out_channels,
                                   scale_shift_norm=self.conf.scale_shift_norm,
@@ -313,20 +451,31 @@ class UNet(object):
             res = Shape4D(
                 h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None \
-                    and res in self.conf.attention_resolutions:
-                h = attn_block(h, "attention",
-                               num_heads=self.conf.num_attention_heads,
-                               num_head_channels=self.conf.num_attention_head_channels,
-                               channel_last=self.conf.channel_last)
+                and res in self.conf.attention_resolutions:
+                if self.conf.attention_type == "self_attention":
+                    h = self_attention(h, 
+                                       name="attention",
+                                       cond=emb_seq,
+                                       num_heads=self.conf.num_attention_heads,
+                                       num_head_channels=self.conf.num_attention_head_channels,
+                                       channel_last=self.conf.channel_last)
+                elif self.conf.attention_type == "cross_attention":
+                    h = cross_attention(h, emb_seq,
+                                        name="cross_attention",
+                                        num_heads=self.conf.num_attention_heads,
+                                        num_head_channels=self.conf.num_attention_head_channels,
+                                        channel_last=self.conf.channel_last)
+                else:
+                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
 
         return h
 
-    def downsample_blocks(self, h, emb, out_channels, level, down, num_res_block):
+    def downsample_blocks(self, h, emb, emb_seq, out_channels, level, down, num_res_block):
         hs = []
         with nn.parameter_scope(f"block_{level}"):
             for i in range(num_res_block):
                 h = self.resblock_with_attention(
-                    h, emb, out_channels, name=f"resblock_{i}")
+                    h, emb, emb_seq, out_channels, name=f"resblock_{i}")
                 hs.append(h)
 
         if down:
@@ -346,7 +495,7 @@ class UNet(object):
 
         return hs
 
-    def upsample_blocks(self, h, emb, hs_down, out_channels, level, up, num_res_block):
+    def upsample_blocks(self, h, emb, emb_seq, hs_down, out_channels, level, up, num_res_block):
         with nn.parameter_scope(f"output_{level}"):
             for i in range(num_res_block + 1):
                 # concat skip
@@ -354,7 +503,7 @@ class UNet(object):
                 h = F.concatenate(h, skip,
                                   axis=3 if self.conf.channel_last else 1)
                 h = self.resblock_with_attention(
-                    h, emb, out_channels, name=f"resblock_{i}")
+                    h, emb, emb_seq, out_channels, name=f"resblock_{i}")
 
         if up:
             if self.conf.resblock_resample:
@@ -371,7 +520,7 @@ class UNet(object):
 
         return h
 
-    def middle_block(self, h, emb):
+    def middle_block(self, h, emb, emb_seq):
         ch = h.shape[-1 if self.conf.channel_last else 1]
         block = ResidualBlock(ch,
                               scale_shift_norm=self.conf.scale_shift_norm,
@@ -382,20 +531,31 @@ class UNet(object):
 
         res = Shape4D(h.shape, self.conf.channel_last).get_as_tuple("h")
         if self.conf.attention_resolutions is not None \
-                and res in self.conf.attention_resolutions:
-            h = attn_block(h, "attention",
-                           num_heads=self.conf.num_attention_heads,
-                           num_head_channels=self.conf.num_attention_head_channels,
-                           channel_last=self.conf.channel_last)
+             and res in self.conf.attention_resolutions:
+            if self.conf.attention_type == "self_attention":
+                h = self_attention(h, 
+                                   name="attention",
+                                   cond=emb_seq,
+                                   num_heads=self.conf.num_attention_heads,
+                                   num_head_channels=self.conf.num_attention_head_channels,
+                                   channel_last=self.conf.channel_last)
+            elif self.conf.attention_type == "cross_attention":
+                h = cross_attention(h, emb_seq,
+                                    name="cross_attention",
+                                    num_heads=self.conf.num_attention_heads,
+                                    num_head_channels=self.conf.num_attention_head_channels,
+                                    channel_last=self.conf.channel_last)
+            else:
+                raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
 
         h = block(h, emb, name="resblock_1")
 
         return h
 
     def output_block(self, h):
-        h = normalize(h,
-                      name="last_norm",
-                      channel_axis=3 if self.conf.channel_last else 1)
+        h = group_norm(h, 
+                       name="last_norm",
+                       channel_axis=3 if self.conf.channel_last else 1)
         h = nonlinearity(h)
         h = conv(h,
                  self.conf.output_channels,
@@ -405,27 +565,41 @@ class UNet(object):
 
         return h
 
-    def __call__(self, x, t, *, name=None, input_cond=None, class_label=None, class_cond_drop_rate=0):
-        # concat input condition
-        x = self.concat_input_cond(x, input_cond)
-
+    def __call__(self,
+                 x,
+                 t,
+                 *,
+                 name=None,
+                 input_cond=None,
+                 class_label=None,
+                 text_emb=None,
+                 cond_drop_rate=0):
         ch = self.conf.base_channels
         with nn.parameter_scope('UNet' if name is None else name):
+            # timestep t
+            emb = self.timestep_embedding(t)
+
+            # input condition. Typically, low resolution image for upsampler.
+            if input_cond is not None:
+                x = self.concat_input_cond(x, input_cond)
+
+            # class condition
+            if self.conf.class_cond:
+                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
+                emb += self.class_embedding(class_label, cond_drop_rate)
+
+            # text condition
+            text_emb_seq = None # todo
+
+            emb = nonlinearity(emb)
+
+            # first convolution
             if self.conf.channel_last:
                 # todo: If we allow tf32, might be better to apply pad even if chennel_first.
                 # But, to do that, we have to care obsolete parameters.
                 x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
-
             h = conv(x, ch, name="first_conv",
                      channel_last=self.conf.channel_last)
-            emb = self.timestep_embedding(t)
-
-            if self.conf.class_cond:
-                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
-                emb = emb + \
-                    self.class_embedding(class_label, class_cond_drop_rate)
-
-            emb = nonlinearity(emb)
 
             hs = [h]
             # downsample block
@@ -436,7 +610,10 @@ class UNet(object):
                     is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
-                    outs = self.downsample_blocks(h, emb, ch * mult,
+                    outs = self.downsample_blocks(h, 
+                                                  emb,
+                                                  text_emb_seq, 
+                                                  ch * mult,
                                                   level=level,
                                                   down=not is_last_block,
                                                   num_res_block=num_res_block)
@@ -445,7 +622,7 @@ class UNet(object):
 
             # middle block
             with nn.parameter_scope("middle_block"):
-                h = self.middle_block(h, emb)
+                h = self.middle_block(h, emb, text_emb_seq)
 
             # upsample block
             with nn.parameter_scope("upsample_block"):
@@ -455,7 +632,11 @@ class UNet(object):
                     is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
-                    h = self.upsample_blocks(h, emb, hs, ch * mult,
+                    h = self.upsample_blocks(h, 
+                                             emb,
+                                             text_emb_seq,
+                                             hs,
+                                             ch * mult,
                                              level=level,
                                              up=not is_last_block,
                                              num_res_block=num_res_block)
