@@ -95,7 +95,7 @@ def force_float(func):
 def get_lr_scheduler(conf: TrainConfig):
     if conf.lr_scheduler is None:
         return None
-    elif conf.lr_scheduler == "consine":
+    elif conf.lr_scheduler == "cosine":
         from neu.learning_rate_scheduler import EpochCosineLearningRateScheduler
         return EpochCosineLearningRateScheduler(base_lr=conf.lr,
                                                 epochs=conf.n_iters,

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Union, Any
 
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
@@ -90,10 +90,11 @@ class ModelConfig:
         "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
 
     # arch.
+    arch: str = "unet"
     scale_shift_norm: bool = True
     resblock_resample: bool = False
     resblock_rescale_skip: bool = False
-    num_res_blocks: int = 3
+    num_res_blocks: Any = MISSING
     channel_mult: List[int] = MISSING
     base_channels: int = 128
     dropout: float = 0.

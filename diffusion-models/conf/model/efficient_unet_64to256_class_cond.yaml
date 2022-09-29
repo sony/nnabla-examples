@@ -1,0 +1,5 @@
+defaults:
+  - efficient_unet_64to256
+  - _self_
+
+class_cond: True

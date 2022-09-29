@@ -16,7 +16,7 @@ import nnabla as nn
 import nnabla.functions as F
 
 from diffusion import is_learn_sigma, GaussianDiffusion
-from unet import UNet
+from unet import UNet, EfficientUNet
 from config import DiffusionConfig, ModelConfig
 
 from neu.misc import AttrDict
@@ -32,8 +32,16 @@ class Model(object):
         self.model_conf = model_conf
 
     def _define_model(self):
-        unet = UNet(self.model_conf)
-        return unet
+        nets = {
+            "unet": UNet,
+            "efficient_unet": EfficientUNet
+        }
+
+        assert self.model_conf.arch in nets, \
+            f"model architecture '{self.model_conf.arch}' is not implemented."
+
+        return nets[self.model_conf.arch](self.model_conf)
+
 
     def build_train_graph(self,
                           x,

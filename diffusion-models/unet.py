@@ -33,12 +33,14 @@ class ResidualBlock(object):
                  scale_shift_norm=False,
                  dropout=0,
                  conv_shortcut=False,
-                 channel_last=False):
+                 channel_last=False,
+                 rescale_skip=False):
         self.out_channels = out_channels
         self.scale_shift_norm = scale_shift_norm
         self.dropout = dropout
         self.conv_shortcut = conv_shortcut
         self.channel_last = channel_last
+        self.rescale_skip=rescale_skip
 
     def in_layers(self, x):
         h = group_norm(x, name='norm_in',
@@ -99,8 +101,11 @@ class ResidualBlock(object):
             # second block
             h = self.out_layers(h, emb)
 
-            # add residual
-            out = h + self.shortcut(x)
+            # skip connection
+            if self.rescale_skip:
+                out = (h + self.shortcut(x)) / math.sqrt(2)
+            else:
+                out = h + self.shortcut(x)
 
         return out
 
@@ -138,8 +143,11 @@ class ResidualBlockResampleBase(ResidualBlock):
             # second block
             h = self.out_layers(h, emb)
 
-            # add residual
-            out = h + self.shortcut(x_res)
+            # skip connection
+            if self.rescale_skip:
+                out = (h + self.shortcut(x_res)) / math.sqrt(2)
+            else:
+                out = h + self.shortcut(x_res)
 
         return out
 
@@ -360,7 +368,7 @@ class UNet(object):
             self.num_res_blocks = [
                 conf.num_res_blocks for _ in range(len(conf.channel_mult))]
         else:
-            assert isinstance(conf.num_res_blocks, "__iter__") \
+            assert hasattr(conf.num_res_blocks, "__iter__") \
                    and len(conf.num_res_blocks) == len(conf.channel_mult), \
                     f"length of num_res_blocks and channel_mult must be the same (num_res_block: {conf.num_res_blocks}, channel_mult: {conf.channel_mult})"
             self.num_res_blocks = conf.num_res_blocks
@@ -485,7 +493,8 @@ class UNet(object):
             block = ResidualBlock(out_channels,
                                   scale_shift_norm=self.conf.scale_shift_norm,
                                   dropout=self.conf.dropout,
-                                  channel_last=self.conf.channel_last)
+                                  channel_last=self.conf.channel_last,
+                                  rescale_skip=self.conf.resblock_rescale_skip)
 
             h = block(h, emb, "res_block")
 
@@ -524,7 +533,8 @@ class UNet(object):
                 resblock_down = ResidualBlockDown(out_channels=out_channels,
                                                   scale_shift_norm=self.conf.scale_shift_norm,
                                                   dropout=self.conf.dropout,
-                                                  channel_last=self.conf.channel_last)
+                                                  channel_last=self.conf.channel_last,
+                                                  rescale_skip=self.conf.resblock_rescale_skip)
                 h = resblock_down(h, emb, name=f"downsample_{level}")
             else:
                 h = downsample(h,
@@ -551,7 +561,8 @@ class UNet(object):
                 resblock_up = ResidualBlockUp(out_channels=out_channels,
                                               scale_shift_norm=self.conf.scale_shift_norm,
                                               dropout=self.conf.dropout,
-                                              channel_last=self.conf.channel_last)
+                                              channel_last=self.conf.channel_last,
+                                              rescale_skip=self.conf.resblock_rescale_skip)
                 h = resblock_up(h, emb, name=f"upsample_{level}")
             else:
                 h = upsample(h,
@@ -566,7 +577,8 @@ class UNet(object):
         block = ResidualBlock(ch,
                               scale_shift_norm=self.conf.scale_shift_norm,
                               dropout=self.conf.dropout,
-                              channel_last=self.conf.channel_last)
+                              channel_last=self.conf.channel_last,
+                              rescale_skip=self.conf.resblock_rescale_skip)
 
         h = block(h, emb, name="resblock_0")
 
@@ -696,6 +708,207 @@ class UNet(object):
             out_shape.c = self.conf.output_channels
             assert Shape4D(out.shape,
                            channel_last=self.conf.channel_last) == out_shape
+
+        return out
+
+
+class EfficientUNet(UNet):
+    def __init__(self, *args, **kwargs):
+        super(EfficientUNet, self).__init__(*args, **kwargs)
+    
+    def downsample_blocks(self, h, emb, emb_seq, out_channels, level, num_res_block):
+        # 1. downsample (strided conv) -> 2. resblock x n -> 3. attention
+        # for skip connection, use only the last output (not intermediate layers in each resolusion block)
+        hs = []
+
+        # 1. downsample
+        if self.conf.resblock_resample:
+            logger.warning("Downsample by residual block. This is *not* a default setting for Efficient-UNet.")
+            h = ResidualBlockDown(out_channels=out_channels,
+                                    scale_shift_norm=self.conf.scale_shift_norm,
+                                    dropout=self.conf.dropout,
+                                    channel_last=self.conf.channel_last,
+                                    rescale_skip=self.conf.resblock_rescale_skip)(h, emb, name=f"downsample_{level}")
+        else:
+            h = downsample(h,
+                            name=f"downsample_{level}",
+                            with_conv=self.conf.conv_resample,
+                            channel_last=self.conf.channel_last)
+
+        with nn.parameter_scope(f"block_{level}"):
+            # 2. resblock x n
+            block = ResidualBlock(out_channels,
+                                  scale_shift_norm=self.conf.scale_shift_norm,
+                                  dropout=self.conf.dropout,
+                                  channel_last=self.conf.channel_last,
+                                  rescale_skip=self.conf.resblock_rescale_skip)
+            for i in range(num_res_block):
+                h = block(h, emb, f"resblock_{i}")
+            
+            # 3. attention
+            res = Shape4D(h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            if self.conf.attention_resolutions is not None \
+                and res in self.conf.attention_resolutions:
+                
+                if self.conf.attention_type == "self_attention":
+                    h = self_attention(h, 
+                                       name="attention",
+                                       cond=emb_seq,
+                                       num_heads=self.conf.num_attention_heads,
+                                       num_head_channels=self.conf.num_attention_head_channels,
+                                       channel_last=self.conf.channel_last)
+                elif self.conf.attention_type == "cross_attention":
+                    h = cross_attention(h, emb_seq,
+                                        name="cross_attention",
+                                        num_heads=self.conf.num_attention_heads,
+                                        num_head_channels=self.conf.num_attention_head_channels,
+                                        channel_last=self.conf.channel_last)
+                else:
+                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+
+            
+            hs.append(h)
+
+        return hs
+
+    def upsample_blocks(self, h, emb, emb_seq, hs_down, out_channels, level, num_res_block):
+        # 1. skip connection -> 2. resblock x n -> 3. attention -> 4. upsample
+
+        # 1. skip connection
+        h = F.concatenate(h, hs_down.pop(),
+                          axis=3 if self.conf.channel_last else 1)
+        
+        with nn.parameter_scope(f"output_{level}"):
+            # 2. resblock x n
+            block = ResidualBlock(out_channels,
+                                  scale_shift_norm=self.conf.scale_shift_norm,
+                                  dropout=self.conf.dropout,
+                                  channel_last=self.conf.channel_last,
+                                  rescale_skip=self.conf.resblock_rescale_skip)
+            for i in range(num_res_block):
+                h = block(h, emb, f"resblock_{i}")
+
+            # 3. attention
+            res = Shape4D(h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            if self.conf.attention_resolutions is not None and res in self.conf.attention_resolutions:
+                if self.conf.attention_type == "self_attention":
+                    h = self_attention(h, 
+                                       name="attention",
+                                       cond=emb_seq,
+                                       num_heads=self.conf.num_attention_heads,
+                                       num_head_channels=self.conf.num_attention_head_channels,
+                                       channel_last=self.conf.channel_last)
+                elif self.conf.attention_type == "cross_attention":
+                    h = cross_attention(h, emb_seq,
+                                        name="cross_attention",
+                                        num_heads=self.conf.num_attention_heads,
+                                        num_head_channels=self.conf.num_attention_head_channels,
+                                        channel_last=self.conf.channel_last)
+                else:
+                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+        # 4. upsample
+        if self.conf.resblock_resample:
+            logger.warning("Upsample by residual block. This is *not* a default setting for Efficient-UNet.")
+            h = ResidualBlockUp(out_channels=out_channels,
+                                scale_shift_norm=self.conf.scale_shift_norm,
+                                dropout=self.conf.dropout,
+                                channel_last=self.conf.channel_last,
+                                rescale_skip=self.conf.resblock_rescale_skip)(h, emb, name=f"upsample_{level}")
+        else:
+            h = upsample(h,
+                            name=f"upsample_{level}",
+                            with_conv=self.conf.conv_resample,
+                            channel_last=self.conf.channel_last)
+
+        return h
+    
+    def output_block(self, h):
+        return conv(h,
+                    self.conf.output_channels,
+                    name="last_conv",
+                    kernel=(1, 1),
+                    pad=(0, 0),
+                    channel_last=self.conf.channel_last)
+
+    def __call__(self,
+                 x,
+                 t,
+                 *,
+                 name=None,
+                 input_cond=None,
+                 class_label=None,
+                 text_emb=None,
+                 cond_drop_rate=0):
+        ch = self.conf.base_channels
+        with nn.parameter_scope('UNet' if name is None else name):
+            # timestep t
+            emb = self.timestep_embedding(t)
+
+            # input condition. Typically, low resolution image for upsampler.
+            if input_cond is not None:
+                x = self.concat_input_cond(x, input_cond)
+
+            # class condition
+            if self.conf.class_cond:
+                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
+                emb += self.class_embedding(class_label, cond_drop_rate)
+
+            # text condition
+            text_emb_seq = None
+            if self.conf.text_cond:
+                assert text_emb is not None, "text_emb must be passed"
+                text_emb_seq, text_emb_pooled = self.text_embedding(text_emb, cond_drop_rate)
+                emb += text_emb_pooled
+            
+            emb = nonlinearity(emb)
+
+            if self.conf.channel_last:
+                # todo: If we allow tf32, might be better to apply pad even if chennel_first.
+                # But, to do that, we have to care obsolete parameters.
+                x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
+
+            h = conv(x, ch, name="first_conv", channel_last=self.conf.channel_last)
+
+            hs = []
+            # downsample block
+            with nn.parameter_scope("downsample_block"):
+                for level, (mult, num_res_block) in enumerate(zip(self.conf.channel_mult, self.num_res_blocks)):
+                    # apply resblock and attention for this resolution
+                    outs = self.downsample_blocks(h, 
+                                                  emb,
+                                                  text_emb_seq,
+                                                  ch * mult,
+                                                  level=level,
+                                                  num_res_block=num_res_block)
+                    hs += outs
+                    h = outs[-1]
+
+            # middle block
+            with nn.parameter_scope("middle_block"):
+                h = self.middle_block(h, emb, text_emb_seq)
+
+            # upsample block
+            with nn.parameter_scope("upsample_block"):
+                for level, (mult, num_res_block) in enumerate(zip(reversed(self.conf.channel_mult), reversed(self.num_res_blocks))):
+                    # apply resblock and attention for this resolution
+                    h = self.upsample_blocks(h, 
+                                             emb,
+                                             text_emb_seq,
+                                             hs,
+                                             ch * mult,
+                                             level=level,
+                                             num_res_block=num_res_block)
+                    
+            assert len(hs) == 0
+
+            # output block
+            with nn.parameter_scope("output_block"):
+                out = self.output_block(h)
+
+            out_shape = Shape4D(x.shape, channel_last=self.conf.channel_last)
+            out_shape.c = self.conf.output_channels
+            assert Shape4D(
+                out.shape, channel_last=self.conf.channel_last) == out_shape
 
         return out
 
