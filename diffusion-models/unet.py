@@ -624,6 +624,7 @@ class UNet(object):
                  *,
                  name=None,
                  input_cond=None,
+                 input_cond_aug_timestep=None,
                  class_label=None,
                  text_emb=None,
                  cond_drop_rate=0):
@@ -635,6 +636,14 @@ class UNet(object):
             # input condition. Typically, low resolution image for upsampler.
             if input_cond is not None:
                 x = self.concat_input_cond(x, input_cond)
+
+                # gaussian conditioning timestep if applied.
+                if self.conf.noisy_low_res:
+                    assert isinstance(input_cond_aug_timestep, nn.Variable), \
+                        "input_cond_aug_timestep must be an instance of nn.Variable"
+
+                    emb += self.timestep_embedding(input_cond_aug_timestep,
+                                                   "gaussian_conditioning_timestep_embedding")
 
             # class condition
             if self.conf.class_cond:
@@ -836,6 +845,7 @@ class EfficientUNet(UNet):
                  *,
                  name=None,
                  input_cond=None,
+                 input_cond_aug_timestep=None,
                  class_label=None,
                  text_emb=None,
                  cond_drop_rate=0):
@@ -847,6 +857,14 @@ class EfficientUNet(UNet):
             # input condition. Typically, low resolution image for upsampler.
             if input_cond is not None:
                 x = self.concat_input_cond(x, input_cond)
+
+                # gaussian conditioning timestep if applied.
+                if self.conf.noisy_low_res:
+                    assert isinstance(input_cond_aug_timestep, nn.Variable), \
+                        "input_cond_aug_timestep must be an instance of nn.Variable"
+
+                    emb += self.timestep_embedding(input_cond_aug_timestep,
+                                                   "gaussian_conditioning_timestep_embedding")
 
             # class condition
             if self.conf.class_cond:

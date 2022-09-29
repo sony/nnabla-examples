@@ -172,6 +172,11 @@ def main(conf: config.TrainScriptConfig):
                                         mode="average",
                                         channel_last=conf.model.channel_last)
 
+        # gaussian conditioning augmentation
+        if conf.train.noisy_low_res:
+            x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
+            model_kwargs["input_cond_aug_timestep"] = aug_level
+        
         # create model_kwargs
         model_kwargs["input_cond"] = x_low_res
 
@@ -429,6 +434,7 @@ def main(conf: config.TrainScriptConfig):
 
                 gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(
                     need_grad=False)
+                gen_model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(np.zeros((num_gen, )))
 
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,

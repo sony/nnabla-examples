@@ -119,8 +119,10 @@ def main(conf: config.GenScriptConfig):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
 
         if is_upsample:
-            lowres, _ = data_lowres.next()
-            model_kwargs["input_cond"].d = lowres / 127.5 - 1
+            if loaded_conf.model.noisy_low_res:
+                # todo: apply arbitrary augmentation for generation
+                # x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
+                model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(np.zeros(shape=(B, )))
 
         sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
                                                         noise=None,

@@ -85,6 +85,15 @@ def get_image_shape(image_size, input_channels, channel_last):
 OmegaConf.register_new_resolver("get_is", get_image_shape)
 
 
+def is_noisy_lr(low_res_size, noisy_lr):
+    if low_res_size is None:
+        return False
+
+    return noisy_lr
+
+
+OmegaConf.register_new_resolver("is_noisy_lr", is_noisy_lr)
+
 def get_text_emb_shape(max_length, emb_dim, channel_last):
     if max_length == 0 or emb_dim == 0:
         return None
@@ -102,11 +111,13 @@ class ModelConfig:
     # input
     input_channels: int = 3
     image_size: List[int] = MISSING
-    low_res_size: Union[None, List[int]] = None
-    image_shape: List[int] = \
+    image_shape: Union[None, List[int]] = \
         "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
+
+    low_res_size: Union[None, List[int]] = None    
     low_res_shape: Union[None, List[int]] = \
         "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
+    noisy_low_res: bool = "${is_noisy_lr:${model.low_res_size},${train.noisy_low_res}}"
 
     # arch.
     arch: str = "unet"
@@ -172,6 +183,11 @@ class TrainConfig:
 
     # checkpointing
     resume: bool = True
+
+    # augmentation
+    # If True, Gaussian conditioning augmentation proposed in "Cascaded Diffusion" is performed for low_res image.
+    # Note that if a model doesn't have low_res input (i.e. base model), this option is simply ignored.
+    noisy_low_res: bool = True 
 
     # loss
     loss_scaling: float = 1.0

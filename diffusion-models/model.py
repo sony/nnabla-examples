@@ -42,6 +42,33 @@ class Model(object):
 
         return nets[self.model_conf.arch](self.model_conf)
 
+    def _sampling_timestep(self, n_sample):
+        t = F.randint(
+                low=0, high=self.diffusion.num_timesteps, shape=(n_sample, ))
+
+        # F.randint could return high with very low prob. Workaround to avoid this.
+        t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
+
+        t.persistent = True
+
+        return t
+    
+    def gaussian_conditioning_augmentation(self, x):
+        """
+        Following a defined diffusion noise schedule, 
+        add noise to image corresponding to randomly sampled time 's'.
+        
+        This is typically used for gaussian conditioning augmentation
+        proposed in "Cascaded diffusion models for High Fidelity Image Generation".
+        Specifically, returns noisy data x' = q(x_s | x) where s ~ U({0, 1, ..., T-1}) and timestep 's'.
+
+        Note that, practically, this is just an alias of sampling timestep `s` and compute diffusion.q_sample(x, s).
+        """
+        B = x.shape[0]
+        s = self._sampling_timestep(B)
+
+        return self.diffusion.q_sample(x, s), s
+
 
     def build_train_graph(self,
                           x,
@@ -53,10 +80,7 @@ class Model(object):
         B = x.shape[0]
 
         if t is None:
-            t = F.randint(
-                low=0, high=self.diffusion.num_timesteps, shape=(B, ))
-            # F.randint could return high with very low prob. Workaround to avoid this.
-            t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
+            t = self._sampling_timestep(B)
 
         loss_dict = self.diffusion.train_loss(model=self._define_model(),
                                               x_start=x,
