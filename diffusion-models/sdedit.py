@@ -19,17 +19,16 @@ import hydra
 import nnabla as nn
 from nnabla.logger import logger
 import numpy as np
+import nnabla_diffusion.config as config
 from omegaconf import OmegaConf
 from neu.misc import init_nnabla
 from neu.reporter import get_tiled_image, save_tiled_image
 from nnabla.utils.image_utils import imsave, imread
-
-import config
-from diffusion_model.model import Model
+from nnabla_diffusion.diffusion_model.model import Model
 
 
 @hydra.main(version_base=None,
-            config_path="config/yaml",
+            config_path="yaml/",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     assert conf.generate.x_start is not None, "generate.x_start must be supecified for sdedit.py."

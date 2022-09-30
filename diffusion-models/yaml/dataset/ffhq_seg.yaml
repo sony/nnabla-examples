@@ -1,0 +1,12 @@
+defaults:
+  - /proto_configs/dataset@_here_
+
+
+category: ffhq_34
+number_class: 34
+
+
+# path configuration
+# change this if you place a dataset in other directory
+data_dir: ./ddpm-segmentation/datasets
+dataset_root_dir: ${dataset.data_dir}/ffhq_34

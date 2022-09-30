@@ -57,4 +57,5 @@ class GenerateConfig:
 
 # expose config to enable loading from yaml file
 from .utils import register_config
+
 register_config(name="generate", node=GenerateConfig)

@@ -16,11 +16,11 @@ import os
 
 import numpy as np
 import webdataset as wds
-from config import DatasetConfig
 from neu.comm import CommunicatorWrapper
 from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
+from nnabla_diffusion.config import DatasetConfig
 
 from .common import resize_center_crop, resize_random_crop
 

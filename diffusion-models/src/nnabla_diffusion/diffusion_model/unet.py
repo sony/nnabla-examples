@@ -22,8 +22,7 @@ import nnabla.parametric_functions as PF
 import nnabla.initializer as I
 from nnabla.parameter import get_parameter_or_create
 from nnabla.logger import logger
-
-from config import ModelConfig
+from nnabla_diffusion.config import ModelConfig
 
 from .layers import *
 from .utils import Shape4D, context_scope, force_float

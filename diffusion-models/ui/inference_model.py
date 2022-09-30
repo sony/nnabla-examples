@@ -19,9 +19,9 @@ import numpy as np
 import nnabla as nn
 import gradio as gr
 
-from config import load_saved_conf, LoadedConfig
-from diffusion_model.model import Model
-from dataset.common import resize_center_crop
+from nnabla_diffusion.config import load_saved_conf, LoadedConfig
+from nnabla_diffusion.diffusion_model.model import Model
+from nnabla_diffusion.dataset.common import resize_center_crop
 
 from .left import LeftBlocks, LeftBlocksCreator
 

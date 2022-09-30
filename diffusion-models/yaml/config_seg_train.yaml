@@ -1,0 +1,5 @@
+defaults:
+  - /proto_configs/datasetddpm@datasetddpm
+  - runtime: default
+  - datasetddpm: default
+  
