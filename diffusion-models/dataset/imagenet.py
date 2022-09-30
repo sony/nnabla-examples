@@ -43,7 +43,7 @@ def _info(msg):
 
 
 def ImagenetDataIterator(conf: DatasetConfig,
-                         comm: CommunicatorWrapper=None,
+                         comm: CommunicatorWrapper = None,
                          rng=None,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils

@@ -42,6 +42,7 @@ def pad_for_faster_conv(x, *, channel_last=False):
     else:
         return F.pad(x, (0, pad_width, 0, 0, 0, 0))
 
+
 @force_float
 def sinusoidal_embedding(timesteps, embedding_dim):
     """
@@ -76,6 +77,7 @@ def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
                                       # todo: use more stable eps for float16?
                                       channel_axis=channel_axis,
                                       batch_axis=batch_axis)
+
 
 @force_float
 def layer_norm(x, name, *, batch_axis=0, recompute=False):

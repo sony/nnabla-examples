@@ -30,16 +30,18 @@ class WebDatasetDataSourceLocal(DataSource):
 
     Assumes all tar files are already donwnloaded on the same server and accecible as a file. 
     '''
+
     def __init__(self,
                  tar_files,
                  conf: DatasetConfig,
                  rng=None):
-        super(WebDatasetDataSourceLocal, self).__init__(shuffle=conf.shuffle_dataset, rng=rng)
+        super(WebDatasetDataSourceLocal, self).__init__(
+            shuffle=conf.shuffle_dataset, rng=rng)
 
-        shuffle_size=1
+        shuffle_size = 1
         if conf.shuffle_dataset:
             shuffle_size = 10000
-        
+
         self.dataset = iter(wds.DataPipeline(
            wds.ResampledShards(tar_files),
            wds.tarfile_to_samples(),
@@ -60,22 +62,26 @@ class WebDatasetDataSourceLocal(DataSource):
         # Note that position is not used in this data source
 
         data = next(self.dataset)
-        image = data[0] # numpy whose value is between [0, 1], channel last
-        cap = data[1]["caption"] # str
-        emb = data[2]["t5_emb"] # (length, 1024)
+        image = data[0]  # numpy whose value is between [0, 1], channel last
+        cap = data[1]["caption"]  # str
+        emb = data[2]["t5_emb"]  # (length, 1024)
 
         # rescale pixel intensity to [-1, 1]
         image = 2 * image - 1
 
         # resize image to align config
         if self.random_crop:
-            image = resize_random_crop(image, size=self.im_size[0], channel_first=False)
+            image = resize_random_crop(
+                image, size=self.im_size[0], channel_first=False)
         else:
-            image = resize_center_crop(image, size=self.im_size[0], channel_first=False)
+            image = resize_center_crop(
+                image, size=self.im_size[0], channel_first=False)
 
         # padding text sequence
-        emb = emb[:self.max_text_length] # Truncate emb if it's longer than max length.
-        emb = np.pad(emb, ((0, self.max_text_length - emb.shape[0]), (0, 0))) # padding to max length
+        # Truncate emb if it's longer than max length.
+        emb = emb[:self.max_text_length]
+        # padding to max length
+        emb = np.pad(emb, ((0, self.max_text_length - emb.shape[0]), (0, 0)))
 
         if not self.channel_last:
             # channel last -> first
@@ -84,10 +90,12 @@ class WebDatasetDataSourceLocal(DataSource):
 
         return (image, cap, emb)
 
+
 TAR_FILES = {
     "400m": "{00000..41407}.tar",
     # "400m": "{00000..04000}.tar",
 }
+
 
 def Laion400mDataIterator(conf: DatasetConfig, comm: CommunicatorWrapper):
     # set worker info to avoid loading pytorch in webdataset
@@ -95,13 +103,13 @@ def Laion400mDataIterator(conf: DatasetConfig, comm: CommunicatorWrapper):
     os.environ["WORLD_SIZE"] = str(comm.n_procs)
     os.environ["WORKER"] = str(comm.rank)
     os.environ["NUM_WORKERS"] = str(comm.n_procs)
-    
+
     # create datasource
     tar_files = os.path.join(conf.dataset_root_dir, TAR_FILES["400m"])
     ds = WebDatasetDataSourceLocal(tar_files, conf)
 
     return data_iterator(ds,
-                         conf.batch_size, 
+                         conf.batch_size,
                          with_memory_cache=False,
                          use_thread=True,
                          with_file_cache=False)

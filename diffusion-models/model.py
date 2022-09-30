@@ -52,12 +52,12 @@ class Model(object):
         t.persistent = True
 
         return t
-    
+
     def gaussian_conditioning_augmentation(self, x):
         """
         Following a defined diffusion noise schedule, 
         add noise to image corresponding to randomly sampled time 's'.
-        
+
         This is typically used for gaussian conditioning augmentation
         proposed in "Cascaded diffusion models for High Fidelity Image Generation".
         Specifically, returns noisy data x' = q(x_s | x) where s ~ U({0, 1, ..., T-1}) and timestep 's'.
@@ -68,7 +68,6 @@ class Model(object):
         s = self._sampling_timestep(B)
 
         return self.diffusion.q_sample(x, s), s
-
 
     def build_train_graph(self,
                           x,

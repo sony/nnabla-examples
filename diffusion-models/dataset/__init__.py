@@ -33,6 +33,7 @@ iterators = {
     "laion-400m": Laion400mDataIterator,
 }
 
+
 def get_dataset(conf: DatasetConfig, comm: CommunicatorWrapper):
     data_iterator = iterators.get(conf.name, SimpleDataIterator)
     return data_iterator(conf, comm=comm)

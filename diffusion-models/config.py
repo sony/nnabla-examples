@@ -48,7 +48,7 @@ class DatasetConfig:
     # for text condition
     max_text_length: int = 0
     text_emb_dims: int = 0
-    
+
     # from other configs
     channel_last: bool = "${model.channel_last}"
     batch_size: int = "${train.batch_size}"
@@ -94,14 +94,16 @@ def is_noisy_lr(low_res_size, noisy_lr):
 
 OmegaConf.register_new_resolver("is_noisy_lr", is_noisy_lr)
 
+
 def get_text_emb_shape(max_length, emb_dim, channel_last):
     if max_length == 0 or emb_dim == 0:
         return None
-    
+
     if channel_last:
         return (max_length, emb_dim)
-    
+
     return (emb_dim, max_length)
+
 
 OmegaConf.register_new_resolver("get_tes", get_text_emb_shape)
 
@@ -114,7 +116,7 @@ class ModelConfig:
     image_shape: Union[None, List[int]] = \
         "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
 
-    low_res_size: Union[None, List[int]] = None    
+    low_res_size: Union[None, List[int]] = None
     low_res_shape: Union[None, List[int]] = \
         "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
     noisy_low_res: bool = "${is_noisy_lr:${model.low_res_size},${train.noisy_low_res}}"
@@ -149,7 +151,8 @@ class ModelConfig:
     text_cond_emb_type: str = "ln_mlp"
     max_text_length: int = "${dataset.max_text_length}"
     text_emb_dims: int = "${dataset.text_emb_dims}"
-    text_emb_shape: Union[None, List[int]] = "${get_tes:${dataset.max_text_length},${dataset.text_emb_dims},${model.channel_last}}"
+    text_emb_shape: Union[None, List[int]
+                          ] = "${get_tes:${dataset.max_text_length},${dataset.text_emb_dims},${model.channel_last}}"
 
     # output
     model_var_type: str = "learned_range"
@@ -187,7 +190,7 @@ class TrainConfig:
     # augmentation
     # If True, Gaussian conditioning augmentation proposed in "Cascaded Diffusion" is performed for low_res image.
     # Note that if a model doesn't have low_res input (i.e. base model), this option is simply ignored.
-    noisy_low_res: bool = True 
+    noisy_low_res: bool = True
 
     # loss
     loss_scaling: float = 1.0

@@ -146,6 +146,7 @@ def create_ema_op(params, ema_decay=0.9999):
 
         return F.sink(*ops), ema_params
 
+
 def to_cpu(vars: List[nn.Variable]):
     from nnabla.ext_utils import get_extension_context
     cpu_ctx = get_extension_context(

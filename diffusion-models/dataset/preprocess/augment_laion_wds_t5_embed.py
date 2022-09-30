@@ -12,9 +12,10 @@ from mpi4py import MPI
 from transformers import T5Tokenizer, T5EncoderModel
 import torch
 
-T5_MODEL="t5-11b"
+T5_MODEL = "t5-11b"
 t5_tokenizer = T5Tokenizer.from_pretrained(T5_MODEL)
 t5_model = T5EncoderModel.from_pretrained(T5_MODEL)
+
 
 def t5_encode(sentence, device):
     tokens = t5_tokenizer(sentence,
@@ -23,7 +24,7 @@ def t5_encode(sentence, device):
                           max_length=1024,
                           return_length=True,
                           return_tensors="pt")
-    
+
     outputs = t5_model(input_ids=tokens.input_ids.to(f"cuda:{device}"))
 
     emb_pt = outputs.last_hidden_state.detach()
@@ -46,7 +47,8 @@ def save_data(q: Queue, file_path):
                 "npz": {"t5_emb": emb.cpu().numpy()}
             }
             dst.write(sample)
-            
+
+
 def augment_wds(input, output_dir, device, overwrite, logfile):
     """
     Given a single tarfile, 
@@ -81,12 +83,12 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
         # for saving
         batch_caption = []
         batch_others = []
-        for key, img, json in tqdm(src, disable=device>0):
+        for key, img, json in tqdm(src, disable=device > 0):
             # get caption
             caption = json["caption"]
             if not isinstance(caption, str):
                 continue
-            
+
             # make data as a batch
             batch_others.append([key, img, json])
             batch_caption.append(caption)
@@ -94,18 +96,18 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
             # if batch size is not enough, load next data
             if len(batch_caption) < batch_size:
                 continue
-            
+
             # encode captions
             with torch.inference_mode():
                 emb, length = t5_encode(batch_caption, device)
-            
+
             for i in range(batch_size):
                 batch_others[i].append(emb[i, :length[i]])
                 q.put(batch_others[i])
 
             batch_caption.clear()
             batch_others.clear()
-        
+
         if len(batch_caption) > 0:
             with torch.inference_mode():
                 emb, length = t5_encode(batch_caption, device)
@@ -113,7 +115,7 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
             for i in range(len(batch_caption)):
                 batch_others[i].append(emb[i, :length[i]])
                 q.put(batch_others[i])
-        
+
     except KeyboardInterrupt:
         # if interrupted by keyboard, just exit.
         q.put(("STOP", None, None, None))
@@ -138,6 +140,7 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
         import shutil
         shutil.move(filepath, input)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--datadir", type=str, required=True)
@@ -153,15 +156,16 @@ if __name__ == "__main__":
 
     device = MPI.COMM_WORLD.Get_rank()
     t5_model.half().to(f"cuda:{device}")
-    
+
     # tarfiles = os.path.join(args.datadir, "{25001..41407}.tar")
-    tarfiles = os.path.join(args.datadir, "{" + f"{int(args.start_id):05}..{int(args.end_id):05}" + "}.tar")
+    tarfiles = os.path.join(
+        args.datadir, "{" + f"{int(args.start_id):05}..{int(args.end_id):05}" + "}.tar")
     tarfiles = list(braceexpand.braceexpand(tarfiles))
 
     from neu.datasets import get_slice_start_end
-    start, end = get_slice_start_end(len(tarfiles), MPI.COMM_WORLD.Get_size(), device)
+    start, end = get_slice_start_end(
+        len(tarfiles), MPI.COMM_WORLD.Get_size(), device)
 
     with open(args.logfile, "w") as f:
         for tarfile in tqdm(tarfiles[start:end], disable=device > 0):
             augment_wds(tarfile, args.outdir, device, args.overwrite, f)
-    

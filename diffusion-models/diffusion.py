@@ -571,10 +571,11 @@ class GaussianDiffusion(object):
             pred_uncond = model(x_t, t, **model_kwargs_uncond)
 
             if self.model_var_type == ModelVarType.LEARNED_RANGE:
-                pred_noise_uncond = pred_uncond[..., :3] if channel_last else pred_uncond[:, :3]
+                pred_noise_uncond = pred_uncond[...,
+                                                :3] if channel_last else pred_uncond[:, :3]
             else:
                 pred_noise_uncond = pred_uncond
-            
+
             # (1 + w) * eps(t, c) - w * eps(t)
             w = classifier_free_guidance_weight
             pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
@@ -848,7 +849,7 @@ class GaussianDiffusion(object):
         return self.sample_loop(*args,
                                 sampler=partial(
                                     self.p_sample,
-                                    channel_last=channel_last, 
+                                    channel_last=channel_last,
                                     classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
@@ -861,8 +862,8 @@ class GaussianDiffusion(object):
 
         return self.sample_loop(*args,
                                 sampler=partial(
-                                    self.ddim_sample, 
-                                    eta=0., 
+                                    self.ddim_sample,
+                                    eta=0.,
                                     channel_last=channel_last,
                                     classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
@@ -1078,14 +1079,15 @@ class GaussianDiffusion(object):
                 pred_uncond = model(x_t, t, **model_kwargs_uncond)
 
                 if self.model_var_type == ModelVarType.LEARNED_RANGE:
-                    pred_noise_uncond = pred_uncond[..., :3] if channel_last else pred_uncond[:, :3]
+                    pred_noise_uncond = pred_uncond[...,
+                                                    :3] if channel_last else pred_uncond[:, :3]
                 else:
                     pred_noise_uncond = pred_uncond
-                
+
                 # (1 + w) * eps(t, c) - w * eps(t)
                 w = classifier_free_guidance_weight
                 pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
-            
+
             return pred_noise
 
         T = self.num_timesteps

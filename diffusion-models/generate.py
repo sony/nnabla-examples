@@ -64,11 +64,12 @@ def main(conf: config.GenScriptConfig):
     model_kwargs = {}
     is_upsample = loaded_conf.model.low_res_size is not None
     if is_upsample:
-        lowres_conf = config.DatasetConfig(batch_size=B, 
+        lowres_conf = config.DatasetConfig(batch_size=B,
                                            dataset_root_dir=conf.generate.base_samples_dir,
                                            image_size=loaded_conf.model.low_res_size,
                                            shuffle_dataset=False,
-                                           channel_last=loaded_conf.model.channel_last) 
+                                           channel_last=loaded_conf.model.channel_last)
+
         def lowres_label_cb(path):
             # assume file name is "gen_{class_id}_{image id}_{device_id}_{...}.png
             return int(os.path.basename(path).split(".")[0].split("_")[1])
@@ -103,9 +104,9 @@ def main(conf: config.GenScriptConfig):
             # deterministic class
             model_kwargs["class_label"] = nn.Variable.from_numpy_array(
                 [conf.generate.gen_class_id for _ in range(B)])
-        
+
         model_kwargs["class_label"].persistent = True
-    
+
     # sampling
     local_saved_cnt = 0
 
@@ -134,7 +135,8 @@ def main(conf: config.GenScriptConfig):
             if loaded_conf.model.noisy_low_res:
                 # todo: apply arbitrary augmentation for generation
                 # x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
-                model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(np.zeros(shape=(B, )))
+                model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(
+                    np.zeros(shape=(B, )))
 
         sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
                                                         noise=None,

@@ -127,7 +127,7 @@ class Cifar10DataSource(DataSource):
 
 
 def Cifar10DataIterator(conf: DatasetConfig,
-                        comm: CommunicatorWrapper=None,
+                        comm: CommunicatorWrapper = None,
                         rng=None):
     ds = Cifar10DataSource(train=conf.train,
                            shuffle=conf.shuffle_dataset,

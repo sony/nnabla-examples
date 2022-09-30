@@ -179,12 +179,12 @@ SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 def SimpleDataIterator(conf: DatasetConfig,
                        comm: CommunicatorWrapper = None,
-                       label_creator_callback = None,
+                       label_creator_callback=None,
                        rng=None):
     # get all files
     paths = [os.path.join(conf.dataset_root_dir, x)
              for x in os.listdir(conf.dataset_root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
-    
+
     labels = None
     if label_creator_callback is not None:
         labels = [label_creator_callback(path) for path in paths]

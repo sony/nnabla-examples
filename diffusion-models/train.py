@@ -174,9 +174,10 @@ def main(conf: config.TrainScriptConfig):
 
         # gaussian conditioning augmentation
         if conf.train.noisy_low_res:
-            x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
+            x_low_res, aug_level = model.gaussian_conditioning_augmentation(
+                x_low_res)
             model_kwargs["input_cond_aug_timestep"] = aug_level
-        
+
         # create model_kwargs
         model_kwargs["input_cond"] = x_low_res
 
@@ -186,9 +187,10 @@ def main(conf: config.TrainScriptConfig):
         model_kwargs["cond_drop_rate"] = conf.train.cond_drop_rate
 
     # setup text condition
-    if conf.model.text_cond: 
+    if conf.model.text_cond:
         assert conf.model.text_emb_shape is not None
-        model_kwargs["text_emb"] = nn.Variable((conf.train.batch_size, ) + conf.model.text_emb_shape)
+        model_kwargs["text_emb"] = nn.Variable(
+            (conf.train.batch_size, ) + conf.model.text_emb_shape)
 
     loss_dict, t = model.build_train_graph(x_aug,
                                            loss_scaling=None if conf.train.loss_scaling == 1.0 else conf.train.loss_scaling,
@@ -299,8 +301,8 @@ def main(conf: config.TrainScriptConfig):
             data = batch[0]
             x.d = data
 
-            label = batch[1] # if laion, this should be caption.
-           
+            label = batch[1]  # if laion, this should be caption.
+
             text_emb = [None, ] * conf.train.batch_size
             if conf.model.text_cond:
                 text_emb = batch[2]
@@ -314,7 +316,8 @@ def main(conf: config.TrainScriptConfig):
                 if data_queue.full():
                     break
 
-                data_queue.put((data[data_idx], label[data_idx], text_emb[data_idx]))
+                data_queue.put(
+                    (data[data_idx], label[data_idx], text_emb[data_idx]))
 
             loss_dict.loss.forward(clear_no_need_grad=True)
             is_overflow = mpm.backward(loss_dict.loss, solver,
@@ -410,10 +413,10 @@ def main(conf: config.TrainScriptConfig):
         if conf.train.gen_interval > 0 and i % conf.train.gen_interval == 0:
             # sampling
             gen_model_kwargs = {}
-            
+
             # setup condition vectors
             assert data_queue.qsize() == num_gen, \
-                    f"queue size is smaller than expected. ({data_queue.qsize()} < {num_gen})"
+                f"queue size is smaller than expected. ({data_queue.qsize()} < {num_gen})"
             image_list = []
             label_list = []
             text_emb_list = []
@@ -422,7 +425,7 @@ def main(conf: config.TrainScriptConfig):
                 image_list.append(image)
                 label_list.append(label)
                 text_emb_list.append(text_emb)
-        
+
             if conf.model.low_res_size is not None:
                 # create lowres input from training dataset
                 input_cond = nn.Variable.from_numpy_array(np.stack(image_list))
@@ -434,17 +437,21 @@ def main(conf: config.TrainScriptConfig):
 
                 gen_model_kwargs["input_cond"] = input_cond_lowres.get_unlinked_variable(
                     need_grad=False)
-                gen_model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(np.zeros((num_gen, )))
+                gen_model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(
+                    np.zeros((num_gen, )))
 
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
                                                                                                  size=(num_gen, )))
-                gen_model_kwargs["cond_drop_rate"] = 0 # disable dropping condition for generation
+                # disable dropping condition for generation
+                gen_model_kwargs["cond_drop_rate"] = 0
 
             if conf.model.text_cond:
-                gen_model_kwargs["text_emb"] = nn.Variable.from_numpy_array(np.asarray(text_emb_list))
+                gen_model_kwargs["text_emb"] = nn.Variable.from_numpy_array(
+                    np.asarray(text_emb_list))
 
-                assert gen_model_kwargs["text_emb"].shape == (num_gen, ) + model_kwargs["text_emb"].shape[1:]
+                assert gen_model_kwargs["text_emb"].shape == (
+                    num_gen, ) + model_kwargs["text_emb"].shape[1:]
 
             sample_out, _, _ = gen_model.sample(shape=(num_gen, ) + x.shape[1:],
                                                 model_kwargs=gen_model_kwargs,
@@ -458,7 +465,7 @@ def main(conf: config.TrainScriptConfig):
 
             save_tiled_image(sample_out.astype(np.uint8),
                              save_path, channel_last=conf.model.channel_last)
-            
+
             if conf.model.text_cond:
                 with open(os.path.join(image_dir, f"gen_{i}_{comm.rank}_script.txt"), "w") as f:
                     f.write("\n".join(label_list))

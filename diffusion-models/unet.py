@@ -40,7 +40,7 @@ class ResidualBlock(object):
         self.dropout = dropout
         self.conv_shortcut = conv_shortcut
         self.channel_last = channel_last
-        self.rescale_skip=rescale_skip
+        self.rescale_skip = rescale_skip
 
     def in_layers(self, x):
         h = group_norm(x, name='norm_in',
@@ -116,7 +116,7 @@ class ResidualBlockResampleBase(ResidualBlock):
 
     def in_layers_with_resampling(self, x):
         h = group_norm(x, name='norm_in',
-                      channel_axis=3 if self.channel_last else 1)
+                       channel_axis=3 if self.channel_last else 1)
         h = nonlinearity(h)
 
         # apply downsampling to both x and h.
@@ -170,9 +170,11 @@ def self_attention(x,
                    num_heads=4,
                    num_head_channels=None,
                    channel_last=False):
-    
-    assert len(x.shape) == 4, "self_attention only supports 4D tensor for an input."
-    B, C, H, W = Shape4D(x.shape, channel_last=channel_last).get_as_tuple("bchw")
+
+    assert len(
+        x.shape) == 4, "self_attention only supports 4D tensor for an input."
+    B, C, H, W = Shape4D(
+        x.shape, channel_last=channel_last).get_as_tuple("bchw")
 
     # apply normalization and projection for inputs
     with nn.parameter_scope(name):
@@ -193,12 +195,14 @@ def self_attention(x,
         # if cond is given, concat it to k and v along L axis.
         if cond is not None:
             # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
-            assert len(cond.shape) == 3, "A condition for self_attention should be a 3D tensor."
+            assert len(
+                cond.shape) == 3, "A condition for self_attention should be a 3D tensor."
             with nn.parameter_scope("condition"):
                 # Imagen paper says layer_norm performs better for condition
                 cond = layer_norm(cond, name="norm")
-                cond = nin(cond, 2 * C, name="kv_cond", channel_last=channel_last)
-            
+                cond = nin(cond, 2 * C, name="kv_cond",
+                           channel_last=channel_last)
+
             kc, vc = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
             k = F.concatenate(k, kc, axis=1 if channel_last else 2)
             v = F.concatenate(v, vc, axis=1 if channel_last else 2)
@@ -215,7 +219,7 @@ def self_attention(x,
         else:
             # (B, C, HW) -> (B, C, H, W)
             out = F.reshape(out, (B, C, H, W))
-        
+
         # output projection
         out = nin(out, C,
                   name='proj_out',
@@ -233,8 +237,9 @@ def cross_attention(x,
                     num_heads=4,
                     num_head_channels=None,
                     channel_last=False):
-    
-    assert len(x.shape) == 4, "corss_attention only supports 4D tensor for an input."
+
+    assert len(
+        x.shape) == 4, "corss_attention only supports 4D tensor for an input."
     B, C, H, W = Shape4D(x, channel_last=channel_last).get_as_tuple("bchw")
 
     with nn.parameter_scope(name):
@@ -243,12 +248,13 @@ def cross_attention(x,
         q = nin(h, C, name="q", channel_last=channel_last)
 
         # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
-        assert len(cond.shape) == 3, "A condition for cross_attention should be a 3D tensor."
+        assert len(
+            cond.shape) == 3, "A condition for cross_attention should be a 3D tensor."
         with nn.parameter_scope("condition"):
             # Imagen paper says layer_norm performs better for condition
             cond = layer_norm(cond, name="norm")
             cond = nin(cond, 2 * C, name="kv", channel_last=channel_last)
-        
+
         k, v = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
 
         # 4D -> 3D
@@ -271,7 +277,7 @@ def cross_attention(x,
         else:
             # (B, C, HW) -> (B, C, H, W)
             out = F.reshape(out, (B, C, H, W))
-        
+
         # output projection
         out = nin(out, C,
                   name='proj_out',
@@ -281,18 +287,19 @@ def cross_attention(x,
     assert out.shape == x.shape
     return out + x
 
+
 class QKVAttention(object):
     def __init__(self, num_heads=4, num_head_channels=None, channel_last=False):
         self.num_heads = num_heads
         self.num_head_channels = num_head_channels
         self.channel_last = channel_last
-    
+
     def _validate_input_shape(self, q, k, v):
-        assert q.shape[0]== k.shape[0] == v.shape[0], \
+        assert q.shape[0] == k.shape[0] == v.shape[0], \
             "All inputs must have the same batch size."
         assert k.shape[1] == v.shape[1], \
             "k and v must have the same length."
-        
+
         # strong assumuption that q, k, and v have the same channel dims.
         assert q.shape[-1] == k.shape[-1] == v.shape[-1], \
             "All inputs must have the same channel dims."
@@ -313,15 +320,13 @@ class QKVAttention(object):
 
         self.num_head_channels = C // self.num_heads
 
-
     def __call__(self, q, k, v):
         """
         Compute attention based on given q, k, and v.
         """
-         # check inputs' dims
+        # check inputs' dims
         assert len(q.shape) == len(k.shape) == len(v.shape) == 3, \
             "inputs for QKVAttention must be a 3D tensor."
-        
 
         if not self.channel_last:
             # (B, C, L) -> (B, L, C)
@@ -354,7 +359,7 @@ class QKVAttention(object):
         if not self.channel_last:
             # (B, L, C) -> (B, C, L)
             a = F.transpose(a, (0, 2, 1))
-        
+
         return a
 
 
@@ -386,7 +391,7 @@ class UNet(object):
                              interp_like(input_cond, x,
                                          channel_last=self.conf.channel_last),
                              axis=3 if self.conf.channel_last else 1)
-    
+
     @staticmethod
     def masking(x, mask_prob, axis):
         if mask_prob == 0:
@@ -394,14 +399,13 @@ class UNet(object):
 
         mask_shape = [1 for _ in range(len(x.shape))]
         mask_shape[axis] = x.shape[axis]
-        
+
         if mask_prob == 1:
             mask = F.constant(shape=mask_shape)
         else:
             mask = F.rand_binomial(p=1-mask_prob,
-                                shape=mask_shape)
+                                   shape=mask_shape)
         return x * mask
-
 
     def embedding_projection(self, emb, mode: str, to_4d: bool = True):
         # reshape to use conv rather than affine
@@ -410,7 +414,7 @@ class UNet(object):
                 emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
             else:
                 emb = F.reshape(emb, emb.shape + (1, 1))
-        
+
         # post process
         mode = mode.lower()
         if mode == "simple":
@@ -428,13 +432,13 @@ class UNet(object):
         elif mode == "ln_mlp":
             # apply layer norm first.
             emb = layer_norm(emb, name="ln_0")
-            
+
             # fall back to mlp
             return self.embedding_projection(emb, mode="mlp", to_4d=False)
-        
-        raise NotImplementedError(f"embedding projection mode `{mode}` is not supported.")
-        
-    
+
+        raise NotImplementedError(
+            f"embedding projection mode `{mode}` is not supported.")
+
     def timestep_embedding(self, t, name=None):
         if name is None:
             name = 'timestep_embedding'
@@ -459,11 +463,12 @@ class UNet(object):
                            initializer=I.NormalInitializer())  # align init with pytorch
 
             # dropout for unconditional generation
-            emb = self.masking(emb, 
+            emb = self.masking(emb,
                                mask_prob=drop_rate,
                                axis=0)
 
-            emb = self.embedding_projection(emb, mode=self.conf.class_cond_emb_type)
+            emb = self.embedding_projection(
+                emb, mode=self.conf.class_cond_emb_type)
 
         return emb
 
@@ -473,20 +478,20 @@ class UNet(object):
         assert len(text_emb.shape) == 3, \
              f"Invalid shape for text_emb: {text_emb.shape}."
         assert 0 <= drop_rate <= 1, "drop_rate must be in the range of [0, 1]."
-        
+
         with nn.parameter_scope("text_embedding"):
             # dropout for unconditional generation
-            emb = self.masking(text_emb, 
+            emb = self.masking(text_emb,
                                mask_prob=drop_rate,
                                axis=0)
 
             # apply pooling along sequence to get global condition
             # todo: attention pooling
             emb_pooled = F.mean(emb, axis=1)
-            
+
             # apply transformation
             emb_pooled = self.embedding_projection(emb_pooled, mode="ln_mlp")
-        
+
         return emb, emb_pooled
 
     def resblock_with_attention(self, h, emb, emb_seq, out_channels, name):
@@ -502,9 +507,9 @@ class UNet(object):
             res = Shape4D(
                 h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None \
-                and res in self.conf.attention_resolutions:
+                    and res in self.conf.attention_resolutions:
                 if self.conf.attention_type == "self_attention":
-                    h = self_attention(h, 
+                    h = self_attention(h,
                                        name="attention",
                                        cond=emb_seq,
                                        num_heads=self.conf.num_attention_heads,
@@ -517,7 +522,8 @@ class UNet(object):
                                         num_head_channels=self.conf.num_attention_head_channels,
                                         channel_last=self.conf.channel_last)
                 else:
-                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+                    raise ValueError(
+                        f"'{self.conf.attention_type}' is not supported for attention type.")
 
         return h
 
@@ -585,9 +591,9 @@ class UNet(object):
 
         res = Shape4D(h.shape, self.conf.channel_last).get_as_tuple("h")
         if self.conf.attention_resolutions is not None \
-             and res in self.conf.attention_resolutions:
+                and res in self.conf.attention_resolutions:
             if self.conf.attention_type == "self_attention":
-                h = self_attention(h, 
+                h = self_attention(h,
                                    name="attention",
                                    cond=emb_seq,
                                    num_heads=self.conf.num_attention_heads,
@@ -600,14 +606,15 @@ class UNet(object):
                                     num_head_channels=self.conf.num_attention_head_channels,
                                     channel_last=self.conf.channel_last)
             else:
-                raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+                raise ValueError(
+                    f"'{self.conf.attention_type}' is not supported for attention type.")
 
         h = block(h, emb, name="resblock_1")
 
         return h
 
     def output_block(self, h):
-        h = group_norm(h, 
+        h = group_norm(h,
                        name="last_norm",
                        channel_axis=3 if self.conf.channel_last else 1)
         h = nonlinearity(h)
@@ -655,7 +662,8 @@ class UNet(object):
             text_emb_seq = None
             if self.conf.text_cond:
                 assert text_emb is not None, "text_emb must be passed"
-                text_emb_seq, text_emb_pooled = self.text_embedding(text_emb, cond_drop_rate)
+                text_emb_seq, text_emb_pooled = self.text_embedding(
+                    text_emb, cond_drop_rate)
                 emb += text_emb_pooled
 
             emb = nonlinearity(emb)
@@ -677,9 +685,9 @@ class UNet(object):
                     is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
-                    outs = self.downsample_blocks(h, 
+                    outs = self.downsample_blocks(h,
                                                   emb,
-                                                  text_emb_seq, 
+                                                  text_emb_seq,
                                                   ch * mult,
                                                   level=level,
                                                   down=not is_last_block,
@@ -699,7 +707,7 @@ class UNet(object):
                     is_last_block = level == len(self.conf.channel_mult) - 1
 
                     # apply resblock and attention for this resolution
-                    h = self.upsample_blocks(h, 
+                    h = self.upsample_blocks(h,
                                              emb,
                                              text_emb_seq,
                                              hs,
@@ -725,7 +733,7 @@ class UNet(object):
 class EfficientUNet(UNet):
     def __init__(self, *args, **kwargs):
         super(EfficientUNet, self).__init__(*args, **kwargs)
-    
+
     def downsample_blocks(self, h, emb, emb_seq, out_channels, level, num_res_block):
         # 1. downsample (strided conv) -> 2. resblock x n -> 3. attention
         # for skip connection, use only the last output (not intermediate layers in each resolusion block)
@@ -733,17 +741,18 @@ class EfficientUNet(UNet):
 
         # 1. downsample
         if self.conf.resblock_resample:
-            logger.warning("Downsample by residual block. This is *not* a default setting for Efficient-UNet.")
+            logger.warning(
+                "Downsample by residual block. This is *not* a default setting for Efficient-UNet.")
             h = ResidualBlockDown(out_channels=out_channels,
-                                    scale_shift_norm=self.conf.scale_shift_norm,
-                                    dropout=self.conf.dropout,
-                                    channel_last=self.conf.channel_last,
-                                    rescale_skip=self.conf.resblock_rescale_skip)(h, emb, name=f"downsample_{level}")
+                                  scale_shift_norm=self.conf.scale_shift_norm,
+                                  dropout=self.conf.dropout,
+                                  channel_last=self.conf.channel_last,
+                                  rescale_skip=self.conf.resblock_rescale_skip)(h, emb, name=f"downsample_{level}")
         else:
             h = downsample(h,
-                            name=f"downsample_{level}",
-                            with_conv=self.conf.conv_resample,
-                            channel_last=self.conf.channel_last)
+                           name=f"downsample_{level}",
+                           with_conv=self.conf.conv_resample,
+                           channel_last=self.conf.channel_last)
 
         with nn.parameter_scope(f"block_{level}"):
             # 2. resblock x n
@@ -754,14 +763,15 @@ class EfficientUNet(UNet):
                                   rescale_skip=self.conf.resblock_rescale_skip)
             for i in range(num_res_block):
                 h = block(h, emb, f"resblock_{i}")
-            
+
             # 3. attention
-            res = Shape4D(h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            res = Shape4D(
+                h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None \
-                and res in self.conf.attention_resolutions:
-                
+                    and res in self.conf.attention_resolutions:
+
                 if self.conf.attention_type == "self_attention":
-                    h = self_attention(h, 
+                    h = self_attention(h,
                                        name="attention",
                                        cond=emb_seq,
                                        num_heads=self.conf.num_attention_heads,
@@ -774,9 +784,9 @@ class EfficientUNet(UNet):
                                         num_head_channels=self.conf.num_attention_head_channels,
                                         channel_last=self.conf.channel_last)
                 else:
-                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+                    raise ValueError(
+                        f"'{self.conf.attention_type}' is not supported for attention type.")
 
-            
             hs.append(h)
 
         return hs
@@ -787,7 +797,7 @@ class EfficientUNet(UNet):
         # 1. skip connection
         h = F.concatenate(h, hs_down.pop(),
                           axis=3 if self.conf.channel_last else 1)
-        
+
         with nn.parameter_scope(f"output_{level}"):
             # 2. resblock x n
             block = ResidualBlock(out_channels,
@@ -799,10 +809,11 @@ class EfficientUNet(UNet):
                 h = block(h, emb, f"resblock_{i}")
 
             # 3. attention
-            res = Shape4D(h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
+            res = Shape4D(
+                h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None and res in self.conf.attention_resolutions:
                 if self.conf.attention_type == "self_attention":
-                    h = self_attention(h, 
+                    h = self_attention(h,
                                        name="attention",
                                        cond=emb_seq,
                                        num_heads=self.conf.num_attention_heads,
@@ -815,10 +826,12 @@ class EfficientUNet(UNet):
                                         num_head_channels=self.conf.num_attention_head_channels,
                                         channel_last=self.conf.channel_last)
                 else:
-                    raise ValueError(f"'{self.conf.attention_type}' is not supported for attention type.")
+                    raise ValueError(
+                        f"'{self.conf.attention_type}' is not supported for attention type.")
         # 4. upsample
         if self.conf.resblock_resample:
-            logger.warning("Upsample by residual block. This is *not* a default setting for Efficient-UNet.")
+            logger.warning(
+                "Upsample by residual block. This is *not* a default setting for Efficient-UNet.")
             h = ResidualBlockUp(out_channels=out_channels,
                                 scale_shift_norm=self.conf.scale_shift_norm,
                                 dropout=self.conf.dropout,
@@ -826,12 +839,12 @@ class EfficientUNet(UNet):
                                 rescale_skip=self.conf.resblock_rescale_skip)(h, emb, name=f"upsample_{level}")
         else:
             h = upsample(h,
-                            name=f"upsample_{level}",
-                            with_conv=self.conf.conv_resample,
-                            channel_last=self.conf.channel_last)
+                         name=f"upsample_{level}",
+                         with_conv=self.conf.conv_resample,
+                         channel_last=self.conf.channel_last)
 
         return h
-    
+
     def output_block(self, h):
         return conv(h,
                     self.conf.output_channels,
@@ -876,9 +889,10 @@ class EfficientUNet(UNet):
             text_emb_seq = None
             if self.conf.text_cond:
                 assert text_emb is not None, "text_emb must be passed"
-                text_emb_seq, text_emb_pooled = self.text_embedding(text_emb, cond_drop_rate)
+                text_emb_seq, text_emb_pooled = self.text_embedding(
+                    text_emb, cond_drop_rate)
                 emb += text_emb_pooled
-            
+
             emb = nonlinearity(emb)
 
             if self.conf.channel_last:
@@ -886,14 +900,15 @@ class EfficientUNet(UNet):
                 # But, to do that, we have to care obsolete parameters.
                 x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
 
-            h = conv(x, ch, name="first_conv", channel_last=self.conf.channel_last)
+            h = conv(x, ch, name="first_conv",
+                     channel_last=self.conf.channel_last)
 
             hs = []
             # downsample block
             with nn.parameter_scope("downsample_block"):
                 for level, (mult, num_res_block) in enumerate(zip(self.conf.channel_mult, self.num_res_blocks)):
                     # apply resblock and attention for this resolution
-                    outs = self.downsample_blocks(h, 
+                    outs = self.downsample_blocks(h,
                                                   emb,
                                                   text_emb_seq,
                                                   ch * mult,
@@ -910,14 +925,14 @@ class EfficientUNet(UNet):
             with nn.parameter_scope("upsample_block"):
                 for level, (mult, num_res_block) in enumerate(zip(reversed(self.conf.channel_mult), reversed(self.num_res_blocks))):
                     # apply resblock and attention for this resolution
-                    h = self.upsample_blocks(h, 
+                    h = self.upsample_blocks(h,
                                              emb,
                                              text_emb_seq,
                                              hs,
                                              ch * mult,
                                              level=level,
                                              num_res_block=num_res_block)
-                    
+
             assert len(hs) == 0
 
             # output block
