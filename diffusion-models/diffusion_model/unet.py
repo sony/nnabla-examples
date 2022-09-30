@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-from config import ModelConfig
 import numpy as np
 import click
 
@@ -24,8 +23,10 @@ import nnabla.initializer as I
 from nnabla.parameter import get_parameter_or_create
 from nnabla.logger import logger
 
-from layers import *
-from utils import Shape4D, context_scope, force_float
+from config import ModelConfig
+
+from .layers import *
+from .utils import Shape4D, context_scope, force_float
 
 
 class ResidualBlock(object):

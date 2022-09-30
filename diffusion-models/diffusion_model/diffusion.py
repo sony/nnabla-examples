@@ -15,7 +15,7 @@
 import enum
 import math
 from functools import partial
-from config import DiffusionConfig
+from typing import Union
 
 import nnabla as nn
 import nnabla.functions as F
@@ -23,10 +23,10 @@ import numpy as np
 from neu.losses import gaussian_log_likelihood, kl_normal
 from neu.misc import AttrDict
 
-from typing import Union
+from config import DiffusionConfig
 
-from layers import chunk
-from utils import Shape4D, context_scope, force_float
+from .layers import chunk, sqrt
+from .utils import Shape4D, context_scope, force_float
 
 # Better to implement ModelVarType as a module?
 
@@ -656,7 +656,6 @@ class GaussianDiffusion(object):
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
 
-        from layers import sqrt
         alpha_bar = self._extract(self.alphas_cumprod, t, x_t.shape)
         alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
 
@@ -968,7 +967,6 @@ class GaussianDiffusion(object):
                     if len(old_eps) > 3:
                         old_eps.pop(0)
 
-                    from layers import sqrt
                     alpha_bar_prev = self._extract(
                         self.alphas_cumprod_prev, t, x_t.shape)
                     with context_scope("float"):

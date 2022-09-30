@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+  - override job_logging: custom
+
+run:
+  dir: .
+
+output_subdir: null
+

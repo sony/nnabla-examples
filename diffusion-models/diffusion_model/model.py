@@ -14,12 +14,12 @@
 
 import nnabla as nn
 import nnabla.functions as F
+from neu.misc import AttrDict
 
-from diffusion import is_learn_sigma, GaussianDiffusion
-from unet import UNet, EfficientUNet
 from config import DiffusionConfig, ModelConfig
 
-from neu.misc import AttrDict
+from .diffusion import is_learn_sigma, GaussianDiffusion
+from .unet import UNet, EfficientUNet
 
 
 class Model(object):

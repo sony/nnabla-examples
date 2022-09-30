@@ -22,7 +22,6 @@ import hydra
 import nnabla as nn
 import nnabla.solvers as S
 import numpy as np
-from hydra.core.config_store import ConfigStore
 from neu.checkpoint_util import load_checkpoint, save_checkpoint
 from neu.misc import get_current_time, init_nnabla
 from neu.mixed_precision import MixedPrecisionManager
@@ -32,11 +31,13 @@ from omegaconf import OmegaConf
 
 import config
 from dataset import get_dataset
-from diffusion import is_learn_sigma
-from layers import adaptive_pooling_2d
-from model import Model
-from utils import (create_ema_op, get_lr_scheduler, init_checkpoint_queue,
-                   sum_grad_norm)
+from diffusion_model.diffusion import is_learn_sigma
+from diffusion_model.layers import adaptive_pooling_2d
+from diffusion_model.model import Model
+from diffusion_model.utils import (create_ema_op, 
+                                   get_lr_scheduler, 
+                                   init_checkpoint_queue,
+                                   sum_grad_norm)
 
 
 def refine_monitor_files(dir_path, start_iter):
@@ -116,13 +117,6 @@ def augmentation(x, channel_last, random_flip=True):
     return aug
 
 
-# config
-cs = ConfigStore.instance()
-cs.store(name="base_config", node=config.TrainScriptConfig)
-
-config.register_configs()
-
-
 def create_gen_config(conf: config.TrainScriptConfig,
                       respacing_step: int) -> config.GenScriptConfig:
     conf_gen: config.GenScriptConfig \
@@ -139,7 +133,7 @@ def create_gen_config(conf: config.TrainScriptConfig,
     return conf_gen
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config_train")
+@hydra.main(version_base=None, config_path="config/yaml", config_name="config_train")
 def main(conf: config.TrainScriptConfig):
     # setup output dir
     conf.train.output_dir = get_output_dir_name(conf.train.output_dir,

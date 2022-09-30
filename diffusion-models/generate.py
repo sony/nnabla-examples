@@ -27,15 +27,11 @@ from omegaconf import OmegaConf
 
 import config
 from dataset.common import SimpleDataIterator
-from model import Model
-
-cs = ConfigStore.instance()
-cs.store(name="base_config", node=config.GenScriptConfig)
-config.register_configs()
+from diffusion_model.model import Model
 
 
 @hydra.main(version_base=None,
-            config_path="conf",
+            config_path="config/yaml",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     # load diffusion and model config

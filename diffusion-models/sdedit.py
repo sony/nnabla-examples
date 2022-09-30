@@ -13,31 +13,23 @@
 # limitations under the License.
 
 
-from typing import Union
 import os
-from dataclasses import dataclass
 
 import hydra
 import nnabla as nn
 from nnabla.logger import logger
 import numpy as np
-from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 from neu.misc import init_nnabla
 from neu.reporter import get_tiled_image, save_tiled_image
 from nnabla.utils.image_utils import imsave, imread
 
 import config
-from model import Model
-
-
-cs = ConfigStore.instance()
-cs.store(name="base_config", node=config.GenScriptConfig)
-config.register_configs()
+from diffusion_model.model import Model
 
 
 @hydra.main(version_base=None,
-            config_path="conf",
+            config_path="config/yaml",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     assert conf.generate.x_start_path is not None, "generate.x_start_path must be supecified for sdedit.py."

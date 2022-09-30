@@ -14,8 +14,6 @@
 
 import os
 import pathlib
-from random import random
-import sys
 
 import click
 import numpy as np
