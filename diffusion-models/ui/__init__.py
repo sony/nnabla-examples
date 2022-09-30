@@ -12,15 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .python.dataset import DatasetConfig
-from .python.diffusion import DiffusionConfig
-from .python.generate import GenerateConfig
-from .python.model import ModelConfig
-from .python.script import (RuntimeConfig,
-                            TrainScriptConfig,
-                            GenScriptConfig,
-                            InferenceServerScriptConfig,
-                            LoadedConfig,
-                            load_saved_conf)
-from .python.train import TrainConfig
-from .python.ui import InferenceServerConfig
+from .interface import create_demo

@@ -21,6 +21,7 @@ from .diffusion import DiffusionConfig
 from .generate import GenerateConfig
 from .model import ModelConfig
 from .train import TrainConfig
+from .ui import InferenceServerConfig
 
 
 @dataclass
@@ -42,6 +43,14 @@ class TrainScriptConfig:
 class GenScriptConfig:
     runtime: RuntimeConfig = MISSING
     generate: GenerateConfig = MISSING
+
+
+# Config for inference server
+@dataclass
+class InferenceServerScriptConfig:
+    runtime: RuntimeConfig = MISSING
+    server: InferenceServerConfig = MISSING
+
 
 # for loading config file
 @dataclass

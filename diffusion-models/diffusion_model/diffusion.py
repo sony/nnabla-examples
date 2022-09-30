@@ -828,7 +828,7 @@ class GaussianDiffusion(object):
                         pred_x_starts.append((step, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
-        return x_t.d.copy(), samples, pred_x_starts
+        return x_t.d, samples, pred_x_starts
 
     def p_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """

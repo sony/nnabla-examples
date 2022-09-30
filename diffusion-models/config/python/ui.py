@@ -12,15 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .python.dataset import DatasetConfig
-from .python.diffusion import DiffusionConfig
-from .python.generate import GenerateConfig
-from .python.model import ModelConfig
-from .python.script import (RuntimeConfig,
-                            TrainScriptConfig,
-                            GenScriptConfig,
-                            InferenceServerScriptConfig,
-                            LoadedConfig,
-                            load_saved_conf)
-from .python.train import TrainConfig
-from .python.ui import InferenceServerConfig
+from dataclasses import dataclass
+from omegaconf import MISSING
+from typing import Optional
+
+# configuration
+@dataclass
+class InferenceServerConfig:
+    port: int = 50000
+
+    # base model
+    base_h5_path: str = MISSING
+    base_conf_path: str = MISSING
+
+    # upsampler 1
+    up1_h5_path: Optional[str] = None
+    up1_conf_path: Optional[str] = None
+
+# expose config to enable loading from yaml file
+from .utils import register_config
+register_config(name="inference_server", node=InferenceServerConfig)

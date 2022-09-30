@@ -53,19 +53,19 @@ class Model(object):
 
         return t
 
-    def gaussian_conditioning_augmentation(self, x):
+    def gaussian_conditioning_augmentation(self, x, s=None):
         """
         Following a defined diffusion noise schedule, 
-        add noise to image corresponding to randomly sampled time 's'.
+        add a noise to image `x` corresponding to the given timestep `s`.
+        If `s` is None, `s` is randomly sampled from U(0, T-1).
 
         This is typically used for gaussian conditioning augmentation
         proposed in "Cascaded diffusion models for High Fidelity Image Generation".
         Specifically, returns noisy data x' = q(x_s | x) where s ~ U({0, 1, ..., T-1}) and timestep 's'.
-
-        Note that, practically, this is just an alias of sampling timestep `s` and compute diffusion.q_sample(x, s).
         """
-        B = x.shape[0]
-        s = self._sampling_timestep(B)
+        if s is None:
+            B = x.shape[0]
+            s = self._sampling_timestep(B)
 
         return self.diffusion.q_sample(x, s), s
 
