@@ -52,6 +52,19 @@ You can also specify the sampling interval for generation by `generate.respacing
 We also support DDIM sampler that enabls deterministic sampling. If you would like to use it, try `generate.ddim=True` option.
 For more details about DDIM, please see the [original paper](http://proceedings.mlr.press/v139/nichol21a/nichol21a.pdf).
 
+
+## Generating image through browser user interface
+We also provide browser UI to generate image by pretrained DPM.
+
+Please specify your model path (h5 and config) in `config/yaml/config_inference_server.yaml` and do below to launch your local inference server.
+```
+python launch_inference_server.py
+```
+
+After launching the server, you can access it through browser.
+When you launch it on your local PC, just access `localhost:50000`.
+If you launch it on other server (be sure to be able to access it through http connection), please specify its address rather than localhost.
+
 ## Download data for training
 
 ### cifar-10
