@@ -181,10 +181,12 @@ def main(conf: config.TrainScriptConfig):
         # create model_kwargs
         model_kwargs["input_cond"] = x_low_res
 
+    # set cond drop rate for classifier-free guidance
+    model_kwargs["cond_drop_rate"] = conf.train.cond_drop_rate
+
     # setup class condition
     if conf.model.class_cond:
         model_kwargs["class_label"] = nn.Variable((conf.train.batch_size, ))
-        model_kwargs["cond_drop_rate"] = conf.train.cond_drop_rate
 
     # setup text condition
     if conf.model.text_cond:
@@ -440,11 +442,12 @@ def main(conf: config.TrainScriptConfig):
                 gen_model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(
                     np.zeros((num_gen, )))
 
+            # disable dropping condition for generation
+            gen_model_kwargs["cond_drop_rate"] = 0
+
             if conf.model.class_cond:
                 gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
                                                                                                  size=(num_gen, )))
-                # disable dropping condition for generation
-                gen_model_kwargs["cond_drop_rate"] = 0
 
             if conf.model.text_cond:
                 gen_model_kwargs["text_emb"] = nn.Variable.from_numpy_array(
