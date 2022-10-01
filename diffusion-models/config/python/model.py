@@ -22,6 +22,8 @@ from omegaconf import MISSING, OmegaConf
 # Model Definition
 
 # set resolvers
+
+
 def get_output_channels(input_channels, var_type) -> int:
     # calc output channels from input and vartype
     from diffusion_model.diffusion import is_learn_sigma

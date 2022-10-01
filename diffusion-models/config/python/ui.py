@@ -17,6 +17,8 @@ from omegaconf import MISSING
 from typing import Optional
 
 # configuration
+
+
 @dataclass
 class InferenceServerConfig:
     port: int = 50000
@@ -28,6 +30,7 @@ class InferenceServerConfig:
     # upsampler 1
     up1_h5_path: Optional[str] = None
     up1_conf_path: Optional[str] = None
+
 
 # expose config to enable loading from yaml file
 from .utils import register_config

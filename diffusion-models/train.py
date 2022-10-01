@@ -34,8 +34,8 @@ from dataset import get_dataset
 from diffusion_model.diffusion import is_learn_sigma
 from diffusion_model.layers import adaptive_pooling_2d
 from diffusion_model.model import Model
-from diffusion_model.utils import (create_ema_op, 
-                                   get_lr_scheduler, 
+from diffusion_model.utils import (create_ema_op,
+                                   get_lr_scheduler,
                                    init_checkpoint_queue,
                                    sum_grad_norm)
 

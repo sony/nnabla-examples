@@ -20,7 +20,7 @@ from ui import create_demo
 from neu.misc import init_nnabla
 
 
-@hydra.main(version_base=None, 
+@hydra.main(version_base=None,
             config_path="config/yaml",
             config_name="config_inference_server")
 def main(conf: InferenceServerScriptConfig):
@@ -31,9 +31,9 @@ def main(conf: InferenceServerScriptConfig):
 
     # create demo
     demo = create_demo(conf.server)
-    
+
     # launch server
-    demo.launch(server_name="0.0.0.0", 
+    demo.launch(server_name="0.0.0.0",
                 server_port=conf.server.port)
 
 

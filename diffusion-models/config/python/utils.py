@@ -16,6 +16,7 @@ from hydra.core.config_store import ConfigStore
 
 cs = ConfigStore.instance()
 
+
 def register_config(name, node, group="proto_configs"):
     """
     Registers config node which is defined as dataclass to enable loading from yaml file.
@@ -26,17 +27,17 @@ def register_config(name, node, group="proto_configs"):
         def HogeConfig:
             a: int = 1
             b: int = MISSING
-        
+
         register_config(config_name="hoge", node=HogeConfig, group="proto_configs")
         ```
-    
+
         ``` hoge.yaml 
         defaults:
             # you can load default values defined by HogeConfig here
             - /proto_configs/hoge@_here_
-        
+
         # a is loaded from HogeConfig and the value is 1.
-        
+
         b: 3  # you can overwrite values 
         ```
     """

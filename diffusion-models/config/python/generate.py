@@ -17,6 +17,7 @@ from typing import Union
 
 from omegaconf import MISSING
 
+
 @dataclass
 class GenerateConfig:
     # load

@@ -15,6 +15,8 @@
 from dataclasses import dataclass
 
 # Diffusion definition
+
+
 @dataclass
 class DiffusionConfig:
     beta_strategy: str = "linear"
@@ -22,6 +24,7 @@ class DiffusionConfig:
     t_start: int = "${diffusion.max_timesteps}"
     respacing_step: int = 1
     model_var_type: str = "${model.model_var_type}"
+
 
 # expose config to enable loading from yaml file
 from .utils import register_config

@@ -19,7 +19,7 @@ class InferenceModel(object):
                  base_h5: str,
                  up1_conf: Optional[LoadedConfig] = None,
                  up1_h5: Optional[str] = None) -> None:
-        
+
         # base model
         assert os.path.exists(base_h5), \
             f"h5 file '{base_h5}' for base model doesn't exist."
@@ -29,11 +29,12 @@ class InferenceModel(object):
             nn.load_parameters(base_h5)
 
         # 1st upsampler
-        self.use_1st_upsampler = (up1_conf is not None) and (up1_h5 is not None)
+        self.use_1st_upsampler = (
+            up1_conf is not None) and (up1_h5 is not None)
         if self.use_1st_upsampler:
             assert os.path.exists(up1_h5), \
                 f"h5 file '{up1_h5}' for the 1st upsampler model doesn't exist."
-            
+
             self.up1_conf = up1_conf
             with nn.parameter_scope("up1"):
                 nn.load_parameters(up1_h5)
@@ -42,23 +43,23 @@ class InferenceModel(object):
     def _infer(conf: LoadedConfig,
                respacing_step,
                sampler,
-               class_id, 
+               class_id,
                classifier_free_guidance_weight,
                *,
-               lowres_noise_level = None,
-               lowres_image = None):
-        
-        num_gen = 8 # todo: pass it from ui
+               lowres_noise_level=None,
+               lowres_image=None):
+
+        num_gen = 8  # todo: pass it from ui
         conf.diffusion.respacing_step = respacing_step
 
         model = Model(diffusion_conf=conf.diffusion,
-                    model_conf=conf.model)
+                      model_conf=conf.model)
 
         # set up class condition
         model_kwargs = {}
         if conf.model.class_cond:
             model_kwargs["class_label"] = repeat(int(class_id), num_gen)
-        
+
         # set up low-res input
         if conf.model.low_res_size is not None:
             assert lowres_image is not None
@@ -67,9 +68,10 @@ class InferenceModel(object):
             if conf.model.noisy_low_res:
                 assert isinstance(lowres_image, nn.Variable)
                 s = repeat(float(lowres_noise_level), num_gen)
-                lowres_image, aug_level = model.gaussian_conditioning_augmentation(lowres_image, s)
+                lowres_image, aug_level = model.gaussian_conditioning_augmentation(
+                    lowres_image, s)
                 model_kwargs["input_cond_aug_timestep"] = aug_level
-            
+
             model_kwargs["input_cond"] = lowres_image
 
         # setup sampler
@@ -80,17 +82,17 @@ class InferenceModel(object):
             use_ddim = True
         if sampler in ["plms", "dpm2"]:
             ode_solver = sampler
-        
+
         gen, _, _ = model.sample(shape=(num_gen, ) + conf.model.image_shape,
                                  model_kwargs=model_kwargs,
                                  use_ema=True,
-                                 use_ddim=use_ddim, 
+                                 use_ddim=use_ddim,
                                  ode_solver=ode_solver,
                                  progress=True,
                                  classifier_free_guidance_weight=classifier_free_guidance_weight)
-        
+
         return gen
-    
+
     def _single_step_inference_callback(self):
 
         def callback(respacing_step,
@@ -99,17 +101,17 @@ class InferenceModel(object):
                      classifier_free_guidance_weight):
             with nn.parameter_scope("base"):
                 gen: np.ndarray = self._infer(self.base_conf,
-                                                respacing_step,
-                                                sampler,
-                                                class_id,
-                                                classifier_free_guidance_weight)
+                                              respacing_step,
+                                              sampler,
+                                              class_id,
+                                              classifier_free_guidance_weight)
 
             return ((gen + 1) * 127.5).astype(np.uint8)
 
         return callback
 
     def _two_step_inference_callback(self):
-        
+
         def callback(base_respacing_step,
                      base_sampler,
                      base_class_id,
@@ -128,7 +130,6 @@ class InferenceModel(object):
                                 base_class_id,
                                 base_classifier_free_guidance_weight)
 
-
             with nn.parameter_scope("up1"):
                 gen: np.ndarray = \
                     self._infer(self.up1_conf,
@@ -137,7 +138,7 @@ class InferenceModel(object):
                                 up_class_id,
                                 up_classifier_free_guidance_weight,
                                 lowres_noise_level=up_lowres_noiose_level,
-                                lowres_image = base_gen)
+                                lowres_image=base_gen)
 
             return ((gen + 1) * 127.5).astype(np.uint8)
 

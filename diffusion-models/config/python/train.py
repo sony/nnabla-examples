@@ -17,6 +17,7 @@ from typing import Union
 
 from omegaconf import MISSING
 
+
 @dataclass
 class TrainConfig:
     batch_size: int = MISSING
@@ -37,7 +38,7 @@ class TrainConfig:
     # augmentation
     # If True, Gaussian conditioning augmentation proposed in "Cascaded Diffusion" is performed for low_res image.
     # Note that if a model doesn't have low_res input (i.e. base model), this option is simply ignored.
-    noisy_low_res: bool = True 
+    noisy_low_res: bool = True
 
     # loss
     loss_scaling: float = 1.0
@@ -47,6 +48,7 @@ class TrainConfig:
 
     # for classifier-free guidance
     cond_drop_rate: float = 0.1
+
 
 # expose config to enable loading from yaml file
 from .utils import register_config

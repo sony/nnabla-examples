@@ -18,6 +18,7 @@ import gradio as gr
 
 from config import LoadedConfig
 
+
 @dataclass
 class LeftBlocks():
     # inference configurations
@@ -34,9 +35,9 @@ class LeftBlocks():
 
 def respacing_step_block(max_timestep: int,
                          prefix: str) -> gr.Slider:
-    return gr.Slider(minimum=0, 
+    return gr.Slider(minimum=0,
                      maximum=max_timestep,
-                     value=max_timestep // 50, # default value
+                     value=max_timestep // 50,  # default value
                      step=1,
                      label=f"[{prefix}] Respacing step")
 
@@ -50,8 +51,8 @@ def sampler_block(prefix: str) -> gr.Dropdown:
 def class_id_block(is_class_cond: bool,
                    num_classes: int,
                    prefix: str) -> gr.Dropdown:
-    
-    # todo: show class name rather than id 
+
+    # todo: show class name rather than id
     return gr.Dropdown(choices=list(range(0, num_classes)),
                        value=0,
                        visible=is_class_cond,
@@ -72,7 +73,7 @@ def cfguide_block(is_class_cond: bool,
 def lowres_noise_level_block(is_upsampler: bool,
                              max_timestep: int,
                              prefix: str):
-    
+
     return gr.Slider(minimum=0,
                      maximum=max_timestep,
                      value=0,
@@ -93,17 +94,16 @@ def create_left_column_from_config(conf: LoadedConfig, prefix: str) -> LeftBlock
     block3 = class_id_block(is_class_cond=conf.model.class_cond,
                             num_classes=conf.model.num_classes,
                             prefix=prefix)
-    
+
     # classifier-free guidance weight
     block4 = cfguide_block(is_class_cond=conf.model.class_cond,
                            prefix=prefix)
-    
+
     # lowres noise loevel
     block5 = lowres_noise_level_block(is_upsampler=conf.model.low_res_size is not None,
                                       max_timestep=conf.diffusion.max_timesteps,
                                       prefix=prefix)
-    
-    
+
     return LeftBlocks(respacing_step=block1,
                       sampler=block2,
                       class_id=block3,

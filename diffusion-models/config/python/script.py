@@ -39,6 +39,8 @@ class TrainScriptConfig:
     train: TrainConfig = MISSING
 
 # Config for generation scripts
+
+
 @dataclass
 class GenScriptConfig:
     runtime: RuntimeConfig = MISSING

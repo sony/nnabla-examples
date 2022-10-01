@@ -20,6 +20,8 @@ from omegaconf import MISSING
 # todo: using config name to access other config group is unsafe
 
 # Dataset Definition
+
+
 @dataclass
 class DatasetConfig:
     name: str = MISSING
@@ -42,6 +44,7 @@ class DatasetConfig:
     channel_last: bool = "${model.channel_last}"
     batch_size: int = "${train.batch_size}"
     image_size: List[int] = "${model.image_size}"
+
 
 # expose config to enable loading from yaml file
 from .utils import register_config
