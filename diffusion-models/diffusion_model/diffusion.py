@@ -204,8 +204,8 @@ class GaussianDiffusion(object):
 
         if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
             # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
-            # Therefore, because x_0 is always included implicitely, use_timesteps should be [r - 1, 2r - 1, ..., T] where r is respacing step.
-            # Also, we should always include the last step T so that the first noise is a gaussian.
+            # Therefore, because x_0 is always included implicitely, use_timesteps should be [r - 1, 2r - 1, ..., T - 1] where r is respacing step.
+            # Also, we should always include the last step T - 1 so that the first noise is a gaussian.
 
             # create a list containing timesteps used in generation
             use_timesteps = list(
