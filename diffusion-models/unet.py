@@ -81,10 +81,14 @@ class ResidualBlock(object):
 
     def shortcut(self, x):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
-        if self.conv_shortcut or self.out_channels != x_shape.c:
-            return nin(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
 
-        return x
+        if self.out_channels == x_shape.c:
+            return x
+        elif self.conv_shortcut:
+            return conv(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
+
+        return nin(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
+
 
     def __call__(self, x, temb, name):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
@@ -103,7 +107,7 @@ class ResidualBlock(object):
 
             # skip connection
             if self.rescale_skip:
-                out = (h + self.shortcut(x)) / math.sqrt(2)
+                out = (h + self.shortcut(x)) * (2 ** -0.5)
             else:
                 out = h + self.shortcut(x)
 
@@ -779,6 +783,7 @@ class EfficientUNet(UNet):
                                   rescale_skip=self.conf.resblock_rescale_skip)
             for i in range(num_res_block):
                 h = block(h, emb, f"resblock_{i}")
+                hs.append(h)
 
             # 3. attention
             res = Shape4D(
@@ -803,7 +808,7 @@ class EfficientUNet(UNet):
                     raise ValueError(
                         f"'{self.conf.attention_type}' is not supported for attention type.")
 
-            hs.append(h)
+                hs.append(h)
 
         return hs
 
@@ -811,8 +816,11 @@ class EfficientUNet(UNet):
         # 1. skip connection -> 2. resblock x n -> 3. attention -> 4. upsample
 
         # 1. skip connection
-        h = F.concatenate(h, hs_down.pop(),
-                          axis=3 if self.conf.channel_last else 1)
+        # (2022/10/20) follow guided-diffusion's skip connection
+        def skip_connection(u, v, rescale_skip=False):
+            return F.concatenate(u, 
+                                 v * (2 ** -0.5) if rescale_skip else v,
+                                 axis=3 if self.conf.channel_last else 1)
 
         with nn.parameter_scope(f"output_{level}"):
             # 2. resblock x n
@@ -822,12 +830,15 @@ class EfficientUNet(UNet):
                                   channel_last=self.conf.channel_last,
                                   rescale_skip=self.conf.resblock_rescale_skip)
             for i in range(num_res_block):
+                h = skip_connection(h, hs_down.pop())
                 h = block(h, emb, f"resblock_{i}")
 
             # 3. attention
             res = Shape4D(
                 h.shape, channel_last=self.conf.channel_last).get_as_tuple("h")
             if self.conf.attention_resolutions is not None and res in self.conf.attention_resolutions:
+                h = skip_connection(h, hs_down.pop())
+
                 if self.conf.attention_type == "self_attention":
                     h = self_attention(h,
                                        name="attention",
@@ -862,12 +873,11 @@ class EfficientUNet(UNet):
         return h
 
     def output_block(self, h):
-        return conv(h,
-                    self.conf.output_channels,
-                    name="last_conv",
-                    kernel=(1, 1),
-                    pad=(0, 0),
-                    channel_last=self.conf.channel_last)
+        return nin(h,
+                   self.conf.output_channels,
+                   name="last_conv",
+                   zeroing_w=True, # needed?
+                   channel_last=self.conf.channel_last)
 
     def __call__(self,
                  x,
