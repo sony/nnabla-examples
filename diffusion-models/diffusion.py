@@ -145,15 +145,10 @@ def respace_betas(betas, use_timesteps):
     prev_alphas_cumprod = 1.
     alphas_cumprod = 1.
     timestep_map = []
-    first = True
     for t in range(T):
         alphas_cumprod *= 1. - betas[t]
         if t in use_timesteps:
-            if first:
-                alphas_cumprod = 1. - betas[t]
-                first = False
-
-            new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
+            new_beta = 1. - alphas_cumprod / prev_alphas_cumprod
             new_betas.append(new_beta)
             timestep_map.append(t)
             prev_alphas_cumprod = alphas_cumprod
@@ -208,13 +203,17 @@ class GaussianDiffusion(object):
         self.timestep_map = None
 
         if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
+            # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
+            # Therefore, because x_0 is always included implicitely, use_timesteps should be [r - 1, 2r - 1, ..., T] where r is respacing step.
+            # Also, we should always include the last step T so that the first noise is a gaussian.
+
             # create a list containing timesteps used in generation
             use_timesteps = list(
-                range(0, conf.t_start, conf.respacing_step))  # sampling interval
+                range(conf.respacing_step - 1, conf.t_start, conf.respacing_step))  # sampling interval
 
-            if use_timesteps[-1] != conf.t_start:
+            if use_timesteps[-1] != conf.t_start - 1:
                 # The last step (= most noisy data) should be included always.
-                use_timesteps.append(conf.t_start)
+                use_timesteps.append(conf.t_start - 1)
 
             betas, timestep_map = respace_betas(betas, use_timesteps)
             self.timestep_map = const_var(timestep_map)
