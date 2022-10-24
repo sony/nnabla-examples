@@ -148,7 +148,7 @@ def main(conf: config.TrainScriptConfig):
     # initialize nnabla runtime and get communicator
     comm = init_nnabla(ext_name="cudnn",
                        device_id=conf.runtime.device_id,
-                       type_config=conf.runtime.type_config,
+                       type_config="float", # mixed precision is handled in unet.py
                        random_pseed=True)
 
     # create data iterator
@@ -275,7 +275,7 @@ def main(conf: config.TrainScriptConfig):
     comm.barrier()
 
     mpm = MixedPrecisionManager(
-        use_fp16=conf.runtime.type_config == "half",
+        use_fp16=conf.model.use_mixed_precision,
         initial_log_loss_scale=10)
 
     # Queue to keep data instances for input_cond during sampling
@@ -398,11 +398,11 @@ def main(conf: config.TrainScriptConfig):
         if i % conf.train.show_interval == 0:
             if conf.train.progress:
                 desc = reporter.desc(
-                    reset=True, sync=True if conf.runtime.type_config == "float" else False)
+                    reset=True, sync=True)
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True if conf.runtime.type_config == "float" else False)
+                              0 else None, reset=True, sync=True)
 
             reporter.flush_monitor(i)
 

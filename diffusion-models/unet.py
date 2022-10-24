@@ -24,7 +24,7 @@ import nnabla.initializer as I
 from nnabla.logger import logger
 
 from layers import *
-from utils import Shape4D, float_context_scope
+from utils import Shape4D, context_scope, force_float
 
 
 class ResidualBlock(object):
@@ -350,7 +350,7 @@ class QKVAttention(object):
         # create attention weight
         # (B * num_heads, L (for q), L (for k))
         w = F.batch_matmul(q, k, transpose_b=True)
-        with float_context_scope():
+        with context_scope("float"):
             w = F.softmax(w, axis=-1)  # take softmax for each query
 
         # attention
@@ -381,7 +381,9 @@ class UNet(object):
 
         self.conf: ModelConfig = conf
         self.emb_dims = 4 * self.conf.base_channels
+        self.use_mixed_precision = conf.use_mixed_precision
 
+    # condition branch
     def concat_input_cond(self, x, input_cond):
         assert isinstance(input_cond, (nn.Variable, nn.NdArray)
                           ), "input_cond must be nn.Variable or nn,NdArray."
@@ -494,6 +496,50 @@ class UNet(object):
 
         return emb, emb_pooled
 
+    # according to "guided diffusion", all computation for condition vectors seems to be done with float32.
+    @force_float
+    def condition_processing(self,
+                             x,
+                             t,
+                             *,
+                             input_cond=None,
+                             input_cond_aug_timestep=None,
+                             class_label=None,
+                             text_emb=None,
+                             cond_drop_rate=0):
+        # timestep t
+        emb = self.timestep_embedding(t)
+
+        # input condition. Typically, low resolution image for upsampler.
+        if input_cond is not None:
+            x = self.concat_input_cond(x, input_cond)
+
+            # gaussian conditioning timestep if applied.
+            if self.conf.noisy_low_res:
+                assert isinstance(input_cond_aug_timestep, nn.Variable), \
+                    "input_cond_aug_timestep must be an instance of nn.Variable"
+
+                emb += self.timestep_embedding(input_cond_aug_timestep,
+                                                "gaussian_conditioning_timestep_embedding")
+
+        # class condition
+        if self.conf.class_cond:
+            assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
+            emb += self.class_embedding(class_label, cond_drop_rate)
+
+        # text condition
+        emb_seq = None
+        if self.conf.text_cond:
+            assert text_emb is not None, "text_emb must be passed"
+            emb_seq, text_emb_pooled = self.text_embedding(
+                text_emb, cond_drop_rate)
+            emb += text_emb_pooled
+
+        emb = nonlinearity(emb)
+
+        return emb, emb_seq
+
+    # main branch
     def resblock_with_attention(self, h, emb, emb_seq, out_channels, name):
         with nn.parameter_scope(name):
             block = ResidualBlock(out_channels,
@@ -626,47 +672,17 @@ class UNet(object):
 
         return h
 
+    # forward definition
     def __call__(self,
                  x,
                  t,
                  *,
                  name=None,
-                 input_cond=None,
-                 input_cond_aug_timestep=None,
-                 class_label=None,
-                 text_emb=None,
-                 cond_drop_rate=0):
+                 **model_kwargs):
         ch = self.conf.base_channels
-        with nn.parameter_scope('UNet' if name is None else name):
-            # timestep t
-            emb = self.timestep_embedding(t)
-
-            # input condition. Typically, low resolution image for upsampler.
-            if input_cond is not None:
-                x = self.concat_input_cond(x, input_cond)
-
-                # gaussian conditioning timestep if applied.
-                if self.conf.noisy_low_res:
-                    assert isinstance(input_cond_aug_timestep, nn.Variable), \
-                        "input_cond_aug_timestep must be an instance of nn.Variable"
-
-                    emb += self.timestep_embedding(input_cond_aug_timestep,
-                                                   "gaussian_conditioning_timestep_embedding")
-
-            # class condition
-            if self.conf.class_cond:
-                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
-                emb += self.class_embedding(class_label, cond_drop_rate)
-
-            # text condition
-            text_emb_seq = None
-            if self.conf.text_cond:
-                assert text_emb is not None, "text_emb must be passed"
-                text_emb_seq, text_emb_pooled = self.text_embedding(
-                    text_emb, cond_drop_rate)
-                emb += text_emb_pooled
-
-            emb = nonlinearity(emb)
+        with context_scope("half" if self.use_mixed_precision else "float"), nn.parameter_scope('UNet' if name is None else name):
+            # condition
+            emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
 
             # first convolution
             if self.conf.channel_last:
@@ -687,7 +703,7 @@ class UNet(object):
                     # apply resblock and attention for this resolution
                     outs = self.downsample_blocks(h,
                                                   emb,
-                                                  text_emb_seq,
+                                                  emb_seq,
                                                   ch * mult,
                                                   level=level,
                                                   down=not is_last_block,
@@ -697,7 +713,7 @@ class UNet(object):
 
             # middle block
             with nn.parameter_scope("middle_block"):
-                h = self.middle_block(h, emb, text_emb_seq)
+                h = self.middle_block(h, emb, emb_seq)
 
             # upsample block
             with nn.parameter_scope("upsample_block"):
@@ -709,7 +725,7 @@ class UNet(object):
                     # apply resblock and attention for this resolution
                     h = self.upsample_blocks(h,
                                              emb,
-                                             text_emb_seq,
+                                             emb_seq,
                                              hs,
                                              ch * mult,
                                              level=level,
@@ -858,42 +874,11 @@ class EfficientUNet(UNet):
                  t,
                  *,
                  name=None,
-                 input_cond=None,
-                 input_cond_aug_timestep=None,
-                 class_label=None,
-                 text_emb=None,
-                 cond_drop_rate=0):
+                 **model_kwargs):
         ch = self.conf.base_channels
-        with nn.parameter_scope('UNet' if name is None else name):
-            # timestep t
-            emb = self.timestep_embedding(t)
-
-            # input condition. Typically, low resolution image for upsampler.
-            if input_cond is not None:
-                x = self.concat_input_cond(x, input_cond)
-
-                # gaussian conditioning timestep if applied.
-                if self.conf.noisy_low_res:
-                    assert isinstance(input_cond_aug_timestep, nn.Variable), \
-                        "input_cond_aug_timestep must be an instance of nn.Variable"
-
-                    emb += self.timestep_embedding(input_cond_aug_timestep,
-                                                   "gaussian_conditioning_timestep_embedding")
-
-            # class condition
-            if self.conf.class_cond:
-                assert class_label is not None, "class_label must be nn.Variable or nn.NdArray"
-                emb += self.class_embedding(class_label, cond_drop_rate)
-
-            # text condition
-            text_emb_seq = None
-            if self.conf.text_cond:
-                assert text_emb is not None, "text_emb must be passed"
-                text_emb_seq, text_emb_pooled = self.text_embedding(
-                    text_emb, cond_drop_rate)
-                emb += text_emb_pooled
-
-            emb = nonlinearity(emb)
+        with context_scope("half" if self.use_mixed_precision else "float"), nn.parameter_scope('E-UNet' if name is None else name):
+            # condition
+            emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
 
             if self.conf.channel_last:
                 # todo: If we allow tf32, might be better to apply pad even if chennel_first.
@@ -910,7 +895,7 @@ class EfficientUNet(UNet):
                     # apply resblock and attention for this resolution
                     outs = self.downsample_blocks(h,
                                                   emb,
-                                                  text_emb_seq,
+                                                  emb_seq,
                                                   ch * mult,
                                                   level=level,
                                                   num_res_block=num_res_block)
@@ -919,7 +904,7 @@ class EfficientUNet(UNet):
 
             # middle block
             with nn.parameter_scope("middle_block"):
-                h = self.middle_block(h, emb, text_emb_seq)
+                h = self.middle_block(h, emb, emb_seq)
 
             # upsample block
             with nn.parameter_scope("upsample_block"):
@@ -927,7 +912,7 @@ class EfficientUNet(UNet):
                     # apply resblock and attention for this resolution
                     h = self.upsample_blocks(h,
                                              emb,
-                                             text_emb_seq,
+                                             emb_seq,
                                              hs,
                                              ch * mult,
                                              level=level,

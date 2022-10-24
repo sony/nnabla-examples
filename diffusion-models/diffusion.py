@@ -26,7 +26,7 @@ from neu.misc import AttrDict
 from typing import Union
 
 from layers import chunk
-from utils import Shape4D, float_context_scope, force_float
+from utils import Shape4D, context_scope, force_float
 
 # Better to implement ModelVarType as a module?
 
@@ -401,26 +401,19 @@ class GaussianDiffusion(object):
                                 clip_denoised=clip_denoised,
                                 channel_last=channel_last)
 
-        from nnabla.ext_utils import get_extension_context
-        cur_ctx = nn.get_current_context()
-        float_ctx = get_extension_context(ext_name=cur_ctx.backend[0].split(":")[0],
-                                          device_id=cur_ctx.device_id,
-                                          type_config="float")
-
-        # Negative log-likelihood
-        with nn.context_scope(float_ctx):
+        with context_scope("float"):
+            # Negative log-likelihood
             nll = -gaussian_log_likelihood(x_start,
                                            mean=preds.mean, logstd=0.5 * preds.log_var)
             nll_bits = mean_along_except_batch(nll) / np.log(2.0)
-        assert nll.shape == x_start.shape
-        assert nll_bits.shape == (B, )
+            assert nll.shape == x_start.shape
+            assert nll_bits.shape == (B, )
 
-        # kl between true and pred in bits
-        with nn.context_scope(float_ctx):
+            # kl between true and pred in bits
             kl = kl_normal(mean, log_var_clipped, preds.mean, preds.log_var)
             kl_bits = mean_along_except_batch(kl) / np.log(2.0)
-        assert kl.shape == x_start.shape
-        assert kl_bits.shape == (B, )
+            assert kl.shape == x_start.shape
+            assert kl_bits.shape == (B, )
 
         # Return nll at t = 0, otherwise KL(q(x_{t-1}|x_t,x_0)||p(x_{t-1}|x_t))
         return F.where(F.equal_scalar(t, 0), nll_bits, kl_bits)
@@ -668,7 +661,7 @@ class GaussianDiffusion(object):
         alpha_bar = self._extract(self.alphas_cumprod, t, x_t.shape)
         alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
 
-        with float_context_scope():
+        with context_scope("float"):
             sigma = (
                 eta
                 * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
@@ -700,7 +693,7 @@ class GaussianDiffusion(object):
         alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
 
         from layers import sqrt
-        with float_context_scope():
+        with context_scope("float"):
             return (
                 preds.xstart * sqrt(alpha_bar_next)
                 + sqrt(1 - alpha_bar_next) * pred_noise
@@ -979,7 +972,7 @@ class GaussianDiffusion(object):
                     from layers import sqrt
                     alpha_bar_prev = self._extract(
                         self.alphas_cumprod_prev, t, x_t.shape)
-                    with float_context_scope():
+                    with context_scope("float"):
                         # re-predict x_0 using pred_noise_prime
                         pred_x_start = self.predict_xstart_from_noise(
                             x_t=x_t, t=t, noise=pred_noise_prime)
@@ -1145,7 +1138,7 @@ class GaussianDiffusion(object):
                 if model_kwargs is None:
                     model_kwargs = {}
                 for i, t_cont in enumerate(t_cont_list):
-                    with float_context_scope():
+                    with context_scope("float"):
                         t = F.constant(_t_cont_to_disc(
                             t_cont), shape=(shape[0], ))
                         s_cont = _cont_t_lambda(
@@ -1162,7 +1155,7 @@ class GaussianDiffusion(object):
                     pred_noise = _pred_noise(
                         model, x_t, t, channel_last, model_kwargs)
 
-                    with float_context_scope():
+                    with context_scope("float"):
                         u = math.exp(_cont_log_alpha_t(s_cont) -
                                      _cont_log_alpha_t(t_cont)) * x_t
                         u = u - _cont_sigma_t(s_cont) * expm1_h2 * pred_noise
@@ -1170,7 +1163,7 @@ class GaussianDiffusion(object):
                     pred_noise = _pred_noise(
                         model, u, s, channel_last, model_kwargs)
 
-                    with float_context_scope():
+                    with context_scope("float"):
                         x_t = math.exp(_cont_log_alpha_t(
                             t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
                         x_t = x_t - \

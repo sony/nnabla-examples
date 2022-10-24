@@ -42,8 +42,10 @@ def main(conf: config.GenScriptConfig):
     loaded_conf: config.LoadedConfig = config.load_saved_conf(
         conf.generate.config)
 
-    comm = init_nnabla(ext_name="cudnn", device_id=conf.runtime.device_id,
-                       type_config=conf.runtime.type_config, random_pseed=True)
+    comm = init_nnabla(ext_name="cudnn", 
+                       device_id=conf.runtime.device_id,
+                       type_config="float",
+                       random_pseed=True)
 
     # update respacing parameter based on given config
     loaded_conf.diffusion.respacing_step = conf.generate.respacing_step

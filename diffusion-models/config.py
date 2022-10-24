@@ -25,7 +25,6 @@ from omegaconf import MISSING, OmegaConf
 
 @dataclass
 class RuntimeConfig:
-    type_config: str = "half"
     device_id: str = "0"
 
 # Dataset Definition
@@ -132,6 +131,7 @@ class ModelConfig:
     dropout: float = 0.
     channel_last: bool = True
     conv_resample: bool = True
+    use_mixed_precision: bool = True
 
     # attention
     attention_type: str = "self_attention"
