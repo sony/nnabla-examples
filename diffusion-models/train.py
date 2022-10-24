@@ -445,9 +445,18 @@ def main(conf: config.TrainScriptConfig):
             # disable dropping condition for generation
             gen_model_kwargs["cond_drop_rate"] = 0
 
+            # class cond
             if conf.model.class_cond:
-                gen_model_kwargs["class_label"] = nn.Variable.from_numpy_array(np.random.randint(low=0, high=conf.model.num_classes,
-                                                                                                 size=(num_gen, )))
+                if conf.model.low_res_size is not None:
+                    # use class id for lowres image for the upsampler
+                    gen_class_label = nn.Variable.from_numpy_array(np.stack(label_list))
+                else:
+                    # use random class id for the base model
+                    gen_class_label = nn.Variable.from_numpy_array(np.random.randint(low=0, 
+                                                                                     high=conf.model.num_classes,
+                                                                                     size=(num_gen, )))
+
+                gen_model_kwargs["class_label"] = gen_class_label
 
             if conf.model.text_cond:
                 gen_model_kwargs["text_emb"] = nn.Variable.from_numpy_array(
