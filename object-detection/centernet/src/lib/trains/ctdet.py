@@ -111,6 +111,10 @@ class Trainer(object):
         self._reg = nn.Variable((opt.batch_size, max_objs, 2))
         self._reg_mask = nn.Variable((opt.batch_size, max_objs, 1))
 
+        # Construct the computation graph with dummy data.
+        _ = self.model(self._img)
+        self.solver.set_parameters(nn.get_parameters(), reset=False, retain_state=True)
+
     def compute_gradient(self, data):
         loss = self.compute_loss(data)
         total_loss = loss['loss']
@@ -207,7 +211,7 @@ class Trainer(object):
         from neu import checkpoint_util as cu
         checkpoint_file = os.path.join(
             path, 'checkpoint_{}.json'.format(epoch))
-        cu.load_checkpoint(checkpoint_file, self.solver)
+        return cu.load_checkpoint(checkpoint_file, self.solver)
 
     def compute_loss(self, data):
         # Performs forward pass.

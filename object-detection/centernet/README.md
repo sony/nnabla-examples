@@ -130,6 +130,22 @@ To specify a GPU to use, set `CUDA_VISIBLE_DEVICES=<gpu id>` as an environment v
 CUDA_VISIBLE_DEVICES=1 python src/main.py ...(arguments continue)...
 ```
 
+### Resume training from the checkpoint
+
+You can resume training from a specific checkpoint.
+
+The following example shows how to resume DLAv0 training for object detection task with COCO dataset.
+
+```bash
+# Resume training. Assume that the checkpoint is saved in temp/checkpoints
+# Using 4 GPUs in this case.
+mpirun -n 4 python src/main.py ctdet \
+    --data_dir <Path to COCO dataset>
+    --train-config cfg/dlav0_34_coco_fp.yaml \
+    --save_dir temp/ \
+    --resume-from <epoch number>
+```
+
 ## Validation
 
 You can use the ```test.py``` script for AP/mAP validation:
