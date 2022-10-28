@@ -76,10 +76,6 @@ def main(conf: config.GenScriptConfig):
                                          comm=comm,
                                          label_creator_callback=lowres_label_cb)
 
-        # setup input condition
-        model_kwargs["input_cond"] = nn.Variable(
-            (B, ) + loaded_conf.model.low_res_shape)
-
         # calculate number of iterations based on number of lowres samples.
         num_iter = (data_lowres.size + B - 1) // B
 
@@ -125,16 +121,21 @@ def main(conf: config.GenScriptConfig):
 
         if is_upsample:
             lowres, label = data_lowres.next()
-            model_kwargs["input_cond"].d = lowres
+            lowres_var = nn.Variable.from_numpy_array(lowres)
+            
+            if loaded_conf.model.noisy_low_res:
+                if conf.generate.lowres_aug_timestep is None:
+                    aug_timestep = nn.Variable.from_numpy_array(np.zeros(shape=(B, )))
+                    model_kwargs["input_cond_aug_timestep"] = aug_timestep
+                else:
+                    aug_timestep = nn.Variable.from_numpy_array([conf.generate.lowres_noise_timestep for _ in range(B)])
+                    lowres_var, aug_level = model.gaussian_conditioning_augmentation(lowres_var, aug_timestep)
+                    model_kwargs["input_cond_aug_timestep"] = aug_level
+
+            model_kwargs["input_cond"] = lowres_var
 
             if loaded_conf.model.class_cond:
                 model_kwargs["class_label"].d = label
-
-            if loaded_conf.model.noisy_low_res:
-                # todo: apply arbitrary augmentation for generation
-                # x_low_res, aug_level = model.gaussian_conditioning_augmentation(x_low_res)
-                model_kwargs["input_cond_aug_timestep"] = nn.Variable.from_numpy_array(
-                    np.zeros(shape=(B, )))
 
         sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
                                                         noise=None,
