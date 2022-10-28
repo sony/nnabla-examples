@@ -630,7 +630,7 @@ class UNet(object):
 
         emb = nonlinearity(emb)
 
-        return emb, emb_seq
+        return x, emb, emb_seq
 
     # main branch
     def resblock_with_attention(self, h, emb, emb_seq, out_channels, name):
@@ -775,7 +775,7 @@ class UNet(object):
         ch = self.conf.base_channels
         with context_scope("half" if self.use_mixed_precision else "float"), nn.parameter_scope('UNet' if name is None else name):
             # condition
-            emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
+            x, emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
 
             # first convolution
             if self.conf.channel_last:
@@ -977,13 +977,12 @@ class EfficientUNet(UNet):
         ch = self.conf.base_channels
         with context_scope("half" if self.use_mixed_precision else "float"), nn.parameter_scope('E-UNet' if name is None else name):
             # condition
-            emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
+            x, emb, emb_seq = self.condition_processing(x, t, **model_kwargs)
 
             if self.conf.channel_last:
                 # todo: If we allow tf32, might be better to apply pad even if chennel_first.
                 # But, to do that, we have to care obsolete parameters.
                 x = pad_for_faster_conv(x, channel_last=self.conf.channel_last)
-
             h = conv(x, ch, name="first_conv",
                      channel_last=self.conf.channel_last)
 
