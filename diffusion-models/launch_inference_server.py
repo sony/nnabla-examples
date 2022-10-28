@@ -33,6 +33,7 @@ def main(conf: InferenceServerScriptConfig):
     demo = create_demo(conf.server)
 
     # launch server
+    demo.queue(concurrency_count=1)
     demo.launch(server_name="0.0.0.0",
                 server_port=conf.server.port)
 
