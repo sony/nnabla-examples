@@ -12,6 +12,10 @@ from mpi4py import MPI
 from transformers import T5Tokenizer, T5EncoderModel
 import torch
 
+# avoid error by PIL when loading bigger image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 T5_MODEL = "t5-11b"
 t5_tokenizer = T5Tokenizer.from_pretrained(T5_MODEL)
 t5_model = T5EncoderModel.from_pretrained(T5_MODEL)
@@ -49,14 +53,17 @@ def save_data(q: Queue, file_path):
             dst.write(sample)
 
 
-def augment_wds(input, output_dir, device, overwrite, logfile):
+def augment_wds(input, output_dir, batch_size, device, overwrite, logfile):
     """
     Given a single tarfile, 
     output a tarfile augemented by t5 embedding vector of numpy for a caption.
 
     Args:
         input (str): tarfile to be read.
-        output (str): output path 
+        output_dir (str): A path for output directory.
+        batch_size (int): A batchsize for t5 encode. 
+        device (int): GPU device to run.
+        overwrite (boolean): If True, the input tar file will be overwritten by an augmented tar file.
     """
     os.makedirs(output_dir, exist_ok=True)
 
@@ -67,7 +74,7 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
         wds.to_tuple("__key__", "jpg", "json")
     )
 
-    filename = os.path.basename(input)
+    filename = os.path.basename("_".join(input.split("/")[-2:]))
     filepath = os.path.join(output_dir, filename)
 
     # setup thread to save data to tar
@@ -77,8 +84,6 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
     # handle keyboard interrupt
     try:
         thread.start()
-
-        batch_size = 8
 
         # for saving
         batch_caption = []
@@ -129,7 +134,7 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
         thread.join()
 
         # dump error log and skip overwrite
-        f.write(f"{input} \n")
+        logfile.write(f"{input} \n")
         return
 
     # stop thread
@@ -138,29 +143,46 @@ def augment_wds(input, output_dir, device, overwrite, logfile):
 
     if overwrite:
         import shutil
+        print(f"[overwrite] move {filepath} -> {input}")
         shutil.move(filepath, input)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--datadir", type=str, required=True)
     parser.add_argument("--outdir", type=str, required=True)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--datadir", type=str)
     parser.add_argument("--start_id", default=0)
     parser.add_argument("--end_id", default=41407)
+    parser.add_argument("--tarlists", default=None, type=str, nargs="*")
     parser.add_argument("--logfile", type=str, required=True)
+    parser.add_argument("--batch_size", type=int, default=2)
     args = parser.parse_args()
-    args.datadir = os.path.abspath(args.datadir)
-
-    assert os.path.exists(args.datadir)
 
     device = MPI.COMM_WORLD.Get_rank()
     t5_model.half().to(f"cuda:{device}")
 
-    # tarfiles = os.path.join(args.datadir, "{25001..41407}.tar")
-    tarfiles = os.path.join(
-        args.datadir, "{" + f"{int(args.start_id):05}..{int(args.end_id):05}" + "}.tar")
-    tarfiles = list(braceexpand.braceexpand(tarfiles))
+    if args.tarlists is not None:
+        tarfiles = []
+        for tarlist in args.tarlists:
+            assert os.path.exists(tarlist)
+
+            with open(tarlist, "r") as f:
+                lines = f.readlines()
+            
+            for line in lines:
+                tarfile = line.strip()
+                assert os.path.exists(tarfile)
+                tarfiles.append(tarfile)
+
+    else:
+        args.datadir = os.path.abspath(args.datadir)
+        assert os.path.exists(args.datadir)
+        
+        tarfiles = os.path.join(
+            args.datadir, "{" + f"{int(args.start_id):05}..{int(args.end_id):05}" + "}.tar")
+        tarfiles = list(braceexpand.braceexpand(tarfiles))
+    
 
     from neu.datasets import get_slice_start_end
     start, end = get_slice_start_end(
@@ -168,4 +190,9 @@ if __name__ == "__main__":
 
     with open(args.logfile, "w") as f:
         for tarfile in tqdm(tarfiles[start:end], disable=device > 0):
-            augment_wds(tarfile, args.outdir, device, args.overwrite, f)
+            augment_wds(tarfile,
+                        args.outdir,
+                        args.batch_size,
+                        device,
+                        args.overwrite,
+                        f)

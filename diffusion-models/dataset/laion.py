@@ -18,6 +18,7 @@ import numpy as np
 import webdataset as wds
 from config import DatasetConfig
 from neu.comm import CommunicatorWrapper
+from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 
@@ -93,7 +94,6 @@ class WebDatasetDataSourceLocal(DataSource):
 
 TAR_FILES = {
     "400m": "{00000..41407}.tar",
-    # "400m": "{00000..04000}.tar",
 }
 
 
@@ -105,7 +105,13 @@ def Laion400mDataIterator(conf: DatasetConfig, comm: CommunicatorWrapper):
     os.environ["NUM_WORKERS"] = str(comm.n_procs)
 
     # create datasource
-    tar_files = os.path.join(conf.dataset_root_dir, TAR_FILES["400m"])
+    # tar_files = os.path.join(conf.dataset_root_dir, TAR_FILES["400m"])
+
+    tar_list_path = os.path.join(conf.data_dir, "tarlist.txt")
+    with open(tar_list_path, "r") as f:
+        tar_files = [x.strip() for x in f.readlines()]
+    logger.info(f"[LAION400mDataIterator] {len(tar_files)} tarfiles are found.")
+
     ds = WebDatasetDataSourceLocal(tar_files, conf)
 
     return data_iterator(ds,
