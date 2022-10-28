@@ -8,8 +8,8 @@ server:
   # please specify your model path below
 
   ## base model (Required)
-  base_h5_path: # write me
-  base_conf_path: # write me
+  base_h5_path: "" # write me
+  base_conf_path: "" # write me
   
   ## 1st upsampler model (Optional)
   # up1_h5_path: # write me
