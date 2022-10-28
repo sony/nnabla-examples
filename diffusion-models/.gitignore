@@ -1,6 +1,7 @@
 settings.json
 
 Pipfile
+Pipfile.lock
 
 data/
 data
