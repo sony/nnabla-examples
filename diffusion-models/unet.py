@@ -21,6 +21,7 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.initializer as I
+from nnabla.parameter import get_parameter_or_create
 from nnabla.logger import logger
 
 from layers import *
@@ -272,7 +273,7 @@ def cross_attention(x,
         qkv_attention = QKVAttention(num_heads=num_heads,
                                      num_head_channels=num_head_channels,
                                      channel_last=channel_last)
-        out = qkv_attention(q, k, v, cond=cond)
+        out = qkv_attention(q, k, v)
 
         # 3D -> 4D
         if channel_last:
@@ -292,6 +293,72 @@ def cross_attention(x,
     return out + x
 
 
+def attention_pooling_1d(x,
+                         name,
+                         *,
+                         num_heads=4,
+                         num_head_channels=None,
+                         channel_last=False,
+                         keepdims=False):
+    # adapted from https://github.com/openai/CLIP/blob/main/clip/model.py
+
+    # get shape info
+    assert len(x.shape) == 3, \
+        "attention_pooling_1d only supports 3D tensor for an input."
+    # (B, L, C) if channel last else (B, C, L)
+    c_axis = 2 if channel_last else 1
+    l_axis = 3 ^ c_axis # 3 XOR {1, 2} = {2, 1}
+    C = x.shape[c_axis]
+    L = x.shape[l_axis]
+
+    with nn.parameter_scope(name):
+        # compute mean. 
+        # The mean must be concatenated before `x`` so as to support variable length.
+        mean_x = F.mean(x, axis=l_axis, keepdims=True)
+        h = F.concatenate(mean_x, x, axis=l_axis)
+
+        # positional encoding
+        # +1 in `L + 1` is for mean_emb
+        pos_emb = get_parameter_or_create("pos_embed",
+                                          shape=(L + 1, C) if channel_last else (C, L),
+                                          initializer=I.NormalInitializer(C ** -0.5))
+        h += F.reshape(pos_emb, (1, ) + pos_emb.shape)
+
+        # apply layer norm before attention
+        h = layer_norm(h, "ln_pre")
+
+        # qkv projection
+        # compute q from mean vector
+        q = nin(h[:, :1], C, name="q", channel_last=channel_last)
+
+        # comput kv from the original input
+        kv = nin(h[:, 1:], 2 * C, name="kv", channel_last=channel_last)
+        k, v = chunk(kv, num_chunk=2, axis=c_axis)
+
+        qkv_attention = QKVAttention(num_heads=num_heads,
+                                     num_head_channels=num_head_channels,
+                                     channel_last=channel_last)
+        out = qkv_attention(q, k, v)
+
+        # output projection
+        out = nin(out, C,
+                  name='proj_out',
+                  zeroing_w=True,
+                  channel_last=channel_last)
+
+        # check output shape
+        output_shape = list(x.shape)
+        output_shape[l_axis] = 1
+        assert out.shape == tuple(output_shape)
+    
+        if not keepdims:
+            # squeze L axis 
+            out = out[:, 0, :]
+        
+    return out
+
+
+
 class QKVAttention(object):
     def __init__(self, num_heads=4, num_head_channels=None, channel_last=False):
         self.num_heads = num_heads
@@ -299,16 +366,29 @@ class QKVAttention(object):
         self.channel_last = channel_last
 
     def _validate_input_shape(self, q, k, v):
-        assert q.shape[0] == k.shape[0] == v.shape[0], \
+        # check all inputs are 3D tensor.
+        assert len(q.shape) == len(k.shape) == len(v.shape) == 3, \
+            "inputs for QKVAttention must be a 3D tensor."
+
+        # define axes
+        b_axis = 0
+        c_axis = 2 if self.channel_last else 1
+        l_axis = 3 ^ c_axis # 3 XOR {1, 2} = {2, 1}
+
+        # check batch size
+        assert q.shape[b_axis] == k.shape[b_axis] == v.shape[b_axis], \
             "All inputs must have the same batch size."
-        assert k.shape[1] == v.shape[1], \
+        
+        # check spacial size
+        assert k.shape[l_axis] == v.shape[l_axis], \
             "k and v must have the same length."
 
+        # check channel size
         # strong assumuption that q, k, and v have the same channel dims.
-        assert q.shape[-1] == k.shape[-1] == v.shape[-1], \
+        assert q.shape[c_axis] == k.shape[c_axis] == v.shape[c_axis], \
             "All inputs must have the same channel dims."
 
-        C = q.shape[-1]
+        C = q.shape[c_axis]
 
         # check attention configuration
         if self.num_head_channels is not None:
@@ -328,18 +408,15 @@ class QKVAttention(object):
         """
         Compute attention based on given q, k, and v.
         """
-        # check inputs' dims
-        assert len(q.shape) == len(k.shape) == len(v.shape) == 3, \
-            "inputs for QKVAttention must be a 3D tensor."
+        # check input shape
+        self._validate_input_shape(q, k, v)
 
         if not self.channel_last:
+            # make qkv channel-last tensor once so as to make the following code simple.
             # (B, C, L) -> (B, L, C)
             q = F.transpose(q, (0, 2, 1))
             k = F.transpose(k, (0, 2, 1))
             v = F.transpose(v, (0, 2, 1))
-
-        # check input shape
-        self._validate_input_shape(q, k, v)
 
         # L may vary for q and (k, v).
         B, _, C = q.shape
@@ -412,14 +489,17 @@ class UNet(object):
             mask = F.rand_binomial(p=1-mask_prob,
                                    shape=mask_shape)
         return x * mask
+    
+    def global_embedding_to_4d(self, emb):
+        if self.conf.channel_last:
+            return F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
+        
+        return F.reshape(emb, emb.shape + (1, 1))
 
     def embedding_projection(self, emb, mode: str, to_4d: bool = True):
         # reshape to use conv rather than affine
         if to_4d:
-            if self.conf.channel_last:
-                emb = F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
-            else:
-                emb = F.reshape(emb, emb.shape + (1, 1))
+            emb = self.global_embedding_to_4d(emb)
 
         # post process
         mode = mode.lower()
@@ -453,7 +533,7 @@ class UNet(object):
             # sinusoidal embedding
             emb = sinusoidal_embedding(t, self.conf.base_channels)
 
-            emb = self.embedding_projection(emb, mode="MLP")
+            emb = self.embedding_projection(emb, mode="mlp")
 
         return emb
 
@@ -491,12 +571,21 @@ class UNet(object):
                                mask_prob=drop_rate,
                                axis=0)
 
-            # apply pooling along sequence to get global condition
-            # todo: attention pooling
-            emb_pooled = F.mean(emb, axis=1)
+            # apply mlp to text embedding
+            assert self.conf.channel_last, \
+                "text_embedding assumes channel_last layout."
+            emb = self.embedding_projection(emb, mode="ln_mlp", to_4d=False)
 
-            # apply transformation
-            emb_pooled = self.embedding_projection(emb_pooled, mode="ln_mlp")
+            # apply pooling along sequence to get global condition
+            emb_pooled = attention_pooling_1d(emb, 
+                                              name="attention_pooling", 
+                                              num_heads=self.conf.num_attention_heads,
+                                              num_head_channels=self.conf.num_attention_head_channels,
+                                              channel_last=self.conf.channel_last,
+                                              keepdims=False)
+
+            # to 4d
+            emb_pooled = self.global_embedding_to_4d(emb_pooled)
 
         return emb, emb_pooled
 
