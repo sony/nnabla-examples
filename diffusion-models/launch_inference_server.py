@@ -27,7 +27,7 @@ def main(conf: InferenceServerScriptConfig):
     # initialize nnabla context
     init_nnabla(ext_name="cudnn",
                 device_id=conf.runtime.device_id,
-                type_config=conf.runtime.type_config)
+                type_config="float")
 
     # create demo
     demo = create_demo(conf.server)
