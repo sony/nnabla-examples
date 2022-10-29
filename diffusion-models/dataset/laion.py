@@ -110,7 +110,8 @@ def Laion400mDataIterator(conf: DatasetConfig, comm: CommunicatorWrapper):
     tar_list_path = os.path.join(conf.data_dir, "tarlist.txt")
     with open(tar_list_path, "r") as f:
         tar_files = [x.strip() for x in f.readlines()]
-    logger.info(f"[LAION400mDataIterator] {len(tar_files)} tarfiles are found.")
+    logger.info(
+        f"[LAION400mDataIterator] {len(tar_files)} tarfiles are found.")
 
     ds = WebDatasetDataSourceLocal(tar_files, conf)
 

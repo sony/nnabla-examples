@@ -15,6 +15,7 @@
 import argparse
 import os
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--blacklists", type=str, required=True, nargs="*")
@@ -27,7 +28,7 @@ def main():
         print(f"reading black list: {path}...")
         with open(path, "r") as f:
             lines = f.readlines()
-        
+
         for line in lines:
             black_list.add(line.strip())
 
@@ -39,16 +40,17 @@ def main():
             # skip if file is not tar
             if os.path.splitext(file)[-1] != ".tar":
                 continue
-            
+
             # skip if file in blacklist
             filepath = os.path.join(path, file)
             if filepath in black_list:
                 continue
 
             files.append(filepath)
-    
+
     with open(args.out, "w") as f:
         f.write("\n".join(files))
+
 
 if __name__ == "__main__":
     main()

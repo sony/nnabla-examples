@@ -42,7 +42,7 @@ def main(conf: config.GenScriptConfig):
     loaded_conf: config.LoadedConfig = config.load_saved_conf(
         conf.generate.config)
 
-    comm = init_nnabla(ext_name="cudnn", 
+    comm = init_nnabla(ext_name="cudnn",
                        device_id=conf.runtime.device_id,
                        type_config="float",
                        random_pseed=True)

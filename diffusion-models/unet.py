@@ -90,7 +90,6 @@ class ResidualBlock(object):
 
         return nin(x, self.out_channels, name="conv_shortcut", channel_last=self.channel_last)
 
-
     def __call__(self, x, temb, name):
         x_shape = Shape4D(x.shape, channel_last=self.channel_last)
         if self.out_channels is None:
@@ -307,12 +306,12 @@ def attention_pooling_1d(x,
         "attention_pooling_1d only supports 3D tensor for an input."
     # (B, L, C) if channel last else (B, C, L)
     c_axis = 2 if channel_last else 1
-    l_axis = 3 ^ c_axis # 3 XOR {1, 2} = {2, 1}
+    l_axis = 3 ^ c_axis  # 3 XOR {1, 2} = {2, 1}
     C = x.shape[c_axis]
     L = x.shape[l_axis]
 
     with nn.parameter_scope(name):
-        # compute mean. 
+        # compute mean.
         # The mean must be concatenated before `x`` so as to support variable length.
         mean_x = F.mean(x, axis=l_axis, keepdims=True)
         h = F.concatenate(mean_x, x, axis=l_axis)
@@ -320,7 +319,8 @@ def attention_pooling_1d(x,
         # positional encoding
         # +1 in `L + 1` is for mean_emb
         pos_emb = get_parameter_or_create("pos_embed",
-                                          shape=(L + 1, C) if channel_last else (C, L),
+                                          shape=(
+                                              L + 1, C) if channel_last else (C, L),
                                           initializer=I.NormalInitializer(C ** -0.5))
         h += F.reshape(pos_emb, (1, ) + pos_emb.shape)
 
@@ -350,13 +350,12 @@ def attention_pooling_1d(x,
         output_shape = list(x.shape)
         output_shape[l_axis] = 1
         assert out.shape == tuple(output_shape)
-    
-        if not keepdims:
-            # squeze L axis 
-            out = out[:, 0, :]
-        
-    return out
 
+        if not keepdims:
+            # squeze L axis
+            out = out[:, 0, :]
+
+    return out
 
 
 class QKVAttention(object):
@@ -373,12 +372,12 @@ class QKVAttention(object):
         # define axes
         b_axis = 0
         c_axis = 2 if self.channel_last else 1
-        l_axis = 3 ^ c_axis # 3 XOR {1, 2} = {2, 1}
+        l_axis = 3 ^ c_axis  # 3 XOR {1, 2} = {2, 1}
 
         # check batch size
         assert q.shape[b_axis] == k.shape[b_axis] == v.shape[b_axis], \
             "All inputs must have the same batch size."
-        
+
         # check spacial size
         assert k.shape[l_axis] == v.shape[l_axis], \
             "k and v must have the same length."
@@ -489,11 +488,11 @@ class UNet(object):
             mask = F.rand_binomial(p=1-mask_prob,
                                    shape=mask_shape)
         return x * mask
-    
+
     def global_embedding_to_4d(self, emb):
         if self.conf.channel_last:
             return F.reshape(emb, (emb.shape[0], 1, 1, emb.shape[1]))
-        
+
         return F.reshape(emb, emb.shape + (1, 1))
 
     def embedding_projection(self, emb, mode: str, to_4d: bool = True):
@@ -577,8 +576,8 @@ class UNet(object):
             emb = self.embedding_projection(emb, mode="ln_mlp", to_4d=False)
 
             # apply pooling along sequence to get global condition
-            emb_pooled = attention_pooling_1d(emb, 
-                                              name="attention_pooling", 
+            emb_pooled = attention_pooling_1d(emb,
+                                              name="attention_pooling",
                                               num_heads=self.conf.num_attention_heads,
                                               num_head_channels=self.conf.num_attention_head_channels,
                                               channel_last=self.conf.channel_last,
@@ -613,7 +612,7 @@ class UNet(object):
                     "input_cond_aug_timestep must be an instance of nn.Variable"
 
                 emb += self.timestep_embedding(input_cond_aug_timestep,
-                                                "gaussian_conditioning_timestep_embedding")
+                                               "gaussian_conditioning_timestep_embedding")
 
         # class condition
         if self.conf.class_cond:
@@ -907,7 +906,7 @@ class EfficientUNet(UNet):
         # 1. skip connection
         # (2022/10/20) follow guided-diffusion's skip connection
         def skip_connection(u, v, rescale_skip=False):
-            return F.concatenate(u, 
+            return F.concatenate(u,
                                  v * (2 ** -0.5) if rescale_skip else v,
                                  axis=3 if self.conf.channel_last else 1)
 
@@ -965,7 +964,7 @@ class EfficientUNet(UNet):
         return nin(h,
                    self.conf.output_channels,
                    name="last_conv",
-                   zeroing_w=True, # needed?
+                   zeroing_w=True,  # needed?
                    channel_last=self.conf.channel_last)
 
     def __call__(self,

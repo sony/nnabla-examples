@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
             with open(tarlist, "r") as f:
                 lines = f.readlines()
-            
+
             for line in lines:
                 tarfile = line.strip()
                 assert os.path.exists(tarfile)
@@ -178,11 +178,10 @@ if __name__ == "__main__":
     else:
         args.datadir = os.path.abspath(args.datadir)
         assert os.path.exists(args.datadir)
-        
+
         tarfiles = os.path.join(
             args.datadir, "{" + f"{int(args.start_id):05}..{int(args.end_id):05}" + "}.tar")
         tarfiles = list(braceexpand.braceexpand(tarfiles))
-    
 
     from neu.datasets import get_slice_start_end
     start, end = get_slice_start_end(

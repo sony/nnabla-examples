@@ -148,7 +148,7 @@ def main(conf: config.TrainScriptConfig):
     # initialize nnabla runtime and get communicator
     comm = init_nnabla(ext_name="cudnn",
                        device_id=conf.runtime.device_id,
-                       type_config="float", # mixed precision is handled in unet.py
+                       type_config="float",  # mixed precision is handled in unet.py
                        random_pseed=True)
 
     # create data iterator
@@ -449,10 +449,11 @@ def main(conf: config.TrainScriptConfig):
             if conf.model.class_cond:
                 if conf.model.low_res_size is not None:
                     # use class id for lowres image for the upsampler
-                    gen_class_label = nn.Variable.from_numpy_array(np.stack(label_list))
+                    gen_class_label = nn.Variable.from_numpy_array(
+                        np.stack(label_list))
                 else:
                     # use random class id for the base model
-                    gen_class_label = nn.Variable.from_numpy_array(np.random.randint(low=0, 
+                    gen_class_label = nn.Variable.from_numpy_array(np.random.randint(low=0,
                                                                                      high=conf.model.num_classes,
                                                                                      size=(num_gen, )))
 
