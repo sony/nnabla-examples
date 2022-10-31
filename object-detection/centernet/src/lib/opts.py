@@ -99,14 +99,14 @@ class opts(object):
                                  help=f'YAML file for training/inference config. eg. {config_file_list}')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
                                  help='weight decay parameter.')
-        self.parser.add_argument('--checkpoint', type=str, default='',
-                                 help='checkpoint file to resume training.')
         self.parser.add_argument('--mixed_precision', action='store_true',
                                  help='Mixed Precision training using NVIDIA tensor cores.')
         self.parser.add_argument('--channel_last', action='store_true',
                                  help='Channel last models. Currently only DLAv0 is supported')
-        self.parser.add_argument('--checkpoint_dir', type=str, default='',
-                                 help='Root folder that includes checkpoint(s) for test.')
+        self.parser.add_argument('--trained_model_path', type=str, default='',
+                                 help='Trained weight file for inference or resuming training.')
+        self.parser.add_argument('--trained_model_dir', type=str, default='',
+                                 help='Root folder that includes trained weights of each epoch to perform inference.')
         self.parser.add_argument(
             '--resume-from', type=int, default=None,
             help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')

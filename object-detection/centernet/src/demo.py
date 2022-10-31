@@ -36,7 +36,7 @@ def demo(opt):
     '''
 
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
-    if opt.checkpoint == '':
+    if opt.trained_model_path == '':
         print("Please provide trained model")
         return
     if opt.extension_module != 'cpu':
@@ -47,7 +47,7 @@ def demo(opt):
         else:
             ctx = get_extension_context(opt.extension_module, device_id="0")
         nn.set_default_context(ctx)
-    _, ext = os.path.splitext(opt.checkpoint)
+    _, ext = os.path.splitext(opt.trained_model_path)
     nn.set_auto_forward(True)
     Detector = detector_factory[opt.task]
     detector = Detector(opt)

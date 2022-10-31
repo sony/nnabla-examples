@@ -87,8 +87,8 @@ def main(opt):
     logger.info(f"batch size per gpu: {opt.batch_size}")
     model = create_model(opt.arch, opt.heads, opt.head_conv, opt.num_layers, training=True,
                          channel_last=opt.channel_last, pretrained_model_dir=opt.pretrained_model_dir)
-    if opt.checkpoint != '':
-        load_model(model, opt.checkpoint, clear=True)
+    if opt.trained_model_path != '':
+        load_model(model, opt.trained_model_path, clear=True)
 
     start_epoch = 0
     lr_sched = create_learning_rate_scheduler(
