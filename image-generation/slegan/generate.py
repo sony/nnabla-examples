@@ -13,7 +13,9 @@
 # limitations under the License.
 
 
+import glob
 import os
+import re
 import numpy as np
 import nnabla as nn
 import nnabla.logger as logger
@@ -32,10 +34,14 @@ def generate(args):
         args.context, device_id=args.device_id, type_config=args.type_config)
     nn.set_default_context(ctx)
 
+    files = glob.glob(f'{args.model_load_path}/GenEMA_iter*.h5')
+    iter = max(
+        [int(n) for n in [re.sub(r'.*GenEMA_iter(\d+).h5', '\\1', f) for f in files]])
+
     scope_gen = "Generator"
     scope_gen_ema = "Generator_EMA"
-    gen_param_path = args.model_load_path + '/Gen_iter100000.h5'
-    gen_ema_param_path = args.model_load_path + '/GenEMA_iter100000.h5'
+    gen_param_path = f'{args.model_load_path}/Gen_iter{iter}.h5'
+    gen_ema_param_path = f'{args.model_load_path}/GenEMA_iter{iter}.h5'
     with nn.parameter_scope(scope_gen):
         nn.load_parameters(gen_param_path)
     with nn.parameter_scope(scope_gen_ema):

@@ -14,7 +14,9 @@
 # limitations under the License.
 
 
+import glob
 import os
+import re
 import numpy as np
 import nnabla as nn
 import nnabla.logger as logger
@@ -66,9 +68,14 @@ def train(args):
     # Model
     scope_gen = "Generator"
     scope_dis = "Discriminator"
+    iter = 0
     if args.model_load_path:
-        gen_param_path = args.model_load_path + "/Gen_iter100000.h5"
-        dis_param_path = args.model_load_path + "/Dis_iter100000.h5"
+        files = glob.glob(f'{args.model_load_path}/Dis_iter*.h5')
+        iter = max(
+            [int(n) for n in [re.sub(r'.*Dis_iter(\d+).h5', '\\1', f) for f in files]])
+    if args.model_load_path:
+        gen_param_path = f'{args.model_load_path}/Gen_iter{iter}.h5'
+        dis_param_path = f'{args.model_load_path}/Dis_iter{iter}.h5'
         with nn.parameter_scope(scope_gen):
             nn.load_parameters(gen_param_path)
         with nn.parameter_scope(scope_dis):
@@ -100,7 +107,7 @@ def train(args):
     # Use train=True even in an inference phase
     scope_gen_ema = "Generator_EMA"
     if args.model_load_path:
-        gen_ema_param_path = args.model_load_path + "/GenEMA_iter100000.h5"
+        gen_ema_param_path = f'{args.model_load_path}/GenEMA_iter{iter}.h5'
         with nn.parameter_scope(scope_gen_ema):
             nn.load_parameters(gen_ema_param_path)
 
@@ -148,10 +155,8 @@ def train(args):
                        imsize=(args.image_size, args.image_size),
                        num_samples=args.train_samples, rng=rng)
 
-    max_iter = args.max_iter+100000 if args.model_load_path else args.max_iter
-
     # Train loop
-    for i in range(max_iter-100000, max_iter):
+    for i in range(iter, args.max_iter):
         # Train discriminator
         x_fake[0].need_grad = False  # no need backward to generator
         x_fake[1].need_grad = False  # no need backward to generator
@@ -200,18 +205,18 @@ def train(args):
     # Last
     x_test.forward(clear_buffer=True)
     x_test_ema.forward(clear_buffer=True)
-    monitor_image_tile_train.add(max_iter, x_fake[0])
-    monitor_image_tile_test.add(max_iter, x_test)
-    monitor_image_tile_test_ema.add(max_iter, x_test_ema)
+    monitor_image_tile_train.add(args.max_iter, x_fake[0])
+    monitor_image_tile_test.add(args.max_iter, x_test)
+    monitor_image_tile_test_ema.add(args.max_iter, x_test_ema)
     with nn.parameter_scope(scope_gen):
         nn.save_parameters(os.path.join(args.monitor_path,
-                                        "Gen_iter{}.h5".format(max_iter)))
+                                        "Gen_iter{}.h5".format(args.max_iter)))
     with nn.parameter_scope(scope_gen_ema):
         nn.save_parameters(os.path.join(args.monitor_path,
-                                        "GenEMA_iter{}.h5".format(max_iter)))
+                                        "GenEMA_iter{}.h5".format(args.max_iter)))
     with nn.parameter_scope(scope_dis):
         nn.save_parameters(os.path.join(args.monitor_path,
-                                        "Dis_iter{}.h5".format(max_iter)))
+                                        "Dis_iter{}.h5".format(args.max_iter)))
 
 
 def main():
