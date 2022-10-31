@@ -1,6 +1,7 @@
 settings.json
 
 Pipfile
+Pipfile.lock
 
 data/
 data
@@ -19,3 +20,5 @@ tmp/
 
 !conf/*.yaml
 !conf/**/*.yaml
+
+params/

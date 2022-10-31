@@ -165,6 +165,9 @@ class SimpleDatasource(DataSource):
             img = imread(
                 self.img_paths[image_idx], channel_first=not self.channel_last, size=self.im_size, num_channels=3)
 
+        # rescale pixel intensity to [-1, 1]
+        img = img / 127.5 - 1
+
         if self.on_memory:
             self.images[image_idx] = img
 
@@ -176,10 +179,15 @@ SUPPORT_IMG_EXTS = [".jpg", ".png"]
 
 def SimpleDataIterator(conf: DatasetConfig,
                        comm: CommunicatorWrapper = None,
+                       label_creator_callback=None,
                        rng=None):
     # get all files
     paths = [os.path.join(conf.dataset_root_dir, x)
              for x in os.listdir(conf.dataset_root_dir) if os.path.splitext(x)[-1] in SUPPORT_IMG_EXTS]
+
+    labels = None
+    if label_creator_callback is not None:
+        labels = [label_creator_callback(path) for path in paths]
 
     if len(paths) == 0:
         raise ValueError(f"[SimpleDataIterator] No data is found in {conf.dataset_root_dir}'. "
@@ -187,6 +195,7 @@ def SimpleDataIterator(conf: DatasetConfig,
 
     ds = SimpleDatasource(conf,
                           img_paths=paths,
+                          labels=labels,
                           rng=rng)
 
     logger.info(f"Initialized data iterator. {ds.size} images are found.")

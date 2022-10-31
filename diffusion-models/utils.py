@@ -20,7 +20,7 @@ import nnabla.functions as F
 import numpy as np
 from nnabla.parameter import get_parameter_or_create
 
-from typing import Union
+from typing import Union, List
 
 # Shape handler
 
@@ -70,23 +70,26 @@ class Shape4D(object):
 
 
 @contextmanager
-def float_context_scope():
+def context_scope(type_config):
+    assert type_config in ["float", "half"], \
+        "type_config must be either of ['float', 'half']"
+
     from nnabla.ext_utils import get_extension_context
     current_ctx = nn.get_current_context()
-    float_ctx = get_extension_context(ext_name=current_ctx.backend[0].split(":")[0],
-                                      device_id=current_ctx.device_id,
-                                      type_config="float")
+    ctx = get_extension_context(ext_name=current_ctx.backend[0].split(":")[0],
+                                device_id=current_ctx.device_id,
+                                type_config=type_config)
 
-    nn.set_default_context(float_ctx)
+    nn.set_default_context(ctx)
 
-    yield
+    yield ctx
 
     nn.set_default_context(current_ctx)
 
 
 def force_float(func):
     def wrapped_func(*args, **kwargs):
-        with float_context_scope():
+        with context_scope("float"):
             return func(*args, **kwargs)
 
     return wrapped_func
@@ -95,7 +98,7 @@ def force_float(func):
 def get_lr_scheduler(conf: TrainConfig):
     if conf.lr_scheduler is None:
         return None
-    elif conf.lr_scheduler == "consine":
+    elif conf.lr_scheduler == "cosine":
         from neu.learning_rate_scheduler import EpochCosineLearningRateScheduler
         return EpochCosineLearningRateScheduler(base_lr=conf.lr,
                                                 epochs=conf.n_iters,
@@ -119,17 +122,9 @@ def create_ema_op(params, ema_decay=0.9999):
     """
     Define exponential moving average update for trainable params.
     """
-    from nnabla.ext_utils import get_extension_context
-    ctx = nn.get_current_context()
-    float_ctx = get_extension_context(
-        ext_name=ctx.backend[0].split(":")[0],
-        device_id=ctx.device_id,
-        type_config="float"
-    )
-
     # Have to use float for ema update.
     # Otherwise ema update is not performed properly.
-    with nn.context_scope(float_ctx):
+    with context_scope("float") as float_ctx:
         def ema_update(p_ema, p_train):
             return F.assign(p_ema, ema_decay * p_ema + (1. - ema_decay) * p_train)
 
@@ -145,6 +140,17 @@ def create_ema_op(params, ema_decay=0.9999):
             ema_params = nn.get_parameters(grad_only=False)
 
         return F.sink(*ops), ema_params
+
+
+def to_cpu(vars: List[nn.Variable]):
+    from nnabla.ext_utils import get_extension_context
+    cpu_ctx = get_extension_context(
+        ext_name="cpu",
+        type_config="float"
+    )
+
+    for var in vars:
+        var.data.cast(float, cpu_ctx)
 
 
 # neu extention

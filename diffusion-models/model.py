@@ -16,7 +16,7 @@ import nnabla as nn
 import nnabla.functions as F
 
 from diffusion import is_learn_sigma, GaussianDiffusion
-from unet import UNet
+from unet import UNet, EfficientUNet
 from config import DiffusionConfig, ModelConfig
 
 from neu.misc import AttrDict
@@ -32,8 +32,42 @@ class Model(object):
         self.model_conf = model_conf
 
     def _define_model(self):
-        unet = UNet(self.model_conf)
-        return unet
+        nets = {
+            "unet": UNet,
+            "efficient_unet": EfficientUNet
+        }
+
+        assert self.model_conf.arch in nets, \
+            f"model architecture '{self.model_conf.arch}' is not implemented."
+
+        return nets[self.model_conf.arch](self.model_conf)
+
+    def _sampling_timestep(self, n_sample):
+        t = F.randint(
+                low=0, high=self.diffusion.num_timesteps, shape=(n_sample, ))
+
+        # F.randint could return high with very low prob. Workaround to avoid this.
+        t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
+
+        t.persistent = True
+
+        return t
+
+    def gaussian_conditioning_augmentation(self, x):
+        """
+        Following a defined diffusion noise schedule, 
+        add noise to image corresponding to randomly sampled time 's'.
+
+        This is typically used for gaussian conditioning augmentation
+        proposed in "Cascaded diffusion models for High Fidelity Image Generation".
+        Specifically, returns noisy data x' = q(x_s | x) where s ~ U({0, 1, ..., T-1}) and timestep 's'.
+
+        Note that, practically, this is just an alias of sampling timestep `s` and compute diffusion.q_sample(x, s).
+        """
+        B = x.shape[0]
+        s = self._sampling_timestep(B)
+
+        return self.diffusion.q_sample(x, s), s
 
     def build_train_graph(self,
                           x,
@@ -45,10 +79,7 @@ class Model(object):
         B = x.shape[0]
 
         if t is None:
-            t = F.randint(
-                low=0, high=self.diffusion.num_timesteps, shape=(B, ))
-            # F.randint could return high with very low prob. Workaround to avoid this.
-            t = F.clip_by_value(t, min=0, max=self.diffusion.num_timesteps-0.5)
+            t = self._sampling_timestep(B)
 
         loss_dict = self.diffusion.train_loss(model=self._define_model(),
                                               x_start=x,
@@ -89,7 +120,8 @@ class Model(object):
                dump_interval=-1,
                progress=False,
                use_ddim=False,
-               ode_solver=None):
+               ode_solver=None,
+               classifier_free_guidance_weight=None):
 
         if use_ema:
             with nn.parameter_scope("ema"):
@@ -101,7 +133,8 @@ class Model(object):
                                    dump_interval=dump_interval,
                                    progress=progress,
                                    use_ddim=use_ddim,
-                                   ode_solver=ode_solver)
+                                   ode_solver=ode_solver,
+                                   classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         loop_func = self.diffusion.ddim_sample_loop if use_ddim else self.diffusion.p_sample_loop
         if ode_solver == "plms":
@@ -118,7 +151,8 @@ class Model(object):
                 x_start=x_start,
                 model_kwargs=model_kwargs,
                 dump_interval=dump_interval,
-                progress=progress
+                progress=progress,
+                classifier_free_guidance_weight=classifier_free_guidance_weight
             )
 
     def sample_trajectory(self, shape, noise=None, x_start=None, model_kwargs=None, use_ema=True, progress=False, use_ddim=False):

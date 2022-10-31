@@ -14,6 +14,7 @@
 
 from .cifar10 import Cifar10DataIterator
 from .imagenet import ImagenetDataIterator
+from .laion import Laion400mDataIterator
 from .common import SimpleDataIterator
 
 from config import DatasetConfig
@@ -26,18 +27,13 @@ try:
 except:
     pass
 
+iterators = {
+    "cifar10": Cifar10DataIterator,
+    "imagenet": ImagenetDataIterator,
+    "laion-400m": Laion400mDataIterator,
+}
+
 
 def get_dataset(conf: DatasetConfig, comm: CommunicatorWrapper):
-    if conf.name == "cifar10":
-        data_iterator = Cifar10DataIterator(conf,
-                                            comm=comm,
-                                            train=True)
-    elif conf.name == "imagenet":
-        data_iterator = ImagenetDataIterator(conf,
-                                             comm=comm,
-                                             train=True)
-    else:
-        data_iterator = SimpleDataIterator(conf,
-                                           comm=comm)
-
-    return data_iterator
+    data_iterator = iterators.get(conf.name, SimpleDataIterator)
+    return data_iterator(conf, comm=comm)

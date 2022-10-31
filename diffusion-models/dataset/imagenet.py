@@ -45,7 +45,6 @@ def _info(msg):
 def ImagenetDataIterator(conf: DatasetConfig,
                          comm: CommunicatorWrapper = None,
                          rng=None,
-                         train=True,
                          resource_dir=DEFAULT_RESOURCE_DIR):
     # todo: use image-classification/imagenet utils
 
@@ -63,7 +62,7 @@ def ImagenetDataIterator(conf: DatasetConfig,
             dname2label[dname] = int(label)
 
     # get all files
-    if train:
+    if conf.train:
         # ilsvrcYYYY/train/{label id}/*.JPEG
         root_dir = pathlib.Path(os.path.join(conf.dataset_root_dir, "train"))
         _info(f"load train data and label from {root_dir}.")

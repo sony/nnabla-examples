@@ -1,0 +1,9 @@
+transformers
+sentencepiece
+torch
+braceexpand
+webdataset
+mpi4py
+pillow
+nnabla
+neu # neu is not publicly available on pypi. you should install neu from nnabla-examples. 

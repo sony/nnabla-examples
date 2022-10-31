@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Union, Any
 
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
@@ -25,7 +25,6 @@ from omegaconf import MISSING, OmegaConf
 
 @dataclass
 class RuntimeConfig:
-    type_config: str = "half"
     device_id: str = "0"
 
 # Dataset Definition
@@ -40,7 +39,14 @@ class DatasetConfig:
     fix_aspect_ratio: bool = True
     random_crop: bool = False
     shuffle_dataset: bool = True
+    train: bool = True
+
+    # for class condition
     num_classes: int = 1
+
+    # for text condition
+    max_text_length: int = 0
+    text_emb_dims: int = 0
 
     # from other configs
     channel_last: bool = "${model.channel_last}"
@@ -78,38 +84,75 @@ def get_image_shape(image_size, input_channels, channel_last):
 OmegaConf.register_new_resolver("get_is", get_image_shape)
 
 
+def is_noisy_lr(low_res_size, noisy_lr):
+    if low_res_size is None:
+        return False
+
+    return noisy_lr
+
+
+OmegaConf.register_new_resolver("is_noisy_lr", is_noisy_lr)
+
+
+def get_text_emb_shape(max_length, emb_dim, channel_last):
+    if max_length == 0 or emb_dim == 0:
+        return None
+
+    if channel_last:
+        return (max_length, emb_dim)
+
+    return (emb_dim, max_length)
+
+
+OmegaConf.register_new_resolver("get_tes", get_text_emb_shape)
+
+
 @dataclass
 class ModelConfig:
     # input
     input_channels: int = 3
     image_size: List[int] = MISSING
-    low_res_size: Union[None, List[int]] = None
-    image_shape: List[int] = \
+    image_shape: Union[None, List[int]] = \
         "${get_is:${model.image_size},${model.input_channels},${model.channel_last}}"
+
+    low_res_size: Union[None, List[int]] = None
     low_res_shape: Union[None, List[int]] = \
         "${get_is:${model.low_res_size},${model.input_channels},${model.channel_last}}"
+    noisy_low_res: bool = "${is_noisy_lr:${model.low_res_size},${train.noisy_low_res}}"
 
     # arch.
+    arch: str = "unet"
     scale_shift_norm: bool = True
     resblock_resample: bool = False
     resblock_rescale_skip: bool = False
-    num_res_blocks: int = 3
+    num_res_blocks: Any = MISSING
     channel_mult: List[int] = MISSING
     base_channels: int = 128
     dropout: float = 0.
-    class_cond: bool = False
-    class_cond_drop_rate: float = 0
-    class_cond_emb_type: str = "simple"
     channel_last: bool = True
-    num_classes: int = "${dataset.num_classes}"
     conv_resample: bool = True
+    use_mixed_precision: bool = True
 
     # attention
+    attention_type: str = "self_attention"
     attention_resolutions: List[int] = field(
         default_factory=lambda: [8, 16, 32])
     num_attention_head_channels: Union[None, int] = 64
     num_attention_heads: Union[None, int] = None
     # num_attention_head_channels is prioritized over num_attention_heads if both are specified.
+
+    # class condition
+    class_cond: bool = False
+    class_cond_emb_type: str = "simple"
+    num_classes: int = "${dataset.num_classes}"
+
+    # text condition
+    text_cond: bool = False
+    text_cond_emb_type: str = "ln_mlp"
+    max_text_length: int = "${dataset.max_text_length}"
+    text_emb_dims: int = "${dataset.text_emb_dims}"
+    text_emb_shape: Union[None, List[int]
+                          ] = "${get_tes:${dataset.max_text_length},${dataset.text_emb_dims},${model.channel_last}}"
 
     # output
     model_var_type: str = "learned_range"
@@ -144,11 +187,19 @@ class TrainConfig:
     # checkpointing
     resume: bool = True
 
+    # augmentation
+    # If True, Gaussian conditioning augmentation proposed in "Cascaded Diffusion" is performed for low_res image.
+    # Note that if a model doesn't have low_res input (i.e. base model), this option is simply ignored.
+    noisy_low_res: bool = True
+
     # loss
     loss_scaling: float = 1.0
     lr: float = 1e-4
     clip_grad: Union[None, float] = None
     lr_scheduler: Union[None, str] = None
+
+    # for classifier-free guidance
+    cond_drop_rate: float = 0.1
 
 
 @dataclass
@@ -164,7 +215,7 @@ class GenerateConfig:
     ode_solver: Union[None, str] = None
     # currently supporting "plms" and "dpm2"
     samples: int = 1024
-    batch_size: int = 32
+    batch_size: int = 36
 
     # for refinement
     respacing_step: int = 4
@@ -175,6 +226,7 @@ class GenerateConfig:
 
     # class cond
     gen_class_id: Union[None, int] = None
+    classifier_free_guidance_weight: Union[None, float] = None
 
     # for SDEidt
     x_start_path: Union[None, str] = None

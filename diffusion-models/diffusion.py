@@ -26,7 +26,7 @@ from neu.misc import AttrDict
 from typing import Union
 
 from layers import chunk
-from utils import Shape4D, float_context_scope, force_float
+from utils import Shape4D, context_scope, force_float
 
 # Better to implement ModelVarType as a module?
 
@@ -145,15 +145,10 @@ def respace_betas(betas, use_timesteps):
     prev_alphas_cumprod = 1.
     alphas_cumprod = 1.
     timestep_map = []
-    first = True
     for t in range(T):
         alphas_cumprod *= 1. - betas[t]
         if t in use_timesteps:
-            if first:
-                alphas_cumprod = 1. - betas[t]
-                first = False
-
-            new_beta = 1 - alphas_cumprod / prev_alphas_cumprod
+            new_beta = 1. - alphas_cumprod / prev_alphas_cumprod
             new_betas.append(new_beta)
             timestep_map.append(t)
             prev_alphas_cumprod = alphas_cumprod
@@ -208,13 +203,17 @@ class GaussianDiffusion(object):
         self.timestep_map = None
 
         if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
+            # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
+            # Therefore, because x_0 is always included implicitely, use_timesteps should be [r - 1, 2r - 1, ..., T] where r is respacing step.
+            # Also, we should always include the last step T so that the first noise is a gaussian.
+
             # create a list containing timesteps used in generation
             use_timesteps = list(
-                range(0, conf.t_start, conf.respacing_step))  # sampling interval
+                range(conf.respacing_step - 1, conf.t_start, conf.respacing_step))  # sampling interval
 
-            if use_timesteps[-1] != conf.t_start:
+            if use_timesteps[-1] != conf.t_start - 1:
                 # The last step (= most noisy data) should be included always.
-                use_timesteps.append(conf.t_start)
+                use_timesteps.append(conf.t_start - 1)
 
             betas, timestep_map = respace_betas(betas, use_timesteps)
             self.timestep_map = const_var(timestep_map)
@@ -302,7 +301,7 @@ class GaussianDiffusion(object):
     @force_float
     def q_sample(self, x_start, t, noise=None):
         """
-        Diffuse the data (t == 0 means diffused for 1 step), which samples from q(x_t | x_0).
+        Diffuse the data (t == 0 means diffusing data for 1 step), which samples from q(x_t | x_0).
         xt = sqrt(cumprod(alpha_0, ..., alpha_t)) * x_0 + sqrt(1 - cumprod(alpha_0, ..., alpha_t)) * epsilon
 
         Args:
@@ -401,26 +400,19 @@ class GaussianDiffusion(object):
                                 clip_denoised=clip_denoised,
                                 channel_last=channel_last)
 
-        from nnabla.ext_utils import get_extension_context
-        cur_ctx = nn.get_current_context()
-        float_ctx = get_extension_context(ext_name=cur_ctx.backend[0].split(":")[0],
-                                          device_id=cur_ctx.device_id,
-                                          type_config="float")
-
-        # Negative log-likelihood
-        with nn.context_scope(float_ctx):
+        with context_scope("float"):
+            # Negative log-likelihood
             nll = -gaussian_log_likelihood(x_start,
                                            mean=preds.mean, logstd=0.5 * preds.log_var)
             nll_bits = mean_along_except_batch(nll) / np.log(2.0)
-        assert nll.shape == x_start.shape
-        assert nll_bits.shape == (B, )
+            assert nll.shape == x_start.shape
+            assert nll_bits.shape == (B, )
 
-        # kl between true and pred in bits
-        with nn.context_scope(float_ctx):
+            # kl between true and pred in bits
             kl = kl_normal(mean, log_var_clipped, preds.mean, preds.log_var)
             kl_bits = mean_along_except_batch(kl) / np.log(2.0)
-        assert kl.shape == x_start.shape
-        assert kl_bits.shape == (B, )
+            assert kl.shape == x_start.shape
+            assert kl_bits.shape == (B, )
 
         # Return nll at t = 0, otherwise KL(q(x_{t-1}|x_t,x_0)||p(x_{t-1}|x_t))
         return F.where(F.equal_scalar(t, 0), nll_bits, kl_bits)
@@ -508,7 +500,7 @@ class GaussianDiffusion(object):
 
         return ret
 
-    def p_mean_var(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, channel_last=False):
+    def p_mean_var(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, channel_last=False, classifier_free_guidance_weight=None):
         """
         Compute mean and var of p(x_{t-1}|x_t) from model.
 
@@ -518,6 +510,7 @@ class GaussianDiffusion(object):
             t (nn.Variable): A 1-D tensor of timesteps. The first axis represents batchsize.
             clip_denoised (boolean): If True, clip the denoised signal into [-1, 1].
             channel_last (boolean): Whether the channel axis is the last axis of an Array or not.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             An AttrDict containing the following items:
@@ -563,6 +556,22 @@ class GaussianDiffusion(object):
                 )
             }[self.model_var_type]()
 
+        # classifier-free guidance
+        if classifier_free_guidance_weight is not None and classifier_free_guidance_weight > 0:
+            model_kwargs_uncond = model_kwargs.copy()
+            model_kwargs_uncond["cond_drop_rate"] = 1
+            pred_uncond = model(x_t, t, **model_kwargs_uncond)
+
+            if self.model_var_type == ModelVarType.LEARNED_RANGE:
+                pred_noise_uncond = pred_uncond[...,
+                                                :3] if channel_last else pred_uncond[:, :3]
+            else:
+                pred_noise_uncond = pred_uncond
+
+            # (1 + w) * eps(t, c) - w * eps(t)
+            w = classifier_free_guidance_weight
+            pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
+
         x_recon = self.predict_xstart_from_noise(
             x_t=x_t, t=t, noise=pred_noise)
 
@@ -596,7 +605,8 @@ class GaussianDiffusion(object):
                  noise_function=F.randn,
                  repeat_noise=False,
                  no_noise=False,
-                 channel_last=False):
+                 channel_last=False,
+                 classifier_free_guidance_weight=None):
         """
         Sample from the model for one step.
         Also return predicted x_start.
@@ -606,7 +616,8 @@ class GaussianDiffusion(object):
                                 t=t,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
-                                channel_last=channel_last)
+                                channel_last=channel_last,
+                                classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         # no noise when t == 0
         if no_noise:
@@ -630,7 +641,8 @@ class GaussianDiffusion(object):
                     repeat_noise=False,
                     no_noise=False,
                     eta=0.,
-                    channel_last=False):
+                    channel_last=False,
+                    classifier_free_guidance_weight=None):
         """
         sample x_{t-1} from x_{t} by the model using DDIM sampler.
         Also return predicted x_start.
@@ -639,7 +651,8 @@ class GaussianDiffusion(object):
         preds = self.p_mean_var(model, x_t, t,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
-                                channel_last=channel_last)
+                                channel_last=channel_last,
+                                classifier_free_guidance_weight=classifier_free_guidance_weight)
 
         pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
 
@@ -647,7 +660,7 @@ class GaussianDiffusion(object):
         alpha_bar = self._extract(self.alphas_cumprod, t, x_t.shape)
         alpha_bar_prev = self._extract(self.alphas_cumprod_prev, t, x_t.shape)
 
-        with float_context_scope():
+        with context_scope("float"):
             sigma = (
                 eta
                 * sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
@@ -679,7 +692,7 @@ class GaussianDiffusion(object):
         alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
 
         from layers import sqrt
-        with float_context_scope():
+        with context_scope("float"):
             return (
                 preds.xstart * sqrt(alpha_bar_next)
                 + sqrt(1 - alpha_bar_next) * pred_noise
@@ -818,7 +831,7 @@ class GaussianDiffusion(object):
         assert x_t.shape == shape
         return x_t.d.copy(), samples, pred_x_starts
 
-    def p_sample_loop(self, *args, channel_last=False, **kwargs):
+    def p_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}) proposed by "Denoising Diffusion Probabilistic Models".
         See self.sample_loop for more details about sampling process.
@@ -827,10 +840,12 @@ class GaussianDiffusion(object):
 
         return self.sample_loop(*args,
                                 sampler=partial(
-                                    self.p_sample, channel_last=channel_last),
+                                    self.p_sample,
+                                    channel_last=channel_last,
+                                    classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
-    def ddim_sample_loop(self, *args, channel_last=False, **kwargs):
+    def ddim_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
         Sample data from x_T ~ N(0, I) with p(x_{t-1}|x_{t}, x_{0}) proposed by "Denoising Diffusion Implicit Models".
         See self.sample_loop for more details about sampling process.
@@ -839,7 +854,10 @@ class GaussianDiffusion(object):
 
         return self.sample_loop(*args,
                                 sampler=partial(
-                                    self.ddim_sample, eta=0., channel_last=channel_last),
+                                    self.ddim_sample,
+                                    eta=0.,
+                                    channel_last=channel_last,
+                                    classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
     def plms_sample_loop(self, model, shape, *,
@@ -849,7 +867,8 @@ class GaussianDiffusion(object):
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
-                         without_auto_forward=False):
+                         without_auto_forward=False,
+                         classifier_free_guidance_weight=None):
         """
         Sample data from x_T ~ N(0, I) by "Pseudo Numerical Methods for Diffusion Models on Manifolds".
         Iteratively sample data from model from t=T to t=0.
@@ -867,6 +886,7 @@ class GaussianDiffusion(object):
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
             progress (boolean): If True, tqdm will be used to show the sampling progress.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -928,7 +948,8 @@ class GaussianDiffusion(object):
                     preds = self.p_mean_var(timestep_rescaled_model, x_t, t,
                                             model_kwargs=model_kwargs,
                                             clip_denoised=True,
-                                            channel_last=channel_last)
+                                            channel_last=channel_last,
+                                            classifier_free_guidance_weight=classifier_free_guidance_weight)
 
                     pred_noise = self.predict_noise_from_xstart(
                         x_t, t, preds.xstart)
@@ -950,7 +971,7 @@ class GaussianDiffusion(object):
                     from layers import sqrt
                     alpha_bar_prev = self._extract(
                         self.alphas_cumprod_prev, t, x_t.shape)
-                    with float_context_scope():
+                    with context_scope("float"):
                         # re-predict x_0 using pred_noise_prime
                         pred_x_start = self.predict_xstart_from_noise(
                             x_t=x_t, t=t, noise=pred_noise_prime)
@@ -973,7 +994,8 @@ class GaussianDiffusion(object):
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
-                         without_auto_forward=False):
+                         without_auto_forward=False,
+                         classifier_free_guidance_weight=None):
         """
         Sample data from x_T ~ N(0, I) by "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps".
         Iteratively sample data from model from t=T to t=0 by using DPM-solver-2.
@@ -991,6 +1013,7 @@ class GaussianDiffusion(object):
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
             progress (boolean): If True, tqdm will be used to show the sampling progress.
+            classifier_free_guidance_weight (float): A weight for classifier-free guidance.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -1040,6 +1063,23 @@ class GaussianDiffusion(object):
             else:
                 # Model only predicts noise
                 pred_noise = pred
+
+            # classifier-free guidance
+            if classifier_free_guidance_weight is not None and classifier_free_guidance_weight > 0:
+                model_kwargs_uncond = model_kwargs.copy()
+                model_kwargs_uncond["cond_drop_rate"] = 1
+                pred_uncond = model(x_t, t, **model_kwargs_uncond)
+
+                if self.model_var_type == ModelVarType.LEARNED_RANGE:
+                    pred_noise_uncond = pred_uncond[...,
+                                                    :3] if channel_last else pred_uncond[:, :3]
+                else:
+                    pred_noise_uncond = pred_uncond
+
+                # (1 + w) * eps(t, c) - w * eps(t)
+                w = classifier_free_guidance_weight
+                pred_noise = (1 + w) * pred_noise - w * pred_noise_uncond
+
             return pred_noise
 
         T = self.num_timesteps
@@ -1097,7 +1137,7 @@ class GaussianDiffusion(object):
                 if model_kwargs is None:
                     model_kwargs = {}
                 for i, t_cont in enumerate(t_cont_list):
-                    with float_context_scope():
+                    with context_scope("float"):
                         t = F.constant(_t_cont_to_disc(
                             t_cont), shape=(shape[0], ))
                         s_cont = _cont_t_lambda(
@@ -1114,7 +1154,7 @@ class GaussianDiffusion(object):
                     pred_noise = _pred_noise(
                         model, x_t, t, channel_last, model_kwargs)
 
-                    with float_context_scope():
+                    with context_scope("float"):
                         u = math.exp(_cont_log_alpha_t(s_cont) -
                                      _cont_log_alpha_t(t_cont)) * x_t
                         u = u - _cont_sigma_t(s_cont) * expm1_h2 * pred_noise
@@ -1122,7 +1162,7 @@ class GaussianDiffusion(object):
                     pred_noise = _pred_noise(
                         model, u, s, channel_last, model_kwargs)
 
-                    with float_context_scope():
+                    with context_scope("float"):
                         x_t = math.exp(_cont_log_alpha_t(
                             t_cont_next_list[i]) - _cont_log_alpha_t(t_cont)) * x_t
                         x_t = x_t - \

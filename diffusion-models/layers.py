@@ -19,7 +19,7 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.initializer as I
 
-from utils import Shape4D
+from utils import Shape4D, force_float
 
 
 def pad_for_faster_conv(x, *, channel_last=False):
@@ -43,6 +43,7 @@ def pad_for_faster_conv(x, *, channel_last=False):
         return F.pad(x, (0, pad_width, 0, 0, 0, 0))
 
 
+@force_float
 def sinusoidal_embedding(timesteps, embedding_dim):
     """
     Sinusoidal embeddings originally proposed in "Attention Is All You Need" (https://arxiv.org/abs/1706.03762).
@@ -68,11 +69,21 @@ def nonlinearity(x, *, recompute=False):
         return F.swish(x)
 
 
-def normalize(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
+@force_float
+def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.group_normalization(x,
                                       num_groups=32,
+                                      # todo: use more stable eps for float16?
                                       channel_axis=channel_axis,
+                                      batch_axis=batch_axis)
+
+
+@force_float
+def layer_norm(x, name, *, batch_axis=0, recompute=False):
+    with nn.parameter_scope(name), nn.recompute(recompute):
+        return PF.layer_normalization(x,
+                                      # todo: use more stable eps for float16?
                                       batch_axis=batch_axis)
 
 
@@ -105,9 +116,12 @@ def nin(x, c, name, *, zeroing_w=False, channel_last=False, recompute=False):
 
     with nn.recompute(recompute):
         return PF.convolution(x, c,
-                              kernel=(1, 1),
-                              pad=(0, 0), stride=(1, 1), name=name,
-                              w_init=w_init, b_init=b_init,
+                              kernel=(1 for _ in range(x.ndim - 2)),
+                              pad=(0 for _ in range(x.ndim - 2)),
+                              stride=(1 for _ in range(x.ndim - 2)),
+                              name=name,
+                              w_init=w_init,
+                              b_init=b_init,
                               channel_last=channel_last)
 
 
@@ -178,6 +192,10 @@ def interp_like(x, arr, channel_last, mode="linear"):
 
     # get target shape from arr
     h, w = Shape4D(arr.shape, channel_last=channel_last).get_as_tuple("hw")
+
+    # return x if x and arr has the same spatial size.
+    if Shape4D(x.shape, channel_last=channel_last).get_as_tuple("hw") == (h, w):
+        return x
 
     x_interp = F.interpolate(x, output_size=(
         h, w), mode=mode, channel_last=channel_last)
