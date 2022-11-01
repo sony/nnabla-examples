@@ -204,16 +204,21 @@ class GaussianDiffusion(object):
 
         if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
             # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
-            # Therefore, because x_0 is always included implicitely, use_timesteps should be [r - 1, 2r - 1, ..., T - 1] where r is respacing step.
-            # Also, we should always include the last step T - 1 so that the first noise is a gaussian.
+            # According to guided-diffusion, we should always use t = 0 and T - 1.
+            # In addition to them, add (T / respacing_step - 2) timesteps.
+            num_use_timesteps = conf.max_timesteps // conf.respacing_step
 
-            # create a list containing timesteps used in generation
-            use_timesteps = list(
-                range(conf.respacing_step - 1, conf.t_start, conf.respacing_step))  # sampling interval
+            frac_steps = float(conf.max_timesteps - 1) / (num_use_timesteps - 1)
 
-            if use_timesteps[-1] != conf.t_start - 1:
-                # The last step (= most noisy data) should be included always.
-                use_timesteps.append(conf.t_start - 1)
+            start = 0
+            cur_idx = 0.
+            use_timesteps = []
+            for _ in range(num_use_timesteps):
+                use_timesteps.append(start + round(cur_idx))
+                cur_idx += frac_steps
+
+            assert use_timesteps[0] == 0
+            assert use_timesteps[-1] == conf.max_timesteps - 1
 
             betas, timestep_map = respace_betas(betas, use_timesteps)
             self.timestep_map = const_var(timestep_map)
