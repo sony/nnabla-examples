@@ -38,6 +38,7 @@ class GenerateConfig:
     t_start: Union[None, int] = None
 
     # nstep
+    lowres_aug_timestep: Union[None, int] = None
     base_samples_dir: Union[None, str] = None
 
     # class cond

@@ -18,7 +18,6 @@ import os
 import hydra
 import nnabla as nn
 import numpy as np
-from hydra.core.config_store import ConfigStore
 from neu.misc import init_nnabla
 from neu.reporter import get_tiled_image, save_tiled_image
 from nnabla.logger import logger
