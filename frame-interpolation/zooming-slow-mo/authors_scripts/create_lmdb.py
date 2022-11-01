@@ -23,7 +23,7 @@ import lmdb
 import cv2
 from tqdm import trange
 
-#- Command line arguments -#
+# - Command line arguments - #
 data_parser = argparse.ArgumentParser(description='dataset path')
 
 data_parser.add_argument('--dataset-path', type=str, default='./vimeo_septuplet/sequences',
