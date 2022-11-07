@@ -178,7 +178,7 @@ def main():
         total_train_loss = 0
         index = 0
         lr = adjust_learning_rate(epoch)
-        ###Training###
+        ### Training ###
         while index < train_size:
             # Get mini batch
             # Preprocess

@@ -20,7 +20,7 @@ import cv2
 import numpy as np
 from data_utils import imresize_np
 
-#- Command line arguments -#
+# - Command line arguments - #
 data_parser = argparse.ArgumentParser(description='Training data preperation')
 data_parser.add_argument('--dataset-path', type=str, default="./vimeo_septuplet/sequences",
                          help='add path where vimeo dataset resides')
