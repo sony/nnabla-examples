@@ -14,7 +14,9 @@
 # limitations under the License.
 
 
+import glob
 import os
+import re
 import numpy as np
 import nnabla as nn
 import nnabla.logger as logger
@@ -66,6 +68,19 @@ def train(args):
     # Model
     scope_gen = "Generator"
     scope_dis = "Discriminator"
+    iter = 0
+    if args.model_load_path:
+        files = glob.glob(f'{args.model_load_path}/Dis_iter*.h5')
+        iter = max(
+            [int(n) for n in [re.sub(r'.*Dis_iter(\d+).h5', '\\1', f) for f in files]])
+    if args.model_load_path:
+        gen_param_path = f'{args.model_load_path}/Gen_iter{iter}.h5'
+        dis_param_path = f'{args.model_load_path}/Dis_iter{iter}.h5'
+        with nn.parameter_scope(scope_gen):
+            nn.load_parameters(gen_param_path)
+        with nn.parameter_scope(scope_dis):
+            nn.load_parameters(dis_param_path)
+
     # generator loss
     z = nn.Variable([args.batch_size, args.latent, 1, 1])
     x_fake = Generator(z, scope_name=scope_gen, img_size=args.image_size)
@@ -91,6 +106,11 @@ def train(args):
     # Exponential Moving Average (EMA) model
     # Use train=True even in an inference phase
     scope_gen_ema = "Generator_EMA"
+    if args.model_load_path:
+        gen_ema_param_path = f'{args.model_load_path}/GenEMA_iter{iter}.h5'
+        with nn.parameter_scope(scope_gen_ema):
+            nn.load_parameters(gen_ema_param_path)
+
     x_test_ema = Generator(z_test, scope_name=scope_gen_ema,
                            train=True, img_size=args.image_size)[0]
     copy_params(scope_gen, scope_gen_ema)
@@ -136,7 +156,7 @@ def train(args):
                        num_samples=args.train_samples, rng=rng)
 
     # Train loop
-    for i in range(args.max_iter):
+    for i in range(iter, args.max_iter):
         # Train discriminator
         x_fake[0].need_grad = False  # no need backward to generator
         x_fake[1].need_grad = False  # no need backward to generator
