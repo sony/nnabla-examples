@@ -121,14 +121,17 @@ def main(conf: config.GenScriptConfig):
         if is_upsample:
             lowres, label = data_lowres.next()
             lowres_var = nn.Variable.from_numpy_array(lowres)
-            
+
             if loaded_conf.model.noisy_low_res:
                 if conf.generate.lowres_aug_timestep is None:
-                    aug_timestep = nn.Variable.from_numpy_array(np.zeros(shape=(B, )))
+                    aug_timestep = nn.Variable.from_numpy_array(
+                        np.zeros(shape=(B, )))
                     model_kwargs["input_cond_aug_timestep"] = aug_timestep
                 else:
-                    aug_timestep = nn.Variable.from_numpy_array([conf.generate.lowres_noise_timestep for _ in range(B)])
-                    lowres_var, aug_level = model.gaussian_conditioning_augmentation(lowres_var, aug_timestep)
+                    aug_timestep = nn.Variable.from_numpy_array(
+                        [conf.generate.lowres_noise_timestep for _ in range(B)])
+                    lowres_var, aug_level = model.gaussian_conditioning_augmentation(
+                        lowres_var, aug_timestep)
                     model_kwargs["input_cond_aug_timestep"] = aug_level
 
             model_kwargs["input_cond"] = lowres_var

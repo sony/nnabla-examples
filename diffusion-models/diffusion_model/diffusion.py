@@ -208,7 +208,8 @@ class GaussianDiffusion(object):
             # In addition to them, add (T / respacing_step - 2) timesteps.
             num_use_timesteps = conf.max_timesteps // conf.respacing_step
 
-            frac_steps = float(conf.max_timesteps - 1) / (num_use_timesteps - 1)
+            frac_steps = float(conf.max_timesteps - 1) / \
+                (num_use_timesteps - 1)
 
             start = 0
             cur_idx = 0.
@@ -321,7 +322,7 @@ class GaussianDiffusion(object):
 
             x.apply(persistent=True)
             var_list.append(x)
-        
+
         if len(var_list) == 0:
             return
 
@@ -1113,7 +1114,7 @@ class GaussianDiffusion(object):
 
                 with context_scope("float"):
                     u = math.exp(_cont_log_alpha_t(s_cont) -
-                                    _cont_log_alpha_t(t_cont)) * x_t
+                                 _cont_log_alpha_t(t_cont)) * x_t
                     u = u - _cont_sigma_t(s_cont) * expm1_h2 * pred_noise
 
                 pred_noise = _pred_noise(
@@ -1131,7 +1132,7 @@ class GaussianDiffusion(object):
                     # compute pred_x_start
                     pred_x_start = math.exp(-_cont_log_alpha_t(t_cont)) * \
                         x_t - math.exp(-_cont_lambda_t(t_cont)
-                                        ) * pred_noise
+                                       ) * pred_noise
                     pred_x_starts.append((t_cont, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
