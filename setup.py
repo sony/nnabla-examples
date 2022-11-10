@@ -1,8 +1,9 @@
+import setuptools
 from setuptools import setup
 
 setup(
     name='neu',
-    version='1.23.0dev',  # TODO: Must be consistent with nnabla version?
+    version='1.23.0.dev',  # TODO: Must be consistent with nnabla version?
     author='Sony Group Corporation',
     author_email='nnabla@googlegroups.com',
     package_dir={"": "utils"},

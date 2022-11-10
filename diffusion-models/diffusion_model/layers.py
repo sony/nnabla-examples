@@ -19,7 +19,7 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.initializer as I
 
-from utils import Shape4D, force_float
+from .utils import Shape4D, force_float
 
 
 def pad_for_faster_conv(x, *, channel_last=False):

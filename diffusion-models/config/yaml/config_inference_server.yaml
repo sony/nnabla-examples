@@ -1,0 +1,16 @@
+defaults:
+  - /proto_configs/inference_server@server
+  - runtime: default
+  - hydra: simple
+  - _self_
+
+server:
+  # please specify your model path below
+
+  ## base model (Required)
+  base_h5_path: "" # write me
+  base_conf_path: "" # write me
+  
+  ## 1st upsampler model (Optional)
+  # up1_h5_path: # write me
+  # up1_conf_path: # write me

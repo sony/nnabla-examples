@@ -2,3 +2,4 @@ click
 moviepy
 hydra-core
 webdataset
+gradio

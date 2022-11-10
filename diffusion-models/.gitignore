@@ -18,7 +18,7 @@ tmp/
 *.yaml
 *.h5
 
-!conf/*.yaml
-!conf/**/*.yaml
+!config/*.yaml
+!config/**/*.yaml
 
 params/

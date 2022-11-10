@@ -13,14 +13,14 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from config import TrainConfig
+from typing import Union, List
 
 import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from nnabla.parameter import get_parameter_or_create
 
-from typing import Union, List
+from config import TrainConfig
 
 # Shape handler
 
