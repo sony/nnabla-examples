@@ -14,6 +14,8 @@
 
 
 import os
+from queue import Queue
+from threading import Thread
 
 import hydra
 import nnabla as nn
@@ -27,6 +29,30 @@ from omegaconf import OmegaConf
 import config
 from dataset.common import SimpleDataIterator
 from diffusion_model.model import Model
+
+
+def save_img(q: Queue, channel_last: bool):
+    while True:
+        mode, img, file_path = q.get()
+
+        if mode == "STOP":
+            break
+
+        assert isinstance(img, np.ndarray)
+
+        if mode == "TILED":
+            assert len(img.shape) == 4
+            save_tiled_image(img.astype(np.uint8),
+                             file_path,
+                             channel_last=channel_last)
+
+        else:
+            if len(img.shape) == 4:
+                assert img.shape[0] == 1
+                img = img[0]
+
+            imsave(file_path, img.astype(np.uint8),
+                   channel_first=not channel_last)
 
 
 @hydra.main(version_base=None,
@@ -115,6 +141,11 @@ def main(conf: config.GenScriptConfig):
 
     comm.barrier()
 
+    # launch thread to save img
+    q = Queue()
+    thread = Thread(target=save_img, args=(q, loaded_conf.model.channel_last))
+    thread.start()
+
     for i in range(num_iter):
         logger.info(f"Generate samples {i + 1} / {num_iter}.")
 
@@ -160,10 +191,7 @@ def main(conf: config.GenScriptConfig):
             else:
                 save_path = os.path.join(
                     conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
-            save_tiled_image(sample_out.astype(np.uint8),
-                             save_path,
-                             channel_last=loaded_conf.model.channel_last)
-
+            q.put(["TILED", sample_out, save_path])
             local_saved_cnt += 1
         else:
             for b in range(B):
@@ -174,8 +202,8 @@ def main(conf: config.GenScriptConfig):
                 else:
                     save_path = os.path.join(
                         conf.generate.output_dir, f"gen_{local_saved_cnt}_{comm.rank}.png")
-                imsave(save_path, sample_out[b].astype(
-                    np.uint8), channel_first=not loaded_conf.model.channel_last)
+
+                q.put(["SINGLE", sample_out[b], save_path])
 
                 local_saved_cnt += 1
 
@@ -194,6 +222,9 @@ def main(conf: config.GenScriptConfig):
             clip = mp.ImageSequenceClip(clips, fps=5)
             clip.write_videofile(os.path.join(
                 conf.generate.output_dir, f"pred_x0_along_time_{local_saved_cnt}_{comm.rank}.mp4"))
+
+    q.put(["STOP", None, None])
+    thread.join()
 
 
 if __name__ == "__main__":
