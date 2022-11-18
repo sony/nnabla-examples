@@ -7,13 +7,13 @@ defaults:
 # Assumes 8 GPU. 
 # According to the paper, total batch size should be 2048.
 # For faster training, we use 256 batch size in total.
-batch_size: 16
-accum: 2
-n_iters: 2500000 # 2.5m
+batch_size: 4
+accum: 8
+n_iters: 2500000
 
 ## dump
 # progress: False
-output_dir: ./logdir/laion400m_64_imagen
+output_dir: ./logdir/laion400m_64to256_imagen
 # save_interval: 10000
 # show_interval: 10
 # gen_interval: 20000
@@ -23,7 +23,7 @@ output_dir: ./logdir/laion400m_64_imagen
 # resume: False
 
 ## loss
-lr: 1e-4 # for bs=2048
+lr: 1e-4 # 1e-4 for bs=2048
 # loss_scaling: 1.0
 # clip_grad: 1.0
 lr_scheduler: cosine
