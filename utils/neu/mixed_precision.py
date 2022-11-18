@@ -1,8 +1,21 @@
+# Copyright 2021 Sony Group Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from nnabla.solvers import Solver
 from nnabla import Variable
 from nnabla.logger import logger
 
-from neu.comm import CommunicatorWrapper
 
 DEFAULT_INITIAL_LOG_LOSS_SCALE = 20  # 2 to the power of 20
 
@@ -20,23 +33,37 @@ class MixedPrecisionManager(object):
 
         mpm = MixedPrecisionManager(use_fp16=True)
 
-        loss = model(...)
+        x = nn.Variable(...)
+        loss = model(x, ...)
         solver = S.Sgd()
         solver.set_parameters(nn.get_parameters())
 
+        # communicator
+        comm = ...
+
+        # data iterator
+        data = ...
+
         for i in range(max_iter):
-            loss.forward(...)
+            solver.zero_grad()
+            
+            for accum in range(accum_cnt):
+                x.d = data.next()
+                loss.forward(...)
+                mpm.backward(loss, ...)
 
-            mpm.zero_grad(solver)
+            # When model parallel, do all_reduce here
+            comm.all_reduce(...)
 
-            mpm.backward(loss)
+            if mpm.is_grad_overflow(solver):
+                # When overflow happens, do not update parameter
+                # If detecting overflow, mpm decreases loss scale.
+                continue 
+            
+            # After calling solver.update, mpm increases loss scale.
+            mpm.update(solver)
 
-            # returns false if Nan or inf occurs due to overflow.
-            # In this case, solver.update() *is not* actually performed internally.
-            is_updated = mpm.update(solver)  
-
-            if is_updated:
-                # do postprocesses after parameter update like ema update.
+            # do postprocesses after parameter update like ema update.
 
     """
 
@@ -50,28 +77,16 @@ class MixedPrecisionManager(object):
         self.inc_scale_factor = inc_scale_factor
         self.dec_scale_factor = dec_scale_factor
 
-        self._is_scaled = False
-
-    def zero_grad(self, solver: Solver):
-        solver.zero_grad()
-
-    @staticmethod
-    def check_grad_overflow(solver: Solver) -> bool:
-        # solver.check_inf_or_nan_grad() returns True if inf or nan is detected.
-        return solver.check_inf_or_nan_grad()
-
-    def backward(self, loss: Variable, solver: Solver, **kwargs):
-        """
-        Return True if overflow.
-        """
+    @property
+    def loss_scale(self):
         if not self.use_fp16:
-            loss.backward(**kwargs)
-            return False
+            return 1.0
 
-        loss.backward(grad=2 ** self.log_loss_scale, **kwargs)
-        self._is_scaled = False
+        return 2 ** self.log_loss_scale
 
-        if self.check_grad_overflow(solver):
+    def is_grad_overflow(self, solver: Solver) -> bool:
+        # solver.check_inf_or_nan_grad() returns True if inf or nan is detected.
+        if solver.check_inf_or_nan_grad():
             # skip update and make loss scale smaller
             logger.info("[MixedPrecisionManager] Detects overflow. "
                         "Update log_loss_scale from {:.3g} to {:.3g}.".format(self.log_loss_scale, self.log_loss_scale - self.dec_scale_factor))
@@ -81,30 +96,20 @@ class MixedPrecisionManager(object):
 
         return False
 
-    def update(self, solver: Solver, comm: CommunicatorWrapper, *, clip_grad=None, **kwargs) -> bool:
-        """
-        Return True if overflow.
-        """
+    def backward(self, loss: Variable, **kwargs):
         if not self.use_fp16:
-            solver.update(**kwargs)
-            return False
+            loss.backward(**kwargs)
+            return
 
-        # rescale grad before all_reduce along GPUs.
-        solver.scale_grad(1. / (2 ** self.log_loss_scale))
+        loss.backward(grad=self.loss_scale, **kwargs)
 
-        if comm is not None and comm.n_procs > 1:
-            comm.all_reduce([x.grad for x in solver.get_parameters().values()],
-                            division=True,
-                            inplace=False)
+    def scale_grad(self, solver):
+        if not self.use_fp16:
+            return
+        
+        solver.scale_grad(1. / self.loss_scale)
 
-        if self.check_grad_overflow(solver):
-            # skip update and make loss scale smaller
-            logger.info("[MixedPrecisionManager] Detects overflow. "
-                        f"Update log_loss_scale from {self.log_loss_scale} to {self.log_loss_scale - self.dec_scale_factor}.")
-            self.log_loss_scale -= self.dec_scale_factor
-            solver.zero_grad()
-            return True
-
+    def update(self, solver: Solver, *, clip_grad=None, **kwargs):
         if clip_grad is not None:
             assert isinstance(
                 clip_grad, float), "clip_grad must be None or float."
@@ -112,5 +117,6 @@ class MixedPrecisionManager(object):
 
         solver.update(**kwargs)
 
-        self.log_loss_scale += self.inc_scale_factor
-        return False
+        if self.use_fp16:
+            # increment loss scale
+            self.log_loss_scale += self.inc_scale_factor

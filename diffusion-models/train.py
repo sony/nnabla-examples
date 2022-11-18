@@ -324,11 +324,11 @@ def main(conf: config.TrainScriptConfig):
                     (data[data_idx], label[data_idx], text_emb[data_idx]))
 
             loss_dict.loss.forward(clear_no_need_grad=True)
-            is_overflow = mpm.backward(loss_dict.loss, solver,
-                                       clear_buffer=True)
+            mpm.backward(loss_dict.loss,
+                         clear_buffer=True)
 
             # Retry from the first accumulation step if overflow happens.
-            if is_overflow:
+            if mpm.is_grad_overflow(solver):
                 retry_cnt += 1
 
                 # Raise if retry happens too many times.
@@ -364,22 +364,12 @@ def main(conf: config.TrainScriptConfig):
         assert accum_cnt == conf.train.accum
 
         # update
-        is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
-
-        # check all processes not to have overflow.
-        overflow_cnt = nn.NdArray.from_numpy_array(
-            np.array([int(is_overflow)]))
-        comm.all_reduce([overflow_cnt], division=False, inplace=True)
-
-        if overflow_cnt.data > 0.5:
-            # If even a single process has overflow, stop update and retry fwd/bwd again.
-
-            # Basically overflow_cnt should be 0 or comm.n_procs
-            # since allreduce over grads of all parmas has been performed above.
-            assert comm.n_procs - int(overflow_cnt.data) < 1e-5, \
-                "Some but not all nodes successfully update params without overflow. This is unintentional."
-
-            continue
+        mpm.scale_grad(solver)
+        if isinstance(solver, PackedParameterSolver):
+            comm.all_reduce([x.grad for x in solver.packed_params], division=True, inplace=True)
+        else:
+            comm.all_reduce([x.grad for x in solver.get_parameters().values()], division=True, inplace=True)
+        mpm.update(solver, clip_grad=conf.train.clip_grad)
 
         # update ema params
         if isinstance(solver, PackedParameterSolver) and solver.use_ema:
@@ -413,7 +403,9 @@ def main(conf: config.TrainScriptConfig):
 
         if i % conf.train.save_interval == 0:
             if comm.rank == 0:
-                save_checkpoint(conf.train.output_dir, i, solvers, n_keeps=3)
+                save_checkpoint(conf.train.output_dir, i, solvers, 
+                                n_keeps=3,
+                                split_h5_per_solver=True)
 
             comm.barrier()
 
