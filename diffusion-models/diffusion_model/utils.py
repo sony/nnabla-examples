@@ -14,6 +14,7 @@
 
 from contextlib import contextmanager
 from typing import Union, List
+from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
@@ -123,21 +124,24 @@ def create_ema_op(params, ema_decay=0.9999):
     Define exponential moving average update for trainable params.
     """
     # Have to use float for ema update.
-    # Otherwise ema update is not performed properly.
+    # Otherwise ema update doesn't work nicely.
     with context_scope("float") as float_ctx:
         def ema_update(p_ema, p_train):
             return F.assign(p_ema, ema_decay * p_ema + (1. - ema_decay) * p_train)
 
         ops = []
+        ema_params = OrderedDict()
         with nn.parameter_scope("ema"):
             for name, p_train in params.items():
                 p_ema = get_parameter_or_create(
                     name, shape=p_train.shape, need_grad=False)
                 p_ema.data.copy_from(p_train.data)  # initialize
                 p_ema.data.cast(float, float_ctx)
+                
+                # construct ema_op
                 ops.append(ema_update(p_ema, p_train))
-
-            ema_params = nn.get_parameters(grad_only=False)
+                
+                ema_params["/".join(["ema", name])] = p_ema
 
         return F.sink(*ops), ema_params
 
