@@ -26,6 +26,7 @@ from neu.checkpoint_util import load_checkpoint, save_checkpoint
 from neu.misc import get_current_time, init_nnabla
 from neu.mixed_precision import MixedPrecisionManager
 from neu.reporter import KVReporter, save_tiled_image
+from neu.solvers import PackedParameterSolver
 from nnabla.logger import logger
 from omegaconf import OmegaConf
 
@@ -198,6 +199,11 @@ def main(conf: config.TrainScriptConfig):
     solver = S.Adam()
     solver.set_parameters(nn.get_parameters())
 
+    # Packing parameters to make solver faster
+    solver: PackedParameterSolver \
+        = PackedParameterSolver(solver, use_ema=True)
+
+    # learning rate scheduler
     lr_scheduler = get_lr_scheduler(conf.train)
 
     # for ema update
@@ -223,6 +229,7 @@ def main(conf: config.TrainScriptConfig):
                                               solvers, is_master=comm.rank == 0)
         conf.train.output_dir = output_dir
 
+    # setup output directory for generated images during training
     image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:
         os.makedirs(image_dir, exist_ok=True)
@@ -268,6 +275,7 @@ def main(conf: config.TrainScriptConfig):
 
     comm.barrier()
 
+    # setup mixed precision training if needed
     mpm = MixedPrecisionManager(
         use_fp16=conf.model.use_mixed_precision,
         initial_log_loss_scale=10)
@@ -374,7 +382,10 @@ def main(conf: config.TrainScriptConfig):
             continue
 
         # update ema params
-        ema_op.forward(clear_no_need_grad=True)
+        if isinstance(solver, PackedParameterSolver) and solver.use_ema:
+            solver.updata_ema_params(decay=0.9999)
+        else:
+            ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
         if conf.train.dump_grad_norm:
