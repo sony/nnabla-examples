@@ -171,12 +171,11 @@ def main(conf: config.GenScriptConfig):
                 model_kwargs["class_label"].d = label
 
         sample_out, xt_samples, x_starts = model.sample(shape=[B, ] + loaded_conf.model.image_shape,
-                                                        noise=None,
+                                                        x_init=None,
                                                         dump_interval=-1,
                                                         use_ema=conf.generate.ema,
                                                         progress=comm.rank == 0,
-                                                        use_ddim=conf.generate.ddim,
-                                                        ode_solver=conf.generate.ode_solver,
+                                                        sampler=conf.generate.sampler,
                                                         classifier_free_guidance_weight=conf.generate.classifier_free_guidance_weight,
                                                         model_kwargs=model_kwargs)
 

@@ -26,10 +26,8 @@ class GenerateConfig:
 
     # generation configuration
     ema: bool = True
-    ddim: bool = False
-    # todo: add seed to fix ddim sampling
-    ode_solver: Union[None, str] = None
-    # currently supporting "plms" and "dpm2"
+    # currently supporting ["ddpm", "ddim", "ddim_rev", "plms", "dpm2"]
+    sampler: str = "ddpm"
     samples: int = 1024
     batch_size: int = 32
 
@@ -45,8 +43,8 @@ class GenerateConfig:
     gen_class_id: Union[None, int] = None
     classifier_free_guidance_weight: Union[None, float] = None
 
-    # for SDEidt
-    x_start_path: Union[None, str] = None
+    # Input image for SDEidt, etc
+    x_start: Union[None, str] = None
 
     # dump
     output_dir: str = "./outs"

@@ -32,9 +32,9 @@ from diffusion_model.model import Model
             config_path="config/yaml",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
-    assert conf.generate.x_start_path is not None, "generate.x_start_path must be supecified for sdedit.py."
+    assert conf.generate.x_start is not None, "generate.x_start must be supecified for sdedit.py."
     assert os.path.exists(
-        conf.generate.x_start_path), f"{conf.generate.x_start_path} is not found."
+        conf.generate.x_start), f"{conf.generate.x_start} is not found."
 
     # load diffusion and model config
     loaded_conf: config.LoadedConfig = config.load_saved_conf(
@@ -69,7 +69,7 @@ def main(conf: config.GenScriptConfig):
         h, w = loaded_conf.model.image_shape[:-1]
     else:
         h, w = loaded_conf.model.image_shape[1:]
-    x0 = imread(conf.generate.x_start_path, size=(w, h),
+    x0 = imread(conf.generate.x_start, size=(w, h),
                 channel_first=not loaded_conf.model.channel_last)
     x0 = x0[np.newaxis]
 
@@ -85,13 +85,15 @@ def main(conf: config.GenScriptConfig):
 
     # Generate
     # todo: apply SDEdit several times
+    x0_var = nn.Variable.from_numpy_array(x0 / 127.5 - 1)
+    T_var = nn.Variable(shape=(1, ))
+    T_var.fill(model.diffusion.num_timesteps - 1)
     sample_out, xts, x_starts = model.sample(shape=[1, ] + loaded_conf.model.image_shape,
-                                             x_start=nn.Variable.from_numpy_array(
-                                                    x0 / 127.5 - 1),
+                                             x_init=model.diffusion.q_sample(x0_var, T_var),
                                              dump_interval=1,
                                              use_ema=conf.generate.ema,
                                              progress=comm.rank == 0,
-                                             use_ddim=conf.generate.ddim)
+                                             sampler=conf.generate.sampler)
 
     # scale back to [0, 255]
     sample_out = (sample_out + 1) * 127.5

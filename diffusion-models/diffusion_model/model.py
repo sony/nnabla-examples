@@ -113,54 +113,47 @@ class Model(object):
     def sample(self,
                shape,
                *,
-               noise=None,
-               x_start=None,
+               x_init=None,
                model_kwargs=None,
                use_ema=True,
                dump_interval=-1,
                progress=False,
-               use_ddim=False,
-               ode_solver=None,
-               classifier_free_guidance_weight=None):
-
+               sampler="ddpm",
+               classifier_free_guidance_weight=None,
+               no_grad=True):
         if use_ema:
             with nn.parameter_scope("ema"):
                 return self.sample(shape,
-                                   noise=noise,
-                                   x_start=x_start,
+                                   x_init=x_init,
                                    model_kwargs=model_kwargs,
                                    use_ema=False,
                                    dump_interval=dump_interval,
                                    progress=progress,
-                                   use_ddim=use_ddim,
-                                   ode_solver=ode_solver,
+                                   sampler=sampler,
                                    classifier_free_guidance_weight=classifier_free_guidance_weight)
 
-        loop_func = self.diffusion.ddim_sample_loop if use_ddim else self.diffusion.p_sample_loop
-        if ode_solver == "plms":
-            loop_func = self.diffusion.plms_sample_loop
-        elif ode_solver == "dpm2":
-            loop_func = self.diffusion.dpm2_sample_loop
+        sampler = sampler.lower()
+        samplers = {
+            "ddpm": self.diffusion.p_sample_loop,
+            "ddim": self.diffusion.ddim_sample_loop,
+            "ddim_rev": self.diffusion.ddim_rev_sample_loop,
+            "plms": self.diffusion.plms_sample_loop,
+            "dpm2": self.diffusion.dpm2_sample_loop
+        }
 
-        with nn.no_grad():
+        assert sampler in samplers, \
+            f"sampler `{sampler}` is not implemented. It should be one of {list(samplers.keys())}."
+
+        loop_func = samplers[sampler]
+
+        with nn.no_grad(no_grad):
             return loop_func(
                 model=self._define_model(),
                 channel_last=self.model_conf.channel_last,
                 shape=shape,
-                noise=noise,
-                x_start=x_start,
+                x_init=x_init,
                 model_kwargs=model_kwargs,
                 dump_interval=dump_interval,
                 progress=progress,
                 classifier_free_guidance_weight=classifier_free_guidance_weight
             )
-
-    def sample_trajectory(self, shape, noise=None, x_start=None, model_kwargs=None, use_ema=True, progress=False, use_ddim=False):
-        return self.sample(shape,
-                           dump_interval=100,
-                           noise=noise,
-                           x_start=x_start,
-                           model_kwargs=model_kwargs,
-                           use_ema=use_ema,
-                           progress=progress,
-                           use_ddim=use_ddim)
