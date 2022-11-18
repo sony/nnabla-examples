@@ -464,6 +464,9 @@ class UNet(object):
         self.emb_dims = 4 * self.conf.base_channels
         self.use_mixed_precision = conf.use_mixed_precision
 
+        if conf.use_recompute:
+            set_recompute(True)
+
     # condition branch
     def concat_input_cond(self, x, input_cond):
         assert isinstance(input_cond, (nn.Variable, nn.NdArray)
