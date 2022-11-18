@@ -197,7 +197,12 @@ class GaussianDiffusion(object):
         # generate betas from strategy and max timesteps
         betas = get_beta_schedule(conf.beta_strategy, conf.max_timesteps)
         self.beta_strategy = conf.beta_strategy
+
+        # setup timestep to start sampling
+        assert 0 < conf.t_start <= conf.max_timesteps, \
+                f"Invalid t_start. t_start (= {conf.t_start}) must be an integer between [1, {conf.max_timesteps}]."
         self.max_timesteps = conf.max_timesteps
+        self.t_start = conf.t_start
 
         # setup respacing
         self.timestep_map = None
@@ -206,9 +211,10 @@ class GaussianDiffusion(object):
             # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
             # According to guided-diffusion, we should always use t = 0 and T - 1.
             # In addition to them, add (T / respacing_step - 2) timesteps.
-            num_use_timesteps = conf.max_timesteps // conf.respacing_step
+            max_timesteps = min(conf.t_start, conf.max_timesteps)
+            num_use_timesteps = max_timesteps // conf.respacing_step
 
-            frac_steps = float(conf.max_timesteps - 1) / \
+            frac_steps = float(max_timesteps - 1) / \
                 (num_use_timesteps - 1)
 
             start = 0
@@ -219,7 +225,7 @@ class GaussianDiffusion(object):
                 cur_idx += frac_steps
 
             assert use_timesteps[0] == 0
-            assert use_timesteps[-1] == conf.max_timesteps - 1
+            assert use_timesteps[-1] == max_timesteps - 1
 
             betas, timestep_map = respace_betas(betas, use_timesteps)
             self.timestep_map = const_var(timestep_map)
