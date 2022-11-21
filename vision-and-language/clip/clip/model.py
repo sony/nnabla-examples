@@ -173,8 +173,7 @@ def vision_transformer(x, input_res, patch_size, v_width, v_layers, v_heads, emb
         x = F.reshape(x, (x.shape[0], x.shape[1], -1))
         x = F.transpose(x, (0, 2, 1))  # shape = [*, grid ** 2, width]
 
-        z = np.zeros((x.shape[0], 1, x.shape[-1]))
-        zeros = nn.Variable.from_numpy_array(z)
+        zeros = F.constant(0, (x.shape[0], 1, x.shape[-1]))
         class_embed = nn.parameter.get_parameter_or_create(
             name="class_embedding", shape=(v_width,)).reshape((1, 1, v_width))
         # shape = [*, grid ** 2 + 1, width]
