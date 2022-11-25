@@ -36,6 +36,10 @@ class LeftBlocks():
     # for upsampler
     lowres_noise_level: Union[None, gr.Dropdown] = None
 
+    # for img2img
+    source_image: Union[None, gr.Image] = None
+    i2i_strength: Union[None, gr.Slider] = None
+
     def as_tuple(self):
         # we cannot use dataclasses.astuple,
         # because it returns deepcopy of each fields which have difference id.
@@ -120,10 +124,27 @@ class LeftBlocksCreator(object):
                          step=1,
                          label=self._add_prefix("noise timestep for low-resolution image"))
 
+    @property
+    def source_image(self) -> gr.Image:
+        im_shape = tuple(self.conf.model.image_size)
+        return gr.Image(shape=im_shape, label=self._add_prefix("source image for img2img"))
+
+    @property
+    def i2i_strength(self) -> gr.Slider:
+        max_timestep = self.conf.diffusion.max_timesteps
+        return gr.Slider(minimum=0,
+                         maximum=1.0,
+                         value=0.0,  # default value
+                         step=1.0 / max_timestep,
+                         label=self._add_prefix("source image strength for img2img"))
+
+
     def create(self):
         return LeftBlocks(respacing_step=self.respacing_step,
                           sampler=self.sampler,
                           class_id=self.class_id,
                           text=self.text,
                           classifier_free_guidance_weight=self.cfguide,
-                          lowres_noise_level=self.lowres_noise_level)
+                          lowres_noise_level=self.lowres_noise_level,
+                          source_image=self.source_image,
+                          i2i_strength=self.i2i_strength)

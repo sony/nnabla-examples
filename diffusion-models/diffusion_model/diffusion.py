@@ -1092,9 +1092,9 @@ class GaussianDiffusion(object):
         T = self.num_timesteps
         lam0 = _cont_lambda_t(1e-3)
         if self.beta_strategy == "cosine":
-            lam1 = _cont_lambda_t(0.9946)
+            lam1 = _cont_lambda_t(0.9946 * self.t_start / self.max_timesteps)
         else:
-            lam1 = _cont_lambda_t(1.0)
+            lam1 = _cont_lambda_t(1.0 * self.t_start / self.max_timesteps)
         lam_cont_list = np.linspace(lam1, lam0, T+1, dtype=np.float64).tolist()
         t_cont_list = [_cont_t_lambda(lam_cont_list[i]) for i in range(T+1)]
         t_cont_next_list = t_cont_list[1:]

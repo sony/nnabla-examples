@@ -71,8 +71,11 @@ def setup_model_and_kwargs(conf: LoadedConfig,
                            text: str,
                            lowres_image: np.ndarray,
                            lowres_noise_level: int,
+                           i2i_strength: float,
                            num_gen: int):
         conf.diffusion.respacing_step = respacing_step
+        if i2i_strength is not None:
+            conf.diffusion.t_start = int(conf.diffusion.max_timesteps * (1.0 - i2i_strength))
 
         model = Model(diffusion_conf=conf.diffusion,
                       model_conf=conf.model)
@@ -115,7 +118,6 @@ def setup_model_and_kwargs(conf: LoadedConfig,
                 model_kwargs["input_cond_aug_timestep"] = aug_level
 
             model_kwargs["input_cond"] = lowres_image
-
 
         return model, model_kwargs
 
@@ -200,9 +202,10 @@ class InferenceModel(object):
               output_from_parent):
         gi = gradio_inputs
         b = self.input_blocks
-        num_gen = 8 # todo
+        num_gen = 4 # todo
         sampler = self._get_or_none(gi, b.sampler)
         cf_w = self._get_or_none(gi, b.classifier_free_guidance_weight)
+        x_init = self._get_or_none(gi, b.source_image)
 
         setup_args = {
             "conf": self.conf,
@@ -211,15 +214,28 @@ class InferenceModel(object):
             "text": self._get_or_none(gi, b.text),
             "lowres_image": output_from_parent,
             "lowres_noise_level": self._get_or_none(gi, b.lowres_noise_level),
+            "i2i_strength": self._get_or_none(gi, b.i2i_strength),
             "num_gen": num_gen
         }
+        if x_init is None:
+            # Force i2i_strength=0 if a source image is not given.
+            setup_args["i2i_strength"] = 0
 
         model, model_kwargs \
             = setup_model_and_kwargs(**setup_args)
+        if x_init is not None:
+            x_init = np.tile(x_init.reshape((1,) + x_init.shape), (num_gen, ) + (1, ) * len(x_init.shape))
+            x_init = x_init / 127.5 - 1
+            if not self.conf.model.channel_last:
+                x_init = np.transpose(x_init, (2, 0, 1))
+            T_var = nn.Variable(shape=(num_gen, ))
+            T_var.data.fill(model.diffusion.num_timesteps - 1)
+            with nn.auto_forward():
+                x_init = model.diffusion.q_sample(nn.Variable.from_numpy_array(x_init), T_var)
 
         with nn.parameter_scope(self.name):
             gen, _, _ = model.sample(shape=(num_gen, ) + self.conf.model.image_shape,
-                                     x_init=None,
+                                     x_init=x_init,
                                      model_kwargs=model_kwargs,
                                      use_ema=True,
                                      sampler=sampler,
