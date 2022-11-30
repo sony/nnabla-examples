@@ -56,7 +56,12 @@ For more details about DDIM, please see the [original paper](http://proceedings.
 ## Generating image through browser user interface
 We also provide browser UI to generate image by pretrained DPM.
 
-Please specify your model path (h5 and config) in `config/yaml/config_inference_server.yaml` and do below to launch your local inference server.
+First, you need to install additional packages: 
+```
+pip install -r server_requirements.txt
+```
+
+After that, please specify your model path (h5 and config) in `config/yaml/config_inference_server.yaml` and do below to launch your local inference server.
 ```
 python launch_inference_server.py
 ```
