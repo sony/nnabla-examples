@@ -61,8 +61,8 @@ class WebDatasetDataSourceLocal(DataSource):
 
     def _get_data(self, position):
         # Note that position is not used in this data source
-
         data = next(self.dataset)
+
         image = data[0]  # numpy whose value is between [0, 1], channel last
         cap = data[1]["caption"]  # str
         emb = data[2]["t5_emb"]  # (length, 1024)

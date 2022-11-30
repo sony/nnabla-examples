@@ -32,6 +32,7 @@ class DatasetConfig:
     random_crop: bool = False
     shuffle_dataset: bool = True
     train: bool = True
+    random_flip: bool = False
 
     # for class condition
     num_classes: int = 1

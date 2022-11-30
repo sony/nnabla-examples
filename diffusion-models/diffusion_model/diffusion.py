@@ -183,11 +183,6 @@ def mean_along_except_batch(x, batch_axis=0):
 class GaussianDiffusion(object):
     """
     An interface for gaussian diffusion process.
-
-    Args:
-        betas (numpy.ndarray): 
-            A 1-D tensor of noise scales at each timestep. 
-            Assume this is created by get_beta_schedule() defined above.
     """
 
     def __init__(self, conf: DiffusionConfig):

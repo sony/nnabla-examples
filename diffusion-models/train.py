@@ -108,7 +108,7 @@ def get_output_dir_name(org, dataset):
     return os.path.join(org, f"{get_current_time()}_{dataset}")
 
 
-def augmentation(x, channel_last, random_flip=True):
+def augmentation(x, channel_last, random_flip):
     import nnabla.functions as F
     aug = x
 
@@ -156,7 +156,7 @@ def main(conf: config.TrainScriptConfig):
     # setup input image
     # assume data_iterator returns [-1, 1]
     x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)
-    x_aug = augmentation(x, conf.model.channel_last, random_flip=True)
+    x_aug = augmentation(x, conf.model.channel_last, random_flip=conf.dataset.random_flip)
 
     # create low-resolution image
     model_kwargs = {}
@@ -397,7 +397,7 @@ def main(conf: config.TrainScriptConfig):
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True)
+                              0 else None, reset=True, sync=False) # True
 
             reporter.flush_monitor(i)
 
