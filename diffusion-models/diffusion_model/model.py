@@ -63,6 +63,7 @@ class Model(object):
         proposed in "Cascaded diffusion models for High Fidelity Image Generation".
         Specifically, returns noisy data x' = q(x_s | x) where s ~ U({0, 1, ..., T-1}) and timestep 's'.
         """
+        # todo: need to be fixed including a raw image without noise (s = 0 doesn't mean unnoisy image)
         if s is None:
             B = x.shape[0]
             s = self._sampling_timestep(B)
@@ -130,7 +131,8 @@ class Model(object):
                                    dump_interval=dump_interval,
                                    progress=progress,
                                    sampler=sampler,
-                                   classifier_free_guidance_weight=classifier_free_guidance_weight)
+                                   classifier_free_guidance_weight=classifier_free_guidance_weight,
+                                   no_grad=no_grad)
 
         sampler = sampler.lower()
         samplers = {

@@ -243,7 +243,7 @@ class InferenceModel(object):
                                      classifier_free_guidance_weight=cf_w)
 
         # make sure all pixel values are in [-1, 1]
-        gen = np.clip(gen, -1, 1)
+        gen = np.clip(gen.d, -1, 1)
 
         return gen
 

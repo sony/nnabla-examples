@@ -87,7 +87,7 @@ def main(conf: config.GenScriptConfig):
     # todo: apply SDEdit several times
     x0_var = nn.Variable.from_numpy_array(x0 / 127.5 - 1)
     T_var = nn.Variable(shape=(1, ))
-    T_var.fill(model.diffusion.num_timesteps - 1)
+    T_var.data.fill(model.diffusion.num_timesteps - 1)
     sample_out, xts, x_starts = model.sample(shape=[1, ] + loaded_conf.model.image_shape,
                                              x_init=model.diffusion.q_sample(x0_var, T_var),
                                              dump_interval=1,

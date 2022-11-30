@@ -202,7 +202,7 @@ class GaussianDiffusion(object):
         # setup respacing
         self.timestep_map = None
 
-        if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
+        if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps - 1:
             # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
             # According to guided-diffusion, we should always use t = 0 and T - 1.
             # In addition to them, add (T / respacing_step - 2) timesteps.
@@ -237,13 +237,11 @@ class GaussianDiffusion(object):
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
-        alphas_cumprod_next = np.append(alphas_cumprod[1:], 0.0)
         assert alphas_cumprod_prev.shape == (T, )
 
         self.betas = const_var(betas)
         self.alphas_cumprod = const_var(alphas_cumprod)
         self.alphas_cumprod_prev = const_var(alphas_cumprod_prev)
-        self.alphas_cumprod_next = const_var(alphas_cumprod_next)
 
         # for q(x_t | x{t-1})
         self.sqrt_alphas_cumprod = const_var(np.sqrt(alphas_cumprod))
@@ -717,32 +715,43 @@ class GaussianDiffusion(object):
 
     def ddim_rev_sample(self, 
                         model, 
-                        x_t, 
+                        x_tm1, 
                         t, 
                         *,
                         model_kwargs=None,
                         clip_denoised=True,
                         eta=0.0, 
                         channel_last=False,
-                        classifier_free_guidance_weight=None):
+                        classifier_free_guidance_weight=None,
+                        no_noise=False):
         """
-        sample x_{t+1} from x_{t} by the model using DDIM reverse ODE.
+        sample x_{t} from x_{t-1} by the model using DDIM reverse ODE.
+        Because we design self.betas[t] is a noise scale for x_{t+1} (timestep is shifted 1 step),
+        ddim rev
         """
         assert eta == 0.0, "ReverseODE only for deterministic path"
-        preds = self.p_mean_var(model, x_t, t,
+        
+        alpha_bar = self._extract(self.alphas_cumprod, t, x_tm1.shape)
+        
+        if no_noise:
+            # Special case for x_0
+            return x_tm1 * sqrt(alpha_bar), None
+
+        # Note: if t == 0, no_noise must be True so that t - 1 >= 0 is always satisfied.
+        # Todo: replace no_noise with a multipliation by zero.
+        preds = self.p_mean_var(model, x_tm1, t - 1,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
                                 channel_last=channel_last,
                                 classifier_free_guidance_weight=classifier_free_guidance_weight)
 
-        pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
-        alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
+        pred_noise = self.predict_noise_from_xstart(x_tm1, t - 1, preds.xstart)
 
         with context_scope("float"):
             return (
-                preds.xstart * sqrt(alpha_bar_next)
-                + sqrt(1 - alpha_bar_next) * pred_noise
-            )
+                preds.xstart * sqrt(alpha_bar)
+                + sqrt(1 - alpha_bar) * pred_noise
+            ), None
 
     def sample_loop(self, model, shape, sampler, *,
                     x_init=None,
@@ -814,6 +823,7 @@ class GaussianDiffusion(object):
                 else:
                     assert isinstance(x_init, nn.Variable), \
                         "noise must be an instance of np.ndarray or nn.Variable, or None."
+                    x_init.persistent = True
                 assert x_init.shape == shape
             x_t = x_init
 
@@ -826,14 +836,15 @@ class GaussianDiffusion(object):
                                             t,
                                             model_kwargs=model_kwargs,
                                             no_noise=step == 0)
+                x_t.persistent = True
 
                 cnt += 1
                 if dump_interval > 0 and cnt % dump_interval == 0:
-                    samples.append((step, x_t.d.copy()))
-                    pred_x_starts.append((step, pred_x_start.d.copy()))
+                    samples.append((step, x_t))
+                    pred_x_starts.append((step, pred_x_start))
 
         assert x_t.shape == shape
-        return x_t.d, samples, pred_x_starts
+        return x_t, samples, pred_x_starts
 
     def p_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
@@ -989,7 +1000,7 @@ class GaussianDiffusion(object):
                     pred_x_starts.append((step, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
-        return x_t.d.copy(), samples, pred_x_starts
+        return x_t, samples, pred_x_starts
 
     def dpm2_sample_loop(self, model, shape, *,
                          channel_last=False,
@@ -1166,4 +1177,4 @@ class GaussianDiffusion(object):
                     pred_x_starts.append((t_cont, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
-        return x_t.d.copy(), samples, pred_x_starts
+        return x_t, samples, pred_x_starts

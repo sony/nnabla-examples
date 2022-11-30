@@ -39,9 +39,12 @@ class GenerateConfig:
     lowres_aug_timestep: Union[None, int] = None
     base_samples_dir: Union[None, str] = None
 
-    # class cond
+    # condition
+    classifier_free_guidance_weight: Union[None, float] = None   
+    ## class cond
     gen_class_id: Union[None, int] = None
-    classifier_free_guidance_weight: Union[None, float] = None
+    ## text cond
+    text: Union[None, str] = None
 
     # Input image for SDEidt, etc
     x_start: Union[None, str] = None
