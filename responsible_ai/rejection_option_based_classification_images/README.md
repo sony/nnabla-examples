@@ -12,7 +12,7 @@ In this demo, we show how to reduce bias at prediction time using a�
 
 |Name| Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
- [Rejection Option-based Classification for image](https://doi.org/10.1109/ICDM.2012.45) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/rejection_option_based_classification_images.ipynb) | Mitigate the bias |<a href="url"><img src="images/roc_workflow_diagram.png" align="center" height="90" ></a>|
+ [Rejection Option-based Classification for image](https://doi.org/10.1109/ICDM.2012.45) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/reject_option_based_classification_images.ipynb) | Mitigate the bias |<a href="url"><img src="images/roc_workflow_diagram.png" align="center" height="90" ></a>|
  
 To run the 'ROC' experiment in NNabla, please follow the steps below:
 
