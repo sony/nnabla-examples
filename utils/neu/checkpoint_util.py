@@ -96,7 +96,7 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1, split_h5_per_solver
 
     if isinstance(solvers, nn.solver.Solver):
         solvers = {"": solvers}
-    
+
     assert isinstance(solvers, dict), \
         "`solvers` must be either Solver object or dict of { `name`: Solver }."
 
@@ -135,7 +135,6 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1, split_h5_per_solver
             # save relative path so to support moving a saved directory
             partial_info["params_path"] = solver_params_fname
 
-
         checkpoint_info[solvername] = partial_info
 
     # save parameters.
@@ -147,7 +146,7 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1, split_h5_per_solver
 
         # save relative path so to support moving a saved directory
         checkpoint_info["params_path"] = params_fname
-        
+
     checkpoint_info["current_iter"] = current_iter
 
     # save checkpoint
@@ -178,14 +177,15 @@ def _get_full_path(path, base_path):
     # case1: path is absolute
     if os.path.exists(path):
         return path
-    
+
     # case2: path is reative based on base_path
     path1 = os.path.join(base_path, path)
     if os.path.exists(path1):
         return path1
 
     # otherwise: raise
-    raise ValueError(f"Given path doesn't exist. (path: {path}, base_path: {base_path})")
+    raise ValueError(
+        f"Given path doesn't exist. (path: {path}, base_path: {base_path})")
 
 
 def load_checkpoint(path, solvers):
@@ -251,7 +251,7 @@ def load_checkpoint(path, solvers):
         solvers = {"": solvers}
     assert isinstance(solvers, dict), \
         "`solvers` must be either Solver object or dict of { `name`: Solver }."
-    
+
     assert os.path.isfile(path), "checkpoint file not found"
     base_path = os.path.dirname(path)
 
@@ -287,8 +287,9 @@ def load_checkpoint(path, solvers):
 
         # load parameters belonging to this solver if exists
         if "params_path" in partial_info:
-            solver_params_path = _get_full_path(partial_info["params_path"], base_path)
-            nn.load_parameters(solver_params_path) 
+            solver_params_path = _get_full_path(
+                partial_info["params_path"], base_path)
+            nn.load_parameters(solver_params_path)
 
     # get current iteration. note that this might differ from the numbers of update.
     current_iter = checkpoint_info["current_iter"]

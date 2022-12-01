@@ -23,6 +23,7 @@ from .utils import Shape4D, force_float
 
 recompute = False
 
+
 def set_recompute(flag):
     global recompute
     recompute = flag

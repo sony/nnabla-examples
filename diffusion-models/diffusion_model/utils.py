@@ -137,10 +137,10 @@ def create_ema_op(params, ema_decay=0.9999):
                     name, shape=p_train.shape, need_grad=False)
                 p_ema.data.copy_from(p_train.data)  # initialize
                 p_ema.data.cast(float, float_ctx)
-                
+
                 # construct ema_op
                 ops.append(ema_update(p_ema, p_train))
-                
+
                 ema_params["/".join(["ema", name])] = p_ema
 
         return F.sink(*ops), ema_params

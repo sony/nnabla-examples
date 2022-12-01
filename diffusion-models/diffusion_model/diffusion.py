@@ -195,7 +195,7 @@ class GaussianDiffusion(object):
 
         # setup timestep to start sampling
         assert 0 < conf.t_start <= conf.max_timesteps, \
-                f"Invalid t_start. t_start (= {conf.t_start}) must be an integer between [1, {conf.max_timesteps}]."
+            f"Invalid t_start. t_start (= {conf.t_start}) must be an integer between [1, {conf.max_timesteps}]."
         self.max_timesteps = conf.max_timesteps
         self.t_start = conf.t_start
 
@@ -713,14 +713,14 @@ class GaussianDiffusion(object):
             noise = noise_like(x_t.shape, noise_function, repeat_noise)
             return mean_pred + sigma * noise, preds.xstart
 
-    def ddim_rev_sample(self, 
-                        model, 
-                        x_tm1, 
-                        t, 
+    def ddim_rev_sample(self,
+                        model,
+                        x_tm1,
+                        t,
                         *,
                         model_kwargs=None,
                         clip_denoised=True,
-                        eta=0.0, 
+                        eta=0.0,
                         channel_last=False,
                         classifier_free_guidance_weight=None,
                         no_noise=False):
@@ -730,9 +730,9 @@ class GaussianDiffusion(object):
         ddim rev
         """
         assert eta == 0.0, "ReverseODE only for deterministic path"
-        
+
         alpha_bar = self._extract(self.alphas_cumprod, t, x_tm1.shape)
-        
+
         if no_noise:
             # Special case for x_0
             return x_tm1 * sqrt(alpha_bar), None
@@ -809,12 +809,14 @@ class GaussianDiffusion(object):
             # setup initial image
             if x_init is None:
                 if not reverse:
-                    raise ValueError("x_init must be given for the forward process (reverse=False).")
-                
+                    raise ValueError(
+                        "x_init must be given for the forward process (reverse=False).")
+
                 # case reverse=True
                 if self.max_timesteps != self.t_start:
-                    raise ValueError(f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
-                
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
+
                 # if T == t_start for the reverse process, we can rondamly sample an initial noise.
                 x_init = F.randn(shape=shape)
             else:
@@ -879,7 +881,7 @@ class GaussianDiffusion(object):
         """
         Sample latent at t=T by DDIM reverse sampling.
         """
-        
+
         return self.sample_loop(*args,
                                 sampler=partial(
                                     self.ddim_rev_sample,
@@ -943,8 +945,9 @@ class GaussianDiffusion(object):
             if x_init is None:
                 # case reverse=True
                 if self.max_timesteps != self.t_start:
-                    raise ValueError(f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
-                
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
+
                 # if T == t_start for the reverse process, we can rondamly sample an initial noise.
                 x_init = F.randn(shape=shape)
             else:
@@ -1120,8 +1123,9 @@ class GaussianDiffusion(object):
             if x_init is None:
                 # case reverse=True
                 if self.max_timesteps != self.t_start:
-                    raise ValueError(f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
-                
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
+
                 # if T == t_start for the reverse process, we can rondamly sample an initial noise.
                 x_init = F.randn(shape=shape)
             else:

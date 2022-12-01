@@ -186,7 +186,8 @@ class PackedParameterSolver(object):
                 ema_data_narrowed = packed_ema_param.data.narrow(
                     0, p_cur_size, p.size).view(p.shape)
 
-                ema_data_narrowed.copy_from(p_ema.data, use_current_context=False)
+                ema_data_narrowed.copy_from(
+                    p_ema.data, use_current_context=False)
                 p_ema.data = ema_data_narrowed
 
             # update total size
@@ -347,7 +348,7 @@ class PackedParameterSolver(object):
             s.t = packed_t
 
         return self.orig_states
-    
+
     def load_states(self, path):
         if not self.is_packed:
             # solver must have origianl parameters and states.
@@ -361,6 +362,6 @@ class PackedParameterSolver(object):
         self.solver.set_parameters(self.orig_params, reset=True)
         self.solver.load_states(path)
 
-        # re-pack parameters 
+        # re-pack parameters
         self.is_packed = False
         self._packing()

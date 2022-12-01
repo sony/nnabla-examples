@@ -169,7 +169,7 @@ class ResidualBlockUp(ResidualBlockResampleBase):
 
 # Attention
 class SelfAttentionBlock(object):
-    def __init__(self, 
+    def __init__(self,
                  num_heads=4,
                  num_head_channels=None,
                  channel_last=False):
@@ -181,13 +181,14 @@ class SelfAttentionBlock(object):
 
     def get_qkv(self, x, cond):
         assert len(
-        x.shape) == 4, "self_attention only supports 4D tensor for an input."
+            x.shape) == 4, "self_attention only supports 4D tensor for an input."
 
         B, C, H, W = Shape4D(
             x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
 
         # Get query, key, value
-        h = group_norm(x, name="norm", channel_axis=3 if self.channel_last else 1)
+        h = group_norm(
+            x, name="norm", channel_axis=3 if self.channel_last else 1)
         qkv = nin(h, 3 * C, name="qkv", channel_last=self.channel_last)
 
         # 4D -> 3D
@@ -204,14 +205,15 @@ class SelfAttentionBlock(object):
             # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
             assert len(
                 cond.shape) == 3, "A condition for self_attention should be a 3D tensor."
-            
+
             with nn.parameter_scope("condition"):
                 # Imagen paper says layer_norm performs better for condition
                 cond = layer_norm(cond, name="norm")
                 cond = nin(cond, 2 * C, name="kv_cond",
-                        channel_last=self.channel_last)
+                           channel_last=self.channel_last)
 
-            kc, vc = chunk(cond, num_chunk=2, axis=2 if self.channel_last else 1)
+            kc, vc = chunk(cond, num_chunk=2,
+                           axis=2 if self.channel_last else 1)
             k = F.concatenate(k, kc, axis=1 if self.channel_last else 2)
             v = F.concatenate(v, vc, axis=1 if self.channel_last else 2)
 
@@ -234,7 +236,7 @@ class SelfAttentionBlock(object):
                 name='proj_out',
                 zeroing_w=True,
                 channel_last=self.channel_last)
-        
+
         # residual connection
         assert h.shape == x.shape
         return h + x
@@ -255,10 +257,12 @@ class CrossAttentionBlock(SelfAttentionBlock):
     def get_qkv(self, x, cond):
         assert len(
             x.shape) == 4, "corss_attention only supports 4D tensor for an input."
-        B, C, H, W = Shape4D(x, channel_last=self.channel_last).get_as_tuple("bchw")
+        B, C, H, W = Shape4D(
+            x, channel_last=self.channel_last).get_as_tuple("bchw")
 
         # Get query, key, value
-        h = group_norm(x, name="norm", channel_axis=3 if self.channel_last else 1)
+        h = group_norm(
+            x, name="norm", channel_axis=3 if self.channel_last else 1)
         q = nin(h, C, name="q", channel_last=self.channel_last)
 
         # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
@@ -728,12 +732,12 @@ class UNet(object):
                                                     num_head_channels=self.conf.num_attention_head_channels,
                                                     channel_last=self.conf.channel_last)
                 h = self_attention(h,
-                                    name="attention",
-                                    cond=emb_seq)
+                                   name="attention",
+                                   cond=emb_seq)
             elif self.conf.attention_type == "cross_attention":
                 cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
-                                                        num_head_channels=self.conf.num_attention_head_channels,
-                                                        channel_last=self.conf.channel_last)
+                                                      num_head_channels=self.conf.num_attention_head_channels,
+                                                      channel_last=self.conf.channel_last)
                 h = cross_attention(h,
                                     name="cross_attention",
                                     cond=emb_seq)
@@ -882,8 +886,8 @@ class EfficientUNet(UNet):
                                        cond=emb_seq)
                 elif self.conf.attention_type == "cross_attention":
                     cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
-                                                            num_head_channels=self.conf.num_attention_head_channels,
-                                                            channel_last=self.conf.channel_last)
+                                                          num_head_channels=self.conf.num_attention_head_channels,
+                                                          channel_last=self.conf.channel_last)
                     h = cross_attention(h,
                                         name="cross_attention",
                                         cond=emb_seq)

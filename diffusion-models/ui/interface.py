@@ -29,13 +29,13 @@ def create_demo(conf: InferenceServerConfig) -> gr.Blocks:
     models.append(base_model)
 
     # up1
-    use_1st_upsampler = (conf.up1_conf_path is not None) and (conf.up1_h5_path is not None)
+    use_1st_upsampler = (conf.up1_conf_path is not None) and (
+        conf.up1_h5_path is not None)
     if use_1st_upsampler:
         up1_model = InferenceModel(conf=conf.up1_conf_path,
                                    h5=conf.up1_h5_path,
                                    name="1st upsampler")
         models.append(up1_model)
-
 
     inputs = []
     with gr.Blocks() as demo:
@@ -57,10 +57,9 @@ def create_demo(conf: InferenceServerConfig) -> gr.Blocks:
             # right column for outputs
             with gr.Column():
                 base_model.create_output_blocks()
-                
+
                 if use_1st_upsampler:
                     up1_model.create_output_blocks()
-
 
         # create callback
         cb1 = SequentialInferenceModel(models)

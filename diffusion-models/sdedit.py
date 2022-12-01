@@ -89,7 +89,8 @@ def main(conf: config.GenScriptConfig):
     T_var = nn.Variable(shape=(1, ))
     T_var.data.fill(model.diffusion.num_timesteps - 1)
     sample_out, xts, x_starts = model.sample(shape=[1, ] + loaded_conf.model.image_shape,
-                                             x_init=model.diffusion.q_sample(x0_var, T_var),
+                                             x_init=model.diffusion.q_sample(
+                                                 x0_var, T_var),
                                              dump_interval=1,
                                              use_ema=conf.generate.ema,
                                              progress=comm.rank == 0,

@@ -18,6 +18,7 @@ import gradio as gr
 
 from config import LoadedConfig
 
+
 @dataclass
 class LeftBlocks():
     # inference configurations
@@ -26,7 +27,7 @@ class LeftBlocks():
 
     # for any types of conditional model
     classifier_free_guidance_weight: Union[None, gr.Dropdown] = None
-    
+
     # for class conditional model
     class_id: Union[None, gr.Dropdown] = None
 
@@ -52,8 +53,9 @@ class LeftBlocks():
 
         return ret
 
+
 class LeftBlocksCreator(object):
-    def __init__(self, 
+    def __init__(self,
                  conf: LoadedConfig,
                  name: str,
                  *,
@@ -87,7 +89,7 @@ class LeftBlocksCreator(object):
     def class_id(self) -> Union[None, gr.Dropdown]:
         if not self.conf.model.class_cond:
             return None
-        
+
         # todo: show class name rather than id
         return gr.Dropdown(choices=list(range(0, self.conf.model.num_classes)),
                            value=0,
@@ -137,7 +139,6 @@ class LeftBlocksCreator(object):
                          value=0.0,  # default value
                          step=1.0 / max_timestep,
                          label=self._add_prefix("source image strength for img2img"))
-
 
     def create(self):
         return LeftBlocks(respacing_step=self.respacing_step,

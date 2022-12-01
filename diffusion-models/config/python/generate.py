@@ -40,10 +40,10 @@ class GenerateConfig:
     base_samples_dir: Union[None, str] = None
 
     # condition
-    classifier_free_guidance_weight: Union[None, float] = None   
-    ## class cond
+    classifier_free_guidance_weight: Union[None, float] = None
+    # class cond
     gen_class_id: Union[None, int] = None
-    ## text cond
+    # text cond
     text: Union[None, str] = None
 
     # Input image for SDEidt, etc

@@ -156,7 +156,8 @@ def main(conf: config.TrainScriptConfig):
     # setup input image
     # assume data_iterator returns [-1, 1]
     x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)
-    x_aug = augmentation(x, conf.model.channel_last, random_flip=conf.dataset.random_flip)
+    x_aug = augmentation(x, conf.model.channel_last,
+                         random_flip=conf.dataset.random_flip)
 
     # create low-resolution image
     model_kwargs = {}
@@ -366,9 +367,11 @@ def main(conf: config.TrainScriptConfig):
         # update
         mpm.scale_grad(solver)
         if isinstance(solver, PackedParameterSolver):
-            comm.all_reduce([x.grad for x in solver.packed_params], division=True, inplace=True)
+            comm.all_reduce([x.grad for x in solver.packed_params],
+                            division=True, inplace=True)
         else:
-            comm.all_reduce([x.grad for x in solver.get_parameters().values()], division=True, inplace=True)
+            comm.all_reduce(
+                [x.grad for x in solver.get_parameters().values()], division=True, inplace=True)
         mpm.update(solver, clip_grad=conf.train.clip_grad)
 
         # update ema params
@@ -397,13 +400,13 @@ def main(conf: config.TrainScriptConfig):
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=False) # True
+                              0 else None, reset=True, sync=False)  # True
 
             reporter.flush_monitor(i)
 
         if i % conf.train.save_interval == 0:
             if comm.rank == 0:
-                save_checkpoint(conf.train.output_dir, i, solvers, 
+                save_checkpoint(conf.train.output_dir, i, solvers,
                                 n_keeps=3,
                                 split_h5_per_solver=True)
 

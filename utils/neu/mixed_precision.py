@@ -46,7 +46,7 @@ class MixedPrecisionManager(object):
 
         for i in range(max_iter):
             solver.zero_grad()
-            
+
             for accum in range(accum_cnt):
                 x.d = data.next()
                 loss.forward(...)
@@ -59,7 +59,7 @@ class MixedPrecisionManager(object):
                 # When overflow happens, do not update parameter
                 # If detecting overflow, mpm decreases loss scale.
                 continue 
-            
+
             # After calling solver.update, mpm increases loss scale.
             mpm.update(solver)
 
@@ -106,7 +106,7 @@ class MixedPrecisionManager(object):
     def scale_grad(self, solver):
         if not self.use_fp16:
             return
-        
+
         solver.scale_grad(1. / self.loss_scale)
 
     def update(self, solver: Solver, *, clip_grad=None, **kwargs):
