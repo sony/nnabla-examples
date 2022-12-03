@@ -100,6 +100,8 @@ class PackedParameterSolver(object):
 
     @staticmethod
     def _get_param_type_based_on_dtype(x: nn.Variable):
+        assert x.grad.dtype in (np.float32, np.float16), \
+            f"datatype {x.grad.dtype} is not supported."
         return int(x.grad.dtype == np.float32)
 
     def _align_size(self, size):

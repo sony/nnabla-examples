@@ -43,7 +43,7 @@ def _resize_img(img: np.ndarray,
                 fix_aspect_ratio=True):
     # following guided-diffusion, apply box sampling multiple times -> bicubic
 
-    # apply box sampling loop until small size is bigger than 2 * size
+    # apply box sampling loop while the size of the shorter side is bigger than 2*size
     while True:
         h, w = _get_img_hw(img, channel_first)
 
