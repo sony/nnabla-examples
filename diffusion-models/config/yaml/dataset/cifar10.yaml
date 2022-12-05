@@ -8,3 +8,6 @@ num_classes: 10
 # change this if you place a dataset in other directory
 # data_dir: ./data 
 # dataset_root_dir: null
+
+# augmentation
+random_flip: True

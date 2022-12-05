@@ -16,61 +16,55 @@ import gradio as gr
 
 from config import load_saved_conf, InferenceServerConfig
 
-from .left import create_left_column_from_config, LeftBlocks
-from .inference import InferenceModel
+from .inference_model import InferenceModel, SequentialInferenceModel
 
 
 def create_demo(conf: InferenceServerConfig) -> gr.Blocks:
+    models = []
+
     # base model
-    base_conf = load_saved_conf(conf.base_conf_path)
+    base_model = InferenceModel(conf=conf.base_conf_path,
+                                h5=conf.base_h5_path,
+                                name="base")
+    models.append(base_model)
 
     # up1
-    up1_conf = None
     use_1st_upsampler = (conf.up1_conf_path is not None) and (
         conf.up1_h5_path is not None)
     if use_1st_upsampler:
-        up1_conf = load_saved_conf(conf.up1_conf_path)
-
-    # build inference model
-    inference_model = InferenceModel(base_conf=base_conf,
-                                     base_h5=conf.base_h5_path,
-                                     up1_conf=up1_conf,
-                                     up1_h5=conf.up1_h5_path)
+        up1_model = InferenceModel(conf=conf.up1_conf_path,
+                                   h5=conf.up1_h5_path,
+                                   name="1st upsampler")
+        models.append(up1_model)
 
     inputs = []
     with gr.Blocks() as demo:
-        # user inputs on the left column
         with gr.Row():
-            # base model
+            # left column for inputs
             with gr.Column():
                 with gr.Tab("Base model configurations"):
-                    base_blocks: LeftBlocks \
-                        = create_left_column_from_config(base_conf, "base model")
-
-                    inputs += [base_blocks.respacing_step,
-                               base_blocks.sampler,
-                               base_blocks.class_id,
-                               base_blocks.classifier_free_guidance_weight]
+                    base_model.create_input_blocks()
 
                 # up1
+                # initialize by empty block
                 if use_1st_upsampler:
                     with gr.Tab("1st upsampler configuration"):
-                        up1_blocks: LeftBlocks \
-                            = create_left_column_from_config(up1_conf, "1st upsampler")
-
-                        inputs += [up1_blocks.respacing_step,
-                                   up1_blocks.sampler,
-                                   up1_blocks.class_id,
-                                   up1_blocks.classifier_free_guidance_weight,
-                                   up1_blocks.lowres_noise_level]
+                        up1_model.create_input_blocks(class_id_block=base_model.input_blocks.class_id,
+                                                      text_block=base_model.input_blocks.text)
 
                 btn = gr.Button("Generate")
 
-            image_output = gr.Gallery(label="generated images")
+            # right column for outputs
+            with gr.Column():
+                base_model.create_output_blocks()
+
+                if use_1st_upsampler:
+                    up1_model.create_output_blocks()
 
         # create callback
-        btn.click(inference_model.create_callback(),
-                  inputs=inputs,
-                  outputs=[image_output])
+        cb1 = SequentialInferenceModel(models)
+        btn.click(cb1.callback,
+                  inputs=cb1.inputs,
+                  outputs=cb1.outputs)
 
     return demo

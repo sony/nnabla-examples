@@ -1,0 +1,4 @@
+httpcore==0.15
+torch
+transformers
+sentencepiece

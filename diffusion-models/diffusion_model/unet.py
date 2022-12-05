@@ -168,129 +168,116 @@ class ResidualBlockUp(ResidualBlockResampleBase):
 
 
 # Attention
-def self_attention(x,
-                   name,
-                   *,
-                   cond=None,
-                   num_heads=4,
-                   num_head_channels=None,
-                   channel_last=False):
+class SelfAttentionBlock(object):
+    def __init__(self,
+                 num_heads=4,
+                 num_head_channels=None,
+                 channel_last=False):
+        self.channel_last = channel_last
 
-    assert len(
-        x.shape) == 4, "self_attention only supports 4D tensor for an input."
-    B, C, H, W = Shape4D(
-        x.shape, channel_last=channel_last).get_as_tuple("bchw")
+        self.qkv_attention = QKVAttention(num_heads=num_heads,
+                                          num_head_channels=num_head_channels,
+                                          channel_last=channel_last)
 
-    # apply normalization and projection for inputs
-    with nn.parameter_scope(name):
+    def get_qkv(self, x, cond):
+        assert len(
+            x.shape) == 4, "self_attention only supports 4D tensor for an input."
+
+        B, C, H, W = Shape4D(
+            x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
+
         # Get query, key, value
-        h = group_norm(x, name="norm", channel_axis=3 if channel_last else 1)
-        qkv = nin(h, 3 * C, name="qkv", channel_last=channel_last)
+        h = group_norm(
+            x, name="norm", channel_axis=3 if self.channel_last else 1)
+        qkv = nin(h, 3 * C, name="qkv", channel_last=self.channel_last)
 
         # 4D -> 3D
-        if channel_last:
+        if self.channel_last:
             # (B, H, W, 3C) -> (B, HW, 3C)
             qkv = F.reshape(qkv, (B, H * W, 3 * C))
         else:
             # (B, 3C, H, W) -> (B, 3C, HW)
             qkv = F.reshape(qkv, (B, 3 * C, H * W))
 
-        q, k, v = chunk(qkv, num_chunk=3, axis=2 if channel_last else 1)
+        q, k, v = chunk(qkv, num_chunk=3, axis=2 if self.channel_last else 1)
 
-        # if cond is given, concat it to k and v along L axis.
         if cond is not None:
             # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
             assert len(
                 cond.shape) == 3, "A condition for self_attention should be a 3D tensor."
+
             with nn.parameter_scope("condition"):
                 # Imagen paper says layer_norm performs better for condition
                 cond = layer_norm(cond, name="norm")
                 cond = nin(cond, 2 * C, name="kv_cond",
-                           channel_last=channel_last)
+                           channel_last=self.channel_last)
 
-            kc, vc = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
-            k = F.concatenate(k, kc, axis=1 if channel_last else 2)
-            v = F.concatenate(v, vc, axis=1 if channel_last else 2)
+            kc, vc = chunk(cond, num_chunk=2,
+                           axis=2 if self.channel_last else 1)
+            k = F.concatenate(k, kc, axis=1 if self.channel_last else 2)
+            v = F.concatenate(v, vc, axis=1 if self.channel_last else 2)
 
-        qkv_attention = QKVAttention(num_heads=num_heads,
-                                     num_head_channels=num_head_channels,
-                                     channel_last=channel_last)
-        out = qkv_attention(q, k, v)
+        return q, k, v
+
+    def output_block(self, x, h):
+        B, C, H, W = Shape4D(
+            x.shape, channel_last=self.channel_last).get_as_tuple("bchw")
 
         # 3D -> 4D
-        if channel_last:
+        if self.channel_last:
             # (B, HW, C) -> (B, H, W, C)
-            out = F.reshape(out, (B, H, W, C))
+            h = F.reshape(h, (B, H, W, C))
         else:
             # (B, C, HW) -> (B, C, H, W)
-            out = F.reshape(out, (B, C, H, W))
+            h = F.reshape(h, (B, C, H, W))
 
         # output projection
-        out = nin(out, C,
-                  name='proj_out',
-                  zeroing_w=True,
-                  channel_last=channel_last)
+        h = nin(h, C,
+                name='proj_out',
+                zeroing_w=True,
+                channel_last=self.channel_last)
 
-    assert out.shape == x.shape
-    return out + x
+        # residual connection
+        assert h.shape == x.shape
+        return h + x
+
+    def __call__(self, x, name, *, cond=None):
+        # apply normalization and projection for inputs
+        with nn.parameter_scope(name):
+            q, k, v = self.get_qkv(x, cond)
+
+            attn = self.qkv_attention(q, k, v)
+
+            out = self.output_block(x, attn)
+
+        return out
 
 
-def cross_attention(x,
-                    cond,
-                    name,
-                    *,
-                    num_heads=4,
-                    num_head_channels=None,
-                    channel_last=False):
+class CrossAttentionBlock(SelfAttentionBlock):
+    def get_qkv(self, x, cond):
+        assert len(
+            x.shape) == 4, "corss_attention only supports 4D tensor for an input."
+        B, C, H, W = Shape4D(
+            x, channel_last=self.channel_last).get_as_tuple("bchw")
 
-    assert len(
-        x.shape) == 4, "corss_attention only supports 4D tensor for an input."
-    B, C, H, W = Shape4D(x, channel_last=channel_last).get_as_tuple("bchw")
-
-    with nn.parameter_scope(name):
         # Get query, key, value
-        h = group_norm(x, name="norm", channel_axis=3 if channel_last else 1)
-        q = nin(h, C, name="q", channel_last=channel_last)
+        h = group_norm(
+            x, name="norm", channel_axis=3 if self.channel_last else 1)
+        q = nin(h, C, name="q", channel_last=self.channel_last)
 
         # Assume text of shape (B, N, C), where B is batch, N is # tokens, and C is channel.
+        assert cond is not None, \
+            "cond must be passed to cross attention"
         assert len(
             cond.shape) == 3, "A condition for cross_attention should be a 3D tensor."
         with nn.parameter_scope("condition"):
             # Imagen paper says layer_norm performs better for condition
             cond = layer_norm(cond, name="norm")
-            cond = nin(cond, 2 * C, name="kv", channel_last=channel_last)
+            cond = nin(cond, 2 * C, name="kv", channel_last=self.channel_last)
 
-        k, v = chunk(cond, num_chunk=2, axis=2 if channel_last else 1)
+        k, v = chunk(cond, num_chunk=2, axis=2 if self.channel_last else 1)
 
-        # 4D -> 3D
-        if channel_last:
-            # (B, H, W, 3C) -> (B, HW, 3C)
-            q = F.reshape(q, (B, H * W, 3 * C))
-        else:
-            # (B, 3C, H, W) -> (B, 3C, HW)
-            q = F.reshape(q, (B, 3 * C, H * W))
-
-        qkv_attention = QKVAttention(num_heads=num_heads,
-                                     num_head_channels=num_head_channels,
-                                     channel_last=channel_last)
-        out = qkv_attention(q, k, v)
-
-        # 3D -> 4D
-        if channel_last:
-            # (B, HW, C) -> (B, H, W, C)
-            out = F.reshape(out, (B, H, W, C))
-        else:
-            # (B, C, HW) -> (B, C, H, W)
-            out = F.reshape(out, (B, C, H, W))
-
-        # output projection
-        out = nin(out, C,
-                  name='proj_out',
-                  zeroing_w=True,
-                  channel_last=channel_last)
-
-    assert out.shape == x.shape
-    return out + x
+        return q, k, v
 
 
 def attention_pooling_1d(x,
@@ -431,6 +418,11 @@ class QKVAttention(object):
         # create attention weight
         # (B * num_heads, L (for q), L (for k))
         w = F.batch_matmul(q, k, transpose_b=True)
+
+        # we don't need q, k at the following lines.
+        # Delete variables to release memory for auto-forward mode before softmax.
+        del q, k
+
         with context_scope("float"):
             w = F.softmax(w, axis=-1)  # take softmax for each query
 
@@ -463,6 +455,9 @@ class UNet(object):
         self.conf: ModelConfig = conf
         self.emb_dims = 4 * self.conf.base_channels
         self.use_mixed_precision = conf.use_mixed_precision
+
+        if conf.use_recompute:
+            set_recompute(True)
 
     # condition branch
     def concat_input_cond(self, x, input_cond):
@@ -648,18 +643,19 @@ class UNet(object):
             if self.conf.attention_resolutions is not None \
                     and res in self.conf.attention_resolutions:
                 if self.conf.attention_type == "self_attention":
+                    self_attention = SelfAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                        num_head_channels=self.conf.num_attention_head_channels,
+                                                        channel_last=self.conf.channel_last)
                     h = self_attention(h,
                                        name="attention",
-                                       cond=emb_seq,
-                                       num_heads=self.conf.num_attention_heads,
-                                       num_head_channels=self.conf.num_attention_head_channels,
-                                       channel_last=self.conf.channel_last)
+                                       cond=emb_seq)
                 elif self.conf.attention_type == "cross_attention":
-                    h = cross_attention(h, emb_seq,
+                    cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                          num_head_channels=self.conf.num_attention_head_channels,
+                                                          channel_last=self.conf.channel_last)
+                    h = cross_attention(h,
                                         name="cross_attention",
-                                        num_heads=self.conf.num_attention_heads,
-                                        num_head_channels=self.conf.num_attention_head_channels,
-                                        channel_last=self.conf.channel_last)
+                                        cond=emb_seq)
                 else:
                     raise ValueError(
                         f"'{self.conf.attention_type}' is not supported for attention type.")
@@ -732,18 +728,19 @@ class UNet(object):
         if self.conf.attention_resolutions is not None \
                 and res in self.conf.attention_resolutions:
             if self.conf.attention_type == "self_attention":
+                self_attention = SelfAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                    num_head_channels=self.conf.num_attention_head_channels,
+                                                    channel_last=self.conf.channel_last)
                 h = self_attention(h,
                                    name="attention",
-                                   cond=emb_seq,
-                                   num_heads=self.conf.num_attention_heads,
-                                   num_head_channels=self.conf.num_attention_head_channels,
-                                   channel_last=self.conf.channel_last)
+                                   cond=emb_seq)
             elif self.conf.attention_type == "cross_attention":
-                h = cross_attention(h, emb_seq,
+                cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                      num_head_channels=self.conf.num_attention_head_channels,
+                                                      channel_last=self.conf.channel_last)
+                h = cross_attention(h,
                                     name="cross_attention",
-                                    num_heads=self.conf.num_attention_heads,
-                                    num_head_channels=self.conf.num_attention_head_channels,
-                                    channel_last=self.conf.channel_last)
+                                    cond=emb_seq)
             else:
                 raise ValueError(
                     f"'{self.conf.attention_type}' is not supported for attention type.")
@@ -881,18 +878,19 @@ class EfficientUNet(UNet):
                     and res in self.conf.attention_resolutions:
 
                 if self.conf.attention_type == "self_attention":
+                    self_attention = SelfAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                        num_head_channels=self.conf.num_attention_head_channels,
+                                                        channel_last=self.conf.channel_last)
                     h = self_attention(h,
                                        name="attention",
-                                       cond=emb_seq,
-                                       num_heads=self.conf.num_attention_heads,
-                                       num_head_channels=self.conf.num_attention_head_channels,
-                                       channel_last=self.conf.channel_last)
+                                       cond=emb_seq)
                 elif self.conf.attention_type == "cross_attention":
-                    h = cross_attention(h, emb_seq,
+                    cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                          num_head_channels=self.conf.num_attention_head_channels,
+                                                          channel_last=self.conf.channel_last)
+                    h = cross_attention(h,
                                         name="cross_attention",
-                                        num_heads=self.conf.num_attention_heads,
-                                        num_head_channels=self.conf.num_attention_head_channels,
-                                        channel_last=self.conf.channel_last)
+                                        cond=emb_seq)
                 else:
                     raise ValueError(
                         f"'{self.conf.attention_type}' is not supported for attention type.")
@@ -928,22 +926,24 @@ class EfficientUNet(UNet):
             if self.conf.attention_resolutions is not None and res in self.conf.attention_resolutions:
                 h = skip_connection(h, hs_down.pop())
 
-                if self.conf.attention_type == "self_attention":
-                    h = self_attention(h,
-                                       name="attention",
-                                       cond=emb_seq,
-                                       num_heads=self.conf.num_attention_heads,
-                                       num_head_channels=self.conf.num_attention_head_channels,
-                                       channel_last=self.conf.channel_last)
-                elif self.conf.attention_type == "cross_attention":
-                    h = cross_attention(h, emb_seq,
-                                        name="cross_attention",
-                                        num_heads=self.conf.num_attention_heads,
-                                        num_head_channels=self.conf.num_attention_head_channels,
-                                        channel_last=self.conf.channel_last)
-                else:
-                    raise ValueError(
-                        f"'{self.conf.attention_type}' is not supported for attention type.")
+            if self.conf.attention_type == "self_attention":
+                self_attention = SelfAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                    num_head_channels=self.conf.num_attention_head_channels,
+                                                    channel_last=self.conf.channel_last)
+                h = self_attention(h,
+                                   name="attention",
+                                   cond=emb_seq)
+            elif self.conf.attention_type == "cross_attention":
+                cross_attention = CrossAttentionBlock(num_heads=self.conf.num_attention_heads,
+                                                      num_head_channels=self.conf.num_attention_head_channels,
+                                                      channel_last=self.conf.channel_last)
+                h = cross_attention(h,
+                                    name="cross_attention",
+                                    cond=emb_seq)
+            else:
+                raise ValueError(
+                    f"'{self.conf.attention_type}' is not supported for attention type.")
+
         # 4. upsample
         if self.conf.resblock_resample:
             logger.warning(

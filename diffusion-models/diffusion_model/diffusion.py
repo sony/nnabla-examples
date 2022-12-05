@@ -183,11 +183,6 @@ def mean_along_except_batch(x, batch_axis=0):
 class GaussianDiffusion(object):
     """
     An interface for gaussian diffusion process.
-
-    Args:
-        betas (numpy.ndarray): 
-            A 1-D tensor of noise scales at each timestep. 
-            Assume this is created by get_beta_schedule() defined above.
     """
 
     def __init__(self, conf: DiffusionConfig):
@@ -197,18 +192,24 @@ class GaussianDiffusion(object):
         # generate betas from strategy and max timesteps
         betas = get_beta_schedule(conf.beta_strategy, conf.max_timesteps)
         self.beta_strategy = conf.beta_strategy
+
+        # setup timestep to start sampling
+        assert 0 < conf.t_start <= conf.max_timesteps, \
+            f"Invalid t_start. t_start (= {conf.t_start}) must be an integer between [1, {conf.max_timesteps}]."
         self.max_timesteps = conf.max_timesteps
+        self.t_start = conf.t_start
 
         # setup respacing
         self.timestep_map = None
 
-        if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps:
+        if conf.respacing_step > 1 or conf.t_start < conf.max_timesteps - 1:
             # Note: timestep is shifted one step ahead because of 0-indexing (e.g q_sample(x_start, 0) samples x_1 insted of x_0.)
             # According to guided-diffusion, we should always use t = 0 and T - 1.
             # In addition to them, add (T / respacing_step - 2) timesteps.
-            num_use_timesteps = conf.max_timesteps // conf.respacing_step
+            max_timesteps = min(conf.t_start, conf.max_timesteps)
+            num_use_timesteps = max_timesteps // conf.respacing_step
 
-            frac_steps = float(conf.max_timesteps - 1) / \
+            frac_steps = float(max_timesteps - 1) / \
                 (num_use_timesteps - 1)
 
             start = 0
@@ -219,7 +220,7 @@ class GaussianDiffusion(object):
                 cur_idx += frac_steps
 
             assert use_timesteps[0] == 0
-            assert use_timesteps[-1] == conf.max_timesteps - 1
+            assert use_timesteps[-1] == max_timesteps - 1
 
             betas, timestep_map = respace_betas(betas, use_timesteps)
             self.timestep_map = const_var(timestep_map)
@@ -236,13 +237,11 @@ class GaussianDiffusion(object):
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
-        alphas_cumprod_next = np.append(alphas_cumprod[1:], 0.0)
         assert alphas_cumprod_prev.shape == (T, )
 
         self.betas = const_var(betas)
         self.alphas_cumprod = const_var(alphas_cumprod)
         self.alphas_cumprod_prev = const_var(alphas_cumprod_prev)
-        self.alphas_cumprod_next = const_var(alphas_cumprod_next)
 
         # for q(x_t | x{t-1})
         self.sqrt_alphas_cumprod = const_var(np.sqrt(alphas_cumprod))
@@ -714,32 +713,52 @@ class GaussianDiffusion(object):
             noise = noise_like(x_t.shape, noise_function, repeat_noise)
             return mean_pred + sigma * noise, preds.xstart
 
-    def ddim_rev_sample(self, model, x_t, t, *, model_kwargs=None, clip_denoised=True, eta=0.0, channel_last=False):
+    def ddim_rev_sample(self,
+                        model,
+                        x_tm1,
+                        t,
+                        *,
+                        model_kwargs=None,
+                        clip_denoised=True,
+                        eta=0.0,
+                        channel_last=False,
+                        classifier_free_guidance_weight=None,
+                        no_noise=False):
         """
-        sample x_{t+1} from x_{t} by the model using DDIM reverse ODE.
+        sample x_{t} from x_{t-1} by the model using DDIM reverse ODE.
+        Because we design self.betas[t] is a noise scale for x_{t+1} (timestep is shifted 1 step),
+        ddim rev
         """
         assert eta == 0.0, "ReverseODE only for deterministic path"
-        preds = self.p_mean_var(model, x_t, t,
+
+        alpha_bar = self._extract(self.alphas_cumprod, t, x_tm1.shape)
+
+        if no_noise:
+            # Special case for x_0
+            return x_tm1 * sqrt(alpha_bar), None
+
+        # Note: if t == 0, no_noise must be True so that t - 1 >= 0 is always satisfied.
+        # Todo: replace no_noise with a multipliation by zero.
+        preds = self.p_mean_var(model, x_tm1, t - 1,
                                 model_kwargs=model_kwargs,
                                 clip_denoised=clip_denoised,
-                                channel_last=channel_last)
+                                channel_last=channel_last,
+                                classifier_free_guidance_weight=classifier_free_guidance_weight)
 
-        pred_noise = self.predict_noise_from_xstart(x_t, t, preds.xstart)
-        alpha_bar_next = self._extract(self.alphas_cumprod_next, t, x_t.shape)
+        pred_noise = self.predict_noise_from_xstart(x_tm1, t - 1, preds.xstart)
 
-        from layers import sqrt
         with context_scope("float"):
             return (
-                preds.xstart * sqrt(alpha_bar_next)
-                + sqrt(1 - alpha_bar_next) * pred_noise
-            )
+                preds.xstart * sqrt(alpha_bar)
+                + sqrt(1 - alpha_bar) * pred_noise
+            ), None
 
     def sample_loop(self, model, shape, sampler, *,
-                    noise=None,
-                    x_start=None,
+                    x_init=None,
                     model_kwargs=None,
                     dump_interval=-1,
-                    progress=False):
+                    progress=False,
+                    reverse=True):
         """
         Iteratively sample data from model from t=T to t=0.
         T is specified as the length of betas given to __init__().
@@ -749,13 +768,17 @@ class GaussianDiffusion(object):
                 A callable that takes x_t and t and predict noise (and sigma related parameters).
             shape (list like object): A data shape.
             sampler (callable): A function to sample x_{t-1} given x_{t} and t. Typically, self.p_sample or self.ddim_sample.
-            noise (numpy.ndarray or nn.variable): An initial noise for x_T.
-            x_start (nn.Variable): 
-                A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
+            x_init (numpy.ndarray or nn.variable): 
+                An initial (noisy) image.
+                If reverse is True, x_init should be x_T of a noisy image.
+                If reverse is False, x_init should be x_0 of a clean image.
             interval (int): 
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
                 e.g. if interval = 10, the predicted results at {10, 20, 30, ...} will be returned.
             progress (boolean): If True, tqdm will be used to show the sampling progress.
+            reverse (boolean): 
+                If True, reverse sampling process (= generation process) will be performed.
+                If False, forward sampling process (= diffusion process) will be performed.
 
         Returns:
             - x_0 (nn.Variable): the final sampled result of x_0
@@ -764,7 +787,9 @@ class GaussianDiffusion(object):
         """
         # setup timesteps
         T = self.num_timesteps
-        indices = list(range(T))[::-1]
+        indices = list(range(T))
+        if reverse:
+            indices = indices[::-1]
 
         samples = []
         pred_x_starts = []
@@ -781,22 +806,28 @@ class GaussianDiffusion(object):
         self._pre_compute_model_kwargs(model_kwargs)
 
         with nn.auto_forward():
-            if noise is None:
-                noise = F.randn(shape=shape)
-            else:
-                if isinstance(noise, np.ndarray):
-                    noise = nn.Variable.from_numpy_array(noise)
-                else:
-                    assert isinstance(noise, nn.Variable), \
-                        "noise must be an instance of np.ndarray or nn.Variable, or None."
-                assert noise.shape == shape
+            # setup initial image
+            if x_init is None:
+                if not reverse:
+                    raise ValueError(
+                        "x_init must be given for the forward process (reverse=False).")
 
-            if x_start is not None:
-                # SDEdit
-                x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
-                                    noise=noise)
+                # case reverse=True
+                if self.max_timesteps != self.t_start:
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
+
+                # if T == t_start for the reverse process, we can rondamly sample an initial noise.
+                x_init = F.randn(shape=shape)
             else:
-                x_t = noise
+                if isinstance(x_init, np.ndarray):
+                    x_init = nn.Variable.from_numpy_array(x_init)
+                else:
+                    assert isinstance(x_init, nn.Variable), \
+                        "noise must be an instance of np.ndarray or nn.Variable, or None."
+                    x_init.persistent = True
+                assert x_init.shape == shape
+            x_t = x_init
 
             cnt = 0
             for step in indices:
@@ -807,14 +838,15 @@ class GaussianDiffusion(object):
                                             t,
                                             model_kwargs=model_kwargs,
                                             no_noise=step == 0)
+                x_t.persistent = True
 
                 cnt += 1
                 if dump_interval > 0 and cnt % dump_interval == 0:
-                    samples.append((step, x_t.d.copy()))
-                    pred_x_starts.append((step, pred_x_start.d.copy()))
+                    samples.append((step, x_t))
+                    pred_x_starts.append((step, pred_x_start))
 
         assert x_t.shape == shape
-        return x_t.d, samples, pred_x_starts
+        return x_t, samples, pred_x_starts
 
     def p_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
         """
@@ -845,10 +877,24 @@ class GaussianDiffusion(object):
                                     classifier_free_guidance_weight=classifier_free_guidance_weight),
                                 **kwargs)
 
+    def ddim_rev_sample_loop(self, *args, channel_last=False, classifier_free_guidance_weight=None, **kwargs):
+        """
+        Sample latent at t=T by DDIM reverse sampling.
+        """
+
+        return self.sample_loop(*args,
+                                sampler=partial(
+                                    self.ddim_rev_sample,
+                                    eta=0.,
+                                    channel_last=channel_last,
+                                    classifier_free_guidance_weight=classifier_free_guidance_weight),
+                                reverse=False,
+                                **kwargs
+                                )
+
     def plms_sample_loop(self, model, shape, *,
                          channel_last=False,
-                         noise=None,
-                         x_start=None,
+                         x_init=None,
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
@@ -864,7 +910,7 @@ class GaussianDiffusion(object):
             shape (list like object): A data shape.
             channel_last (boolean): If True, the data shape is assumed to represent NHWC.
             noise (collable): A noise generator. If None, F.randn(shape) will be used.
-            x_start (nn.Variable): 
+            x_init (nn.Variable): 
                 A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
             interval (int): 
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
@@ -895,22 +941,23 @@ class GaussianDiffusion(object):
         self._pre_compute_model_kwargs(model_kwargs)
 
         with nn.auto_forward():
-            if noise is None:
-                noise = F.randn(shape=shape)
-            else:
-                if isinstance(noise, np.ndarray):
-                    noise = nn.Variable.from_numpy_array(noise)
-                else:
-                    assert isinstance(noise, nn.Variable), \
-                        "noise must be an instance of np.ndarray or nn.Variable, or None."
-                assert noise.shape == shape
+            # setup initial image
+            if x_init is None:
+                # case reverse=True
+                if self.max_timesteps != self.t_start:
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
 
-            if x_start is not None:
-                # SDEdit
-                x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
-                                    noise=noise)
+                # if T == t_start for the reverse process, we can rondamly sample an initial noise.
+                x_init = F.randn(shape=shape)
             else:
-                x_t = noise
+                if isinstance(x_init, np.ndarray):
+                    x_init = nn.Variable.from_numpy_array(x_init)
+                else:
+                    assert isinstance(x_init, nn.Variable), \
+                        "noise must be an instance of np.ndarray or nn.Variable, or None."
+                assert x_init.shape == shape
+            x_t = x_init
 
             cnt = 0
             old_eps = []
@@ -956,12 +1003,11 @@ class GaussianDiffusion(object):
                     pred_x_starts.append((step, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
-        return x_t.d.copy(), samples, pred_x_starts
+        return x_t, samples, pred_x_starts
 
     def dpm2_sample_loop(self, model, shape, *,
                          channel_last=False,
-                         noise=None,
-                         x_start=None,
+                         x_init,
                          model_kwargs=None,
                          dump_interval=-1,
                          progress=False,
@@ -977,7 +1023,7 @@ class GaussianDiffusion(object):
             shape (list like object): A data shape.
             channel_last (boolean): If True, the data shape is assumed to represent NHWC.
             noise (collable): A noise generator. If None, F.randn(shape) will be used.
-            x_start (nn.Variable): 
+            x_init (nn.Variable): 
                 A reference image for x_0. If given, the first noisy image is created by q_sample(x_start, 0, noise=noise). 
             interval (int): 
                 If > 0, all intermediate results at every `interval` step will be returned as a list.
@@ -1055,9 +1101,9 @@ class GaussianDiffusion(object):
         T = self.num_timesteps
         lam0 = _cont_lambda_t(1e-3)
         if self.beta_strategy == "cosine":
-            lam1 = _cont_lambda_t(0.9946)
+            lam1 = _cont_lambda_t(0.9946 * self.t_start / self.max_timesteps)
         else:
-            lam1 = _cont_lambda_t(1.0)
+            lam1 = _cont_lambda_t(1.0 * self.t_start / self.max_timesteps)
         lam_cont_list = np.linspace(lam1, lam0, T+1, dtype=np.float64).tolist()
         t_cont_list = [_cont_t_lambda(lam_cont_list[i]) for i in range(T+1)]
         t_cont_next_list = t_cont_list[1:]
@@ -1074,23 +1120,22 @@ class GaussianDiffusion(object):
         self._pre_compute_model_kwargs(model_kwargs)
 
         with nn.auto_forward():
-            if noise is None:
-                noise = F.randn(shape=shape)
-            else:
-                if isinstance(noise, np.ndarray):
-                    noise = nn.Variable.from_numpy_array(noise)
-                else:
-                    assert isinstance(noise, nn.Variable), \
-                        "noise must be an instance of np.ndarray or nn.Variable, or None."
-                assert noise.shape == shape
+            if x_init is None:
+                # case reverse=True
+                if self.max_timesteps != self.t_start:
+                    raise ValueError(
+                        f"x_init must be given when the case with max_timesteps ({self.max_timesteps}) != t_start ({self.t_start})")
 
-            if x_start is not None:
-                # SDEdit
-                # x_t = self.q_sample(x_start, F.constant(T - 1, shape=(shape[0], )),
-                #                     noise=noise
-                raise NotImplementedError()
+                # if T == t_start for the reverse process, we can rondamly sample an initial noise.
+                x_init = F.randn(shape=shape)
             else:
-                x_t = noise
+                if isinstance(x_init, np.ndarray):
+                    x_init = nn.Variable.from_numpy_array(x_init)
+                else:
+                    assert isinstance(x_init, nn.Variable), \
+                        "noise must be an instance of np.ndarray or nn.Variable, or None."
+                assert x_init.shape == shape
+            x_t = x_init
 
             if model_kwargs is None:
                 model_kwargs = {}
@@ -1136,4 +1181,4 @@ class GaussianDiffusion(object):
                     pred_x_starts.append((t_cont, pred_x_start.d.copy()))
 
         assert x_t.shape == shape
-        return x_t.d.copy(), samples, pred_x_starts
+        return x_t, samples, pred_x_starts

@@ -26,6 +26,7 @@ from neu.checkpoint_util import load_checkpoint, save_checkpoint
 from neu.misc import get_current_time, init_nnabla
 from neu.mixed_precision import MixedPrecisionManager
 from neu.reporter import KVReporter, save_tiled_image
+from neu.solvers import PackedParameterSolver
 from nnabla.logger import logger
 from omegaconf import OmegaConf
 
@@ -107,7 +108,7 @@ def get_output_dir_name(org, dataset):
     return os.path.join(org, f"{get_current_time()}_{dataset}")
 
 
-def augmentation(x, channel_last, random_flip=True):
+def augmentation(x, channel_last, random_flip):
     import nnabla.functions as F
     aug = x
 
@@ -155,7 +156,8 @@ def main(conf: config.TrainScriptConfig):
     # setup input image
     # assume data_iterator returns [-1, 1]
     x = nn.Variable((conf.train.batch_size, ) + conf.model.image_shape)
-    x_aug = augmentation(x, conf.model.channel_last, random_flip=True)
+    x_aug = augmentation(x, conf.model.channel_last,
+                         random_flip=conf.dataset.random_flip)
 
     # create low-resolution image
     model_kwargs = {}
@@ -198,6 +200,11 @@ def main(conf: config.TrainScriptConfig):
     solver = S.Adam()
     solver.set_parameters(nn.get_parameters())
 
+    # Packing parameters to make solver faster
+    solver: PackedParameterSolver \
+        = PackedParameterSolver(solver, use_ema=True)
+
+    # learning rate scheduler
     lr_scheduler = get_lr_scheduler(conf.train)
 
     # for ema update
@@ -223,6 +230,7 @@ def main(conf: config.TrainScriptConfig):
                                               solvers, is_master=comm.rank == 0)
         conf.train.output_dir = output_dir
 
+    # setup output directory for generated images during training
     image_dir = os.path.join(conf.train.output_dir, "image")
     if comm.rank == 0:
         os.makedirs(image_dir, exist_ok=True)
@@ -268,6 +276,7 @@ def main(conf: config.TrainScriptConfig):
 
     comm.barrier()
 
+    # setup mixed precision training if needed
     mpm = MixedPrecisionManager(
         use_fp16=conf.model.use_mixed_precision,
         initial_log_loss_scale=10)
@@ -316,11 +325,11 @@ def main(conf: config.TrainScriptConfig):
                     (data[data_idx], label[data_idx], text_emb[data_idx]))
 
             loss_dict.loss.forward(clear_no_need_grad=True)
-            is_overflow = mpm.backward(loss_dict.loss, solver,
-                                       clear_buffer=True)
+            mpm.backward(loss_dict.loss,
+                         clear_buffer=True)
 
             # Retry from the first accumulation step if overflow happens.
-            if is_overflow:
+            if mpm.is_grad_overflow(solver):
                 retry_cnt += 1
 
                 # Raise if retry happens too many times.
@@ -356,25 +365,20 @@ def main(conf: config.TrainScriptConfig):
         assert accum_cnt == conf.train.accum
 
         # update
-        is_overflow = mpm.update(solver, comm, clip_grad=conf.train.clip_grad)
-
-        # check all processes not to have overflow.
-        overflow_cnt = nn.NdArray.from_numpy_array(
-            np.array([int(is_overflow)]))
-        comm.all_reduce([overflow_cnt], division=False, inplace=True)
-
-        if overflow_cnt.data > 0.5:
-            # If even a single process has overflow, stop update and retry fwd/bwd again.
-
-            # Basically overflow_cnt should be 0 or comm.n_procs
-            # since allreduce over grads of all parmas has been performed above.
-            assert comm.n_procs - int(overflow_cnt.data) < 1e-5, \
-                "Some but not all nodes successfully update params without overflow. This is unintentional."
-
-            continue
+        mpm.scale_grad(solver)
+        if isinstance(solver, PackedParameterSolver):
+            comm.all_reduce([x.grad for x in solver.packed_params],
+                            division=True, inplace=True)
+        else:
+            comm.all_reduce(
+                [x.grad for x in solver.get_parameters().values()], division=True, inplace=True)
+        mpm.update(solver, clip_grad=conf.train.clip_grad)
 
         # update ema params
-        ema_op.forward(clear_no_need_grad=True)
+        if isinstance(solver, PackedParameterSolver) and solver.use_ema:
+            solver.updata_ema_params(decay=0.9999)
+        else:
+            ema_op.forward(clear_no_need_grad=True)
 
         # grad norm
         if conf.train.dump_grad_norm:
@@ -396,13 +400,15 @@ def main(conf: config.TrainScriptConfig):
                 piter.set_description(desc=desc)
             else:
                 reporter.dump(file=sys.stdout if comm.rank ==
-                              0 else None, reset=True, sync=True)
+                              0 else None, reset=True, sync=False)  # True
 
             reporter.flush_monitor(i)
 
         if i % conf.train.save_interval == 0:
             if comm.rank == 0:
-                save_checkpoint(conf.train.output_dir, i, solvers, n_keeps=3)
+                save_checkpoint(conf.train.output_dir, i, solvers,
+                                n_keeps=3,
+                                split_h5_per_solver=True)
 
             comm.barrier()
 

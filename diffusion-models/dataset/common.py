@@ -28,25 +28,57 @@ from nnabla.utils.image_utils import imread, imresize
 from config import DatasetConfig
 from neu.comm import CommunicatorWrapper
 
+# set pillow as a backend so that we can use box sampling
+from nnabla.utils.image_utils import backend_manager
+backend_manager.set_backend("PilBackend")
+
+
+def _get_img_hw(img, channel_first):
+    return img.shape[-2:] if channel_first else img.shape[:-1]
+
+
+def _resize_img(img: np.ndarray,
+                size: int,
+                channel_first=True,
+                fix_aspect_ratio=True):
+    # following guided-diffusion, apply box sampling multiple times -> bicubic
+
+    # apply box sampling loop while the size of the shorter side is bigger than 2*size
+    while True:
+        h, w = _get_img_hw(img, channel_first)
+
+        if min(h, w) < 2 * size:
+            break
+
+        img = imresize(img, size=(w // 2, h // 2), interpolate="box")
+
+    # apply bicubic sampling
+    if fix_aspect_ratio:
+        scale = size / min(h, w)
+        oh = max(size, int(np.ceil(h * scale)))
+        ow = max(size, int(np.ceil(w * scale)))
+    else:
+        oh = size
+        ow = size
+
+    img = imresize(img, size=(ow, oh), interpolate="bicubic")
+
+    return img
+
 
 def resize_center_crop(img, size, channel_first=True):
     assert isinstance(size, int)
     assert len(img.shape) == 3
-    h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
-    s = size / min(h1, w1)
 
-    # todo: box -> bicubic may improve downsammple quality?
-    rsz = imresize(img,
-                   (max(size, int(round(s * w1))), max(size, int(round(s * h1)))),
-                   channel_first=channel_first)
+    rsz = _resize_img(img, size, channel_first, fix_aspect_ratio=True)
 
-    h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    h2, w2 = _get_img_hw(rsz, channel_first)
     h_off = (h2 - size) // 2
     w_off = (w2 - size) // 2
     rsz = rsz[:, h_off:h_off+size, w_off:w_off +
               size] if channel_first else rsz[h_off:h_off+size, w_off:w_off+size]
 
-    h3, w3 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    h3, w3 = _get_img_hw(rsz, channel_first)
     assert h3 == size and w3 == size
 
     return rsz
@@ -55,25 +87,21 @@ def resize_center_crop(img, size, channel_first=True):
 def resize_random_crop(img, size, channel_first=True, max_crop_scale=1.25):
     assert isinstance(size, int)
     assert len(img.shape) == 3
-    h1, w1 = img.shape[-2:] if channel_first else img.shape[:-1]
 
     assert max_crop_scale >= 1.0
     pre_crop_size = np.random.randint(
         size, math.ceil(size * max_crop_scale) + 1)
-    resize_scale = pre_crop_size / min(h1, w1)
 
-    # todo: box -> bicubic may improve downsammple quality?
-    h_rsz = max(pre_crop_size, int(round(resize_scale * h1)))
-    w_rsz = max(pre_crop_size, int(round(resize_scale * w1)))
-    rsz = imresize(img, (w_rsz, h_rsz), channel_first=channel_first)
+    rsz = _resize_img(img, pre_crop_size,
+                      channel_first=channel_first, fix_aspect_ratio=True)
 
-    h2, w2 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    h2, w2 = _get_img_hw(rsz, channel_first)
     h_off = np.random.randint(h2 - size + 1)
     w_off = np.random.randint(w2 - size + 1)
     rsz = rsz[:, h_off:h_off+size, w_off:w_off +
               size] if channel_first else rsz[h_off:h_off+size, w_off:w_off+size]
 
-    h3, w3 = rsz.shape[-2:] if channel_first else rsz.shape[:-1]
+    h3, w3 = _get_img_hw(rsz, channel_first)
     assert h3 == size and w3 == size
 
     return rsz
@@ -147,10 +175,11 @@ class SimpleDatasource(DataSource):
         if self.on_memory and self.images[image_idx] is not None:
             return (self.images[image_idx], label)
 
+        img = imread(self.img_paths[image_idx],
+                     channel_first=not self.channel_last, num_channels=3)
+
         if self.fix_aspect_ratio:
             # perform resize and crop to keep original aspect ratio.
-            img = imread(self.img_paths[image_idx],
-                         channel_first=not self.channel_last, num_channels=3)
 
             if self.random_crop:
                 # crop randomly so that cropped size equals to self.im_size
@@ -162,8 +191,8 @@ class SimpleDatasource(DataSource):
                     img, self.im_size[0], channel_first=not self.channel_last)
         else:
             # Breaking original aspect ratio, forcely resize image to self.im_size.
-            img = imread(
-                self.img_paths[image_idx], channel_first=not self.channel_last, size=self.im_size, num_channels=3)
+            img = _resize_img(
+                img, self.im_size[0], channel_first=not self.channel_last, fix_aspect_ratio=False)
 
         # rescale pixel intensity to [-1, 1]
         img = img / 127.5 - 1

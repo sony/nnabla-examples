@@ -24,7 +24,7 @@ global prev_save_paths
 prev_save_paths = queue.Queue()
 
 
-def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
+def save_checkpoint(path, current_iter, solvers, n_keeps=-1, split_h5_per_solver=False):
     """Saves the checkpoint file which contains the params and its state info.
 
         Args:
@@ -39,6 +39,8 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
             n_keeps: Number of latest checkpoints to keep. If -1, all checkpoints are kept.
                      Note that we assume save_checkpoint is called from a single line in your script.
                      When you have to call this from multiple lines, n_keeps must be -1 (you have to disable n_keeps).
+            split_h5_per_solver: If True, save several h5 files for parameters.
+                                 Each h5 file contains subset of parameters that each solver has.
 
         Examples:
             # Create computation graph with parameters.
@@ -95,6 +97,9 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
     if isinstance(solvers, nn.solver.Solver):
         solvers = {"": solvers}
 
+    assert isinstance(solvers, dict), \
+        "`solvers` must be either Solver object or dict of { `name`: Solver }."
+
     checkpoint_info = dict()
     save_paths = []
 
@@ -108,7 +113,8 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
         states_path = os.path.join(path, states_fname)
         solver_obj.save_states(states_path)
         save_paths.append(states_path)
-        partial_info["states_path"] = states_path
+        # save relative path to support moving a saved directory
+        partial_info["states_path"] = states_fname
 
         # save registered parameters' name. (just in case)
         params_names = [k for k in solver_obj.get_parameters().keys()]
@@ -118,16 +124,32 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
         num_update = getattr(solver_obj.get_states()[params_names[0]], "t")
         partial_info["num_update"] = num_update
 
+        # save parameters per solver
+        if split_h5_per_solver:
+            solver_params_fname = f"{solvername}_params_{current_iter}.h5"
+            solver_params_path = os.path.join(path, solver_params_fname)
+            nn.save_parameters(path=solver_params_path,
+                               params=solver_obj.get_parameters())
+            save_paths.append(solver_params_path)
+
+            # save relative path so to support moving a saved directory
+            partial_info["params_path"] = solver_params_fname
+
         checkpoint_info[solvername] = partial_info
 
     # save parameters.
-    params_fname = 'params_{}.h5'.format(current_iter)
-    params_path = os.path.join(path, params_fname)
-    nn.parameter.save_parameters(params_path)
-    save_paths.append(params_path)
-    checkpoint_info["params_path"] = params_path
+    if not split_h5_per_solver:
+        params_fname = 'params_{}.h5'.format(current_iter)
+        params_path = os.path.join(path, params_fname)
+        nn.parameter.save_parameters(params_path)
+        save_paths.append(params_path)
+
+        # save relative path so to support moving a saved directory
+        checkpoint_info["params_path"] = params_fname
+
     checkpoint_info["current_iter"] = current_iter
 
+    # save checkpoint
     checkpoint_fname = 'checkpoint_{}.json'.format(current_iter)
     filename = os.path.join(path, checkpoint_fname)
 
@@ -147,6 +169,23 @@ def save_checkpoint(path, current_iter, solvers, n_keeps=-1):
                 os.remove(path)
 
     return
+
+
+def _get_full_path(path, base_path):
+    # for backward compatibility
+
+    # case1: path is absolute
+    if os.path.exists(path):
+        return path
+
+    # case2: path is reative based on base_path
+    path1 = os.path.join(base_path, path)
+    if os.path.exists(path1):
+        return path1
+
+    # otherwise: raise
+    raise ValueError(
+        f"Given path doesn't exist. (path: {path}, base_path: {base_path})")
 
 
 def load_checkpoint(path, solvers):
@@ -208,21 +247,25 @@ def load_checkpoint(path, solvers):
 
     """
 
-    assert os.path.isfile(path), "checkpoint file not found"
-
-    with open(path, 'r') as f:
-        checkpoint_info = json.load(f)
-
     if isinstance(solvers, nn.solver.Solver):
         solvers = {"": solvers}
+    assert isinstance(solvers, dict), \
+        "`solvers` must be either Solver object or dict of { `name`: Solver }."
 
+    assert os.path.isfile(path), "checkpoint file not found"
+    base_path = os.path.dirname(path)
+
+    # load checkpoint
+    with open(path, 'r') as f:
+        checkpoint_info = json.load(f)
     logger.info("Checkpoint load (.json): {}".format(path))
 
     # load parameters (stored in global).
-    params_path = checkpoint_info["params_path"]
-    assert os.path.isfile(params_path), "parameters file not found."
+    if "params_path" in checkpoint_info:
+        params_path = _get_full_path(checkpoint_info["params_path"], base_path)
+        assert os.path.isfile(params_path), "parameters file not found."
 
-    nn.parameter.load_parameters(params_path)
+        nn.parameter.load_parameters(params_path)
 
     for solvername, solver_obj in solvers.items():
         partial_info = checkpoint_info[solvername]
@@ -230,11 +273,23 @@ def load_checkpoint(path, solvers):
             logger.warning("Detected parameters do not match.")
 
         # load solver states.
-        states_path = partial_info["states_path"]
+        states_path = _get_full_path(partial_info["states_path"], base_path)
         assert os.path.isfile(states_path), "states file not found."
 
         # set solver states.
-        solver_obj.load_states(states_path)
+        if solvername == "ema":
+            try:
+                solver_obj.load_states(states_path)
+            except:
+                logger.info("load state for ema is failed.")
+        else:
+            solver_obj.load_states(states_path)
+
+        # load parameters belonging to this solver if exists
+        if "params_path" in partial_info:
+            solver_params_path = _get_full_path(
+                partial_info["params_path"], base_path)
+            nn.load_parameters(solver_params_path)
 
     # get current iteration. note that this might differ from the numbers of update.
     current_iter = checkpoint_info["current_iter"]

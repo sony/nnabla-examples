@@ -21,6 +21,13 @@ import nnabla.initializer as I
 
 from .utils import Shape4D, force_float
 
+recompute = False
+
+
+def set_recompute(flag):
+    global recompute
+    recompute = flag
+
 
 def pad_for_faster_conv(x, *, channel_last=False):
     """
@@ -64,13 +71,15 @@ def sinusoidal_embedding(timesteps, embedding_dim):
     return emb
 
 
-def nonlinearity(x, *, recompute=False):
+def nonlinearity(x):
+    global recompute
     with nn.recompute(recompute):
         return F.swish(x)
 
 
 @force_float
-def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
+def group_norm(x, name, *, channel_axis=1, batch_axis=0):
+    global recompute
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.group_normalization(x,
                                       num_groups=32,
@@ -80,7 +89,8 @@ def group_norm(x, name, *, channel_axis=1, batch_axis=0, recompute=False):
 
 
 @force_float
-def layer_norm(x, name, *, batch_axis=0, recompute=False):
+def layer_norm(x, name, *, batch_axis=0):
+    global recompute
     with nn.parameter_scope(name), nn.recompute(recompute):
         return PF.layer_normalization(x,
                                       # todo: use more stable eps for float16?

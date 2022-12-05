@@ -427,9 +427,7 @@ class KVReporter(object):
                     try:
                         synced_val *= synced_cnt
                         self.comm.all_reduce(
-                            [synced_val], division=False, inplace=True)
-                        self.comm.all_reduce(
-                            [synced_cnt], division=False, inplace=True)
+                            [synced_val, synced_cnt], division=False, inplace=True)
                         synced_val /= synced_cnt
                     except:
                         raise ValueError(

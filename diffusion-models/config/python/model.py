@@ -98,6 +98,7 @@ class ModelConfig:
     channel_last: bool = True
     conv_resample: bool = True
     use_mixed_precision: bool = True
+    use_recompute: bool = False
 
     # attention
     attention_type: str = "self_attention"

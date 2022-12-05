@@ -1,0 +1,10 @@
+defaults:
+  - adm_64to256_class_cond # todo: efficient-unet after it works
+  - _self_
+
+class_cond: False
+text_cond: True
+
+attention_type: self_attention
+
+# use_recompute: True

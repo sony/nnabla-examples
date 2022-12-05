@@ -15,7 +15,7 @@
 import hydra
 
 from config import InferenceServerScriptConfig
-from ui import create_demo
+import ui
 
 from neu.misc import init_nnabla
 
@@ -30,7 +30,7 @@ def main(conf: InferenceServerScriptConfig):
                 type_config="float")
 
     # create demo
-    demo = create_demo(conf.server)
+    demo = ui.create_demo(conf.server)
 
     # launch server
     demo.queue(concurrency_count=1)
