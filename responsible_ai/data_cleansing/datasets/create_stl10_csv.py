@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import os
 import numpy as np
 from contextlib import contextmanager
@@ -26,6 +27,9 @@ from nnabla.utils.data_source_loader import download
 import tarfile
 import argparse
 from .utils import split_data_into_train_val, save_list_to_csv, get_filename_to_download, ensure_dir
+
+sys.path.append("../../utils/")
+from neu.safe_extract import safe_extract
 
 
 class STL10DataSource(DataSource):
@@ -46,24 +50,6 @@ class STL10DataSource(DataSource):
         print(r.name)
         binary_dir = os.path.join(output_dir, "stl10_binary")
         with tarfile.open(fileobj=r, mode="r:gz") as tar:
-            def is_within_directory(directory, target):
-
-                abs_directory = os.path.abspath(directory)
-                abs_target = os.path.abspath(target)
-
-                prefix = os.path.commonprefix([abs_directory, abs_target])
-
-                return prefix == abs_directory
-
-            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-
-                for member in tar.getmembers():
-                    member_path = os.path.join(path, member.name)
-                    if not is_within_directory(path, member_path):
-                        raise Exception("Attempted Path Traversal in Tar File")
-
-                tar.extractall(path, members, numeric_owner=numeric_owner)
-
             safe_extract(tar, path=output_dir)
 
         for member in os.listdir(binary_dir):

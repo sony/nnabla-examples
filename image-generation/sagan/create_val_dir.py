@@ -15,10 +15,14 @@
 
 
 import os
+import sys
 import tarfile
 import argparse
 import tqdm
 import shutil
+
+sys.path.append("../../utils/")
+from neu.safe_extract import safe_extract
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -32,25 +36,6 @@ dst_dir = args.outdir
 
 with tarfile.open(source_tar_file) as tf:
     v_tmp_dir = dst_dir + '/' + 'tmpdir'
-
-    def is_within_directory(directory, target):
-
-        abs_directory = os.path.abspath(directory)
-        abs_target = os.path.abspath(target)
-
-        prefix = os.path.commonprefix([abs_directory, abs_target])
-
-        return prefix == abs_directory
-
-    def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-
-        for member in tar.getmembers():
-            member_path = os.path.join(path, member.name)
-            if not is_within_directory(path, member_path):
-                raise Exception("Attempted Path Traversal in Tar File")
-
-        tar.extractall(path, members, numeric_owner=numeric_owner)
-
     safe_extract(tf, v_tmp_dir)
 with open(os.path.join(os.path.dirname(__file__), "category_list.txt")) as f:
     categories = f.readlines()

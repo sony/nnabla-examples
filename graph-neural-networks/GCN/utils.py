@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import numpy as np
 import networkx as nx
 import pandas as pd
@@ -19,6 +20,9 @@ import os
 import tarfile
 from urllib.request import urlopen
 from sklearn.preprocessing import LabelEncoder
+
+sys.path.append("../../utils/")
+from neu.safe_extract import safe_extract
 
 CORA_URL = "https://linqs-data.soe.ucsc.edu/public/lbc/cora.tgz"
 
@@ -38,25 +42,7 @@ def download_cora(url=CORA_URL):
     if not os.path.exists('./cora'):
         print('Extracting cora dataset...')
         with tarfile.open('./cora.tgz', 'r') as f:
-            def is_within_directory(directory, target):
-
-                abs_directory = os.path.abspath(directory)
-                abs_target = os.path.abspath(target)
-
-                prefix = os.path.commonprefix([abs_directory, abs_target])
-
-                return prefix == abs_directory
-
-            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-
-                for member in tar.getmembers():
-                    member_path = os.path.join(path, member.name)
-                    if not is_within_directory(path, member_path):
-                        raise Exception("Attempted Path Traversal in Tar File")
-
-                tar.extractall(path, members, numeric_owner=numeric_owner)
-
-            safe_extract(f, "./")
+            safe_extract(f, './')
     else:
         print('Cora dataset is already extracted.')
 
