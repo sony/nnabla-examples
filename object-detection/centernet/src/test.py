@@ -95,7 +95,7 @@ def test(opt):
 
     if os.path.isdir(opt.checkpoint_dir) and os.path.exists(opt.checkpoint_dir):
         dir_path = opt.checkpoint_dir
-        checkpoints_to_run = recursive_glob(dir_path, "params.h5")
+        checkpoints_to_run = recursive_glob(dir_path, "params*.h5")
         monitor = Monitor(dir_path)
         monitor_map = MonitorSeries(
             "Val mAP", monitor, interval=1, verbose=False)
