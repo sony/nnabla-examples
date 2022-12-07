@@ -183,8 +183,7 @@ class Trainer(object):
                     m_off_loss += off_loss.d.item() / self.iterations_per_epoch
 
                     pbar_text = (
-                        f"[Train][exp_id: {self.opt.exp_id}, "
-                        f"epoch:{epoch}/{self.opt.num_epochs}||"
+                        f"[Train] epoch:{epoch}/{self.opt.num_epochs}||"
                         f"loss:{total_loss.d.item():8.4f}, "
                         f"hm_loss:{hm_loss.d.item():8.4f}, "
                         f"wh_loss:{wh_loss.d.item():8.4f}, "
@@ -250,8 +249,7 @@ class Trainer(object):
             off_loss += loss['off_loss'].d.item()
 
             pbar_text = (
-                f"[Validation][exp_id: {self.opt.exp_id}, "
-                f"epoch:{epoch}/{self.opt.num_epochs}||"
+                f"[Validation] epoch:{epoch}/{self.opt.num_epochs}||"
                 f"loss:{loss['loss'].d.item():8.4f}, "
                 f"hm_loss:{loss['hm_loss'].d.item():8.4f}, "
                 f"wh_loss:{loss['wh_loss'].d.item():8.4f}, "

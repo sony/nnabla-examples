@@ -37,7 +37,6 @@ class opts(object):
                                  help='ctdet')
         self.parser.add_argument('--dataset', default='coco',
                                  help='coco | pascal')
-        self.parser.add_argument('--exp_id', default='default')
         self.parser.add_argument('--debug', type=int, default=0,
                                  help='level of visualization.'
                                       '1: only show the final detection results'

@@ -148,8 +148,8 @@ def main(opt):
             trainer.evaluate(val_loader, epoch)
             if not opt.disable_val_calc_map:
                 num_iters = val_loader.size
-                pbar = trange(num_iters, desc="[Test][exp_id:{} epoch:{}/{}]".format(
-                    opt.exp_id, epoch, opt.num_epochs), disable=comm.rank > 0)
+                pbar = trange(num_iters, desc="[Test][epoch:{}/{}]".format(
+                    epoch, opt.num_epochs), disable=comm.rank > 0)
                 if comm.rank == 0:
                     results = {}
                     for ind in pbar:
