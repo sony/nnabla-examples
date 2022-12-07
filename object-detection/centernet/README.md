@@ -50,10 +50,12 @@ pip install -r requirements.txt
 You can perform object detection by CenterNet with a pre-trained model as following.
 
 ```bash
-python src/demo.py ctdet --dataset <coco or pascal> --arch <resnet or dlav0> --num_layers <number of layers> --checkpoint <path to *.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
+python src/demo.py ctdet --config_file <config file> --checkpoint <path to params*.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
 ```
 
-The argument `--checkpoint` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that ```dataset```,  ```arch``` and  ```num_layers``` parameters must match with loaded weights.
+The argument `--config_file` will load the network architecture and dataset settings from the YAML file. Check `cfg/*.yaml` files for more details.
+
+The argument `--checkpoint` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that the parameters in the configuration file set by `--config_file` must match with loaded weights.
 
 Set the ```debug``` parameter controls the outputs from the detector:
  * 0 for no output
@@ -151,13 +153,13 @@ mpirun -n 4 python src/main.py ctdet \
 You can use the ```test.py``` script for AP/mAP validation:
 
 ```bash
-python src/test.py ctdet --dataset <coco or pascal> --data_dir <coco or pascal root folder> --arch <resnet or dlav0> --num_layers <number layers> --checkpoint <path to checkpoint file> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint <path to params*.h5 file> --gpus <gpu to use>
 ```
 
 You can also recalculate the AP .txt files for a series using ```test.py```:
 
 ```bash
-python src/test.py ctdet --dataset <coco or pascal> --data_dir <coco or pascal root folder> --arch <resnet or dlav0> --num_layers <number layers> --checkpoint_dir <root folder of checkpoints> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint_dir <root folder of checkpoints> --gpus <gpu to use>
 ```
 
 ## Pretrained weights and benchmarks
@@ -189,11 +191,11 @@ The evaluation scripts from the official datasets is used to calculate AP/mAP.
 
 ## Export nnp file
 
-`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `--save_dir` or `exp/ctdet_{dataset}_{arch}_{num_layers}_{timestamp}` by default.
+`src/save_nnp.py` provides the way to export nnp file. The *.nnp output will be saved in `--save_dir` or `exp/ctdet_{dataset}_{arch}_{num_layers}_{timestamp}` by default.
 
 ```bash
-# For example, to export DLAv034 nnp file, use the following command.
-python src/save_nnp.py ctdet --dataset <coco or pascal> --arch dlav0 --num_layers 34
+# For example, to export DLAv034 nnp file for COCO dataset, use the following command.
+python src/save_nnp.py ctdet --config_file cfg/dlav0_34_coco_fp.yaml
 ```
 
 Please run `python src/save_nnp.py -h` to see which network is supported.

@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import glob
 from datasets.dataset.pascal_config import PascalVOCDefaultParams
 from datasets.dataset.coco_config import COCODefaultParams
 
@@ -93,8 +94,9 @@ class opts(object):
                                  help='input width. -1 for default from dataset.')
 
         # train
+        config_file_list = glob.glob(os.path.join(os.path.dirname(__file__), '..', '..', 'cfg', '*.yaml'))
         self.parser.add_argument('--config_file', type=str,
-                                 help='YAML file for training/inference config')
+                                 help=f'YAML file for training/inference config. eg. {config_file_list}')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
                                  help='weight decay parameter.')
         self.parser.add_argument('--checkpoint', type=str, default='',
