@@ -14,14 +14,13 @@
 
 
 from typing import Any, Union, List
-
+from io import BytesIO
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
 import nnabla as nn
 
-from .model import build_model
 from .simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 
@@ -37,6 +36,7 @@ __all__ = ["tokenize",
            "encode_image",
            "preprocess",
            "logits",
+           'CLIP',
            ]
 _tokenizer = _Tokenizer()
 
@@ -77,8 +77,6 @@ def load(name, jit=False, download_root=None):
     grid_size = round(
         (params["visual/positional_embedding"].shape[0] - 1) ** 0.5)
     image_resolution = vision_patch_size * grid_size
-
-    return build_model()
 
 
 def preprocess(image):
@@ -176,3 +174,51 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
         result[i, :len(tokens)] = np.array(tokens)
 
     return result
+
+
+class CLIP(nn.Module):
+    def __init__(self, model_path=None):
+        if model_path is None:
+            model_path = 'data/ViT-L-14.h5'
+        load(model_path)
+
+    def encode_image(self, image: nn.Variable) -> nn.Variable:
+        assert image.ndim == 4 and image.shape[
+            1] == 3, f'Image shape must be (N, C, H, W). Given {image.shape}'
+        return encode_image(image)
+
+    def encode_text(self, text: nn.Variable) -> nn.Variable:
+        assert text.ndim == 2, 'Text must be (#texts, #tokens)'
+        return encode_text(text)
+
+    def probabilities(self, image_features: nn.Variable, text_features: nn.Variable) -> nn.Variable:
+        import nnabla.functions as F
+        from .model import cosine_similarity
+        logits_per_image = cosine_similarity(image_features, text_features)
+        probs = F.softmax(logits_per_image, axis=-1)
+        return probs
+
+    def __call__(self, image: nn.Variable, text: nn.Variable) -> nn.Variable:
+        image_features = self.encode_image(image)
+        text_features = self.encode_text(text)
+        probs = self.probabilities(image_features, text_features)
+        return probs
+
+    def preprocess_image(self, image_path: Union[str, BytesIO]) -> nn.Variable:
+        from PIL import Image
+        img = Image.open(image_path)
+        img = preprocess(img)
+        img = nn.Variable.from_numpy_array(img[None])
+        return img
+
+    def preprocess_texts(self, texts: List[str]) -> nn.Variable:
+        tokens = tokenize(texts)
+        tokens = nn.Variable.from_numpy_array(tokens)
+        return tokens
+
+    def run(self, image_path: Union[str, BytesIO], texts: List[str]) -> np.ndarray:
+        img = self.preprocess_image(image_path)
+        tokens = self.preprocess_texts(texts)
+        with nn.auto_forward(), nn.no_grad():
+            probs = self(img, tokens)
+        return probs.data.get_data('r')[0]

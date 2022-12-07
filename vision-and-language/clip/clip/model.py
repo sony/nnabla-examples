@@ -321,13 +321,24 @@ def logits(image, text):
     return logits_per_image, logits_per_text
 
 
-class CLIP():
-    def __init__(self) -> None:
-        self.text_enc = transformer
+def cosine_similarity(image_features: nn.Variable, text_features: nn.Variable) -> nn.Variable:
+    # normalized features
+    image_features = image_features / \
+        F.norm(image_features, axis=1, keepdims=True)
+    text_features = text_features / \
+        F.norm(text_features, axis=1, keepdims=True)
 
-    def encode(self, x):
-        t_e = self.text_enc(x)
+    # cosine similarity as logits
+    logit_scale = nn.parameter.get_parameter_or_create(
+        name='logit_scale', shape=())
+    logit_scale = F.exp(logit_scale)
 
+    image_features = image_features.reshape(
+        (1, image_features.shape[0], image_features.shape[1]))
+    text_features = text_features.reshape(
+        (1, text_features.shape[0], text_features.shape[1]))
 
-def build_model():
-    return encode_text
+    per_image = F.batch_matmul(image_features, text_features, transpose_b=True).reshape(
+        (image_features.shape[0], -1))
+    logits_per_image = logit_scale.reshape((1, 1)) * per_image
+    return logits_per_image
