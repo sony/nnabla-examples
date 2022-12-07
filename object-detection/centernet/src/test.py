@@ -103,10 +103,9 @@ def test(opt):
         for cur_file in checkpoints_to_run:
             opt.checkpoint = cur_file
             mAP = test_cur_checkpoint(opt)
-            folder_name = os.path.basename(os.path.dirname(cur_file))
-            # The folder name format is defined in trains/ctdet.py.
-            # Format: file_name = os.path.join(path, "epoch_" + str(epoch).zfill(3))
-            epoch_num = int(folder_name.replace("epoch_", ""))
+            # Format: cur_file = directory_name + f"params_{epoch_num}.h5"
+            filename, extension = os.path.splitext(os.path.basename(cur_file))
+            epoch_num = int(filename.replace("params_", ""))
             monitor_map.add(epoch_num, mAP)
 
     else:
