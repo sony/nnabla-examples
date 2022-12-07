@@ -38,6 +38,13 @@ We have prepared interactive demos, where you can play around without having to 
 | [StarGAN](https://arxiv.org/abs/1711.09020) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/interactive-demos/stargan.ipynb) | Image Translation |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/image-translation/stargan/imgs/sample_black_haired_female.png" align="center" height="90" ></a><a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/image-translation/stargan/imgs/sample_blond_haired_female.png" align="center" height="90" ></a>|
 | [DCGAN](https://arxiv.org/abs/1511.06434) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla/blob/master/tutorial/dcgan_image_generation.ipynb) | Image Generation ||
 
+### Vision & Language
+
+|Name  | Notebook           | Task  | Example                       |
+|:---------------------------------:|:-------------:|:-----:|:------------:|
+| [CLIP](https://arxiv.org/abs/2103.00020) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sony/nnabla-examples/blob/master/vision-and-language/clip/notebook-examples/clip_zero_shot_classification.ipynb) | Zero-shot image classification |<a href="url"><img src="https://github.com/sony/nnabla-examples/raw/master/vision-and-language/clip/CLIP.png" align="center" height="90" ></a>|
+
+
 ### Vision: Recognition
 |Name  | Notebook           | Task  | Example                       |
 |:---------------------------------:|:-------------:|:-----:|:------------:|
