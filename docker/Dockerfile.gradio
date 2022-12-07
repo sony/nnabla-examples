@@ -1,0 +1,50 @@
+# Copyright 2018,2019,2020,2021 Sony Corporation.
+# Copyright 2021,2022 Sony Group Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG CUDA_VER_MAJOR=11
+ARG CUDA_VER_MINOR=0
+ARG PYTHON_VER_MAJOR=3
+ARG PYTHON_VER_MINOR=9
+ARG CUDNN_VER=8
+ARG NNABLA_VER_MAJOR=1
+ARG NNABLA_VER_MINOR=31
+ARG NNABLA_VER_REV=0
+
+
+FROM nnabla/nnabla-ext-cuda:py${PYTHON_VER_MAJOR}${PYTHON_VER_MINOR}-cuda${CUDA_VER_MAJOR}${CUDA_VER_MINOR}-v${NNABLA_VER_MAJOR}.${NNABLA_VER_MINOR}.${NNABLA_VER_REV}
+
+RUN curl ${CURL_OPTS} https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python${PYTHON_VER} get-pip.py ${PIP_INS_OPTS} \
+    && rm get-pip.py
+
+RUN pip install virtualenv
+RUN umask 0 /venv && python -m venv --system-site-packages --without-pip /venv
+RUN . /venv/bin/activate && curl ${CURL_OPTS} https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python${PYTHON_VER} get-pip.py ${PIP_INS_OPTS} \
+    && rm get-pip.py
+
+RUN umask 0 /venv && . /venv/bin/activate && pip install ${PIP_INS_OPTS} scikit-learn matplotlib jupyterlab ipdb voila ipywidgets pandas
+
+# Without the following version specification, widgets in Voila apps don't appear.
+RUN umask 0 /venv && . /venv/bin/activate && pip install jupyterlab-widgets==1.1.1 widgetsnbextension==3.6.1 ipywidgets==7.7.1
+
+RUN umask 0 /venv && . /venv/bin/activate && pip install gradio
+
+
+# Entrypoint to run anything inside the /venv
+COPY entrypoint_with_venv.sh /entrypoint_with_venv.sh
+RUN chmod +x /entrypoint_with_venv.sh
+ENTRYPOINT ["/entrypoint_with_venv.sh"]
+ENV NO_PROXY="localhost"
