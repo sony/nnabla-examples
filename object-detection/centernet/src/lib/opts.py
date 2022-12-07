@@ -93,8 +93,8 @@ class opts(object):
                                  help='input width. -1 for default from dataset.')
 
         # train
-        self.parser.add_argument('--train-config', type=str,
-                                 help='YAML file for training config')
+        self.parser.add_argument('--config_file', type=str,
+                                 help='YAML file for training/inference config')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
                                  help='weight decay parameter.')
         self.parser.add_argument('--checkpoint', type=str, default='',
@@ -163,10 +163,10 @@ class opts(object):
         else:
             opt = self.parser.parse_args(args)
 
-        # Load training config
-        if opt.train_config is not None:
-            opt.train_config = read_yaml(opt.train_config)
-            cfg = opt.train_config
+        # Load config
+        if opt.config_file is not None:
+            opt.config_file = read_yaml(opt.config_file)
+            cfg = opt.config_file
             opt.dataset = cfg.dataset.dataset
             opt.arch = cfg.model.arch
             opt.num_layers = cfg.model.num_layers

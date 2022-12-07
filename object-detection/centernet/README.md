@@ -87,7 +87,7 @@ For PASCAL VOC, see the example script located on ```src/lib/tools/get_pascal_vo
 ## Training
 
 ### Availble pre-trained backbone networks.
-To use the pre-trained backbone weights, download the weight file corresponding to the model configuration and locate under the directory you specify by `pretrained_model_dir` in the `--train-config` file.
+To use the pre-trained backbone weights, download the weight file corresponding to the model configuration and locate under the directory you specify by `pretrained_model_dir` in the `--config_file` file.
 
 For example, if you want to use a pretrained weight file for DLAv0 with 34 layers for mixed precision training (NHWC memory layout), you can download it as following. It will locate the file in `weights/backbone` (default location of pretrained weights specified in YAML config files.).
 
@@ -109,7 +109,7 @@ The following example shows how to run DLAv0 training for Pascal VOC dataset wit
 ```bash
 mpirun -n 4 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
-    --train-config cfg/dlav0_34_pascal_fp.yaml \
+    --config_file cfg/dlav0_34_pascal_fp.yaml \
     --save_dir <path to output training results & logs>
 ```
 
@@ -120,7 +120,7 @@ For a single GPU training, you can run the following.
 ```bash
 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
-    --train-config cfg/dlav0_34_pascal_fp.yaml \
+    --config_file cfg/dlav0_34_pascal_fp.yaml \
     --save_dir <path to output training results & logs>
 ```
 
@@ -141,7 +141,7 @@ The following example shows how to resume DLAv0 training for object detection ta
 # Using 4 GPUs in this case.
 mpirun -n 4 python src/main.py ctdet \
     --data_dir <Path to COCO dataset>
-    --train-config cfg/dlav0_34_coco_fp.yaml \
+    --config_file cfg/dlav0_34_coco_fp.yaml \
     --save_dir temp/ \
     --resume-from <epoch number>
 ```

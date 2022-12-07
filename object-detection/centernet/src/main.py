@@ -120,7 +120,7 @@ def main(opt):
     start_epoch = 0
     loss_func = CtdetLoss(opt)
     lr_sched = create_learning_rate_scheduler(
-        opt.train_config.learning_rate_config)
+        opt.config_file.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
     trainer = Trainer(
         model, loss_func, solver, train_loader, train_source,
