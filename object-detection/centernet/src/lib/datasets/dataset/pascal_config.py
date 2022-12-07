@@ -72,11 +72,10 @@ class PascalVOC(DatasetConfig):
             shuffle=shuffle,
             rng=rng,
         )
-        self.data_dir = os.path.join(opt.data_dir, 'voc')
-        self.img_dir = os.path.join(self.data_dir, 'images')
+        self.img_dir = os.path.join(opt.data_dir, 'images')
         _ann_name = {'train': 'trainval0712', 'val': 'test2007'}
         self.annot_path = os.path.join(
-            self.data_dir, 'annotations', 'pascal_{}.json'
+            opt.data_dir, 'annotations', 'pascal_{}.json'
         ).format(_ann_name[split])
         self.params = PascalVOCDefaultParams()
         self.split = split
