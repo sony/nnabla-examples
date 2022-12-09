@@ -1,5 +1,2 @@
 ftfy
 regex
-nnabla
-nnabla_ext_cuda102
-nnabla-converter

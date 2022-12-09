@@ -75,6 +75,33 @@ Given a batch of text tokens, returns the text features encoded by the language 
 
 Given a batch of images and a batch of text tokens, returns two ndarrays, containing the logit scores corresponding to each image and text input. The values are cosine similarities between the corresponding image and text features, times 100.
 
+## Demo
+
+### Build a Docker image
+
+```bash
+# Assume we are at this folder
+(cd ../../docker && docker build $(id -un)/nnabla-examples-gradio -f Dockerfile.gradio .)
+```
+
+### Zero-shot classification demo
+
+![Screenshot of demo for zero-shot classification](assets/demo_zero_shot_screenshot.jpg)
+
+```bash
+# From host
+docker run --gpus "device=all" --rm -ti -w $(pwd) -v $(pwd):$(pwd):ro --env NO_PROXY="localhost" -p 8889:8889 $(id -un)/nnabla-examples-gradio
+
+# Inside a Docker container
+pip install -r requirements.txt
+python demo_zero_shot_classification.py
+```
+
+### Connect to the demo server using browser
+
+Access `http://<server address>:8889/` on your browser.
+
+
 ## Training 
 
 
