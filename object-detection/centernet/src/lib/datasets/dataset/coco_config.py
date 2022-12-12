@@ -91,15 +91,14 @@ class COCO(DatasetConfig):
             mixed_precision=mixed_precision,
             channel_last=channel_last,
         )
-        self.data_dir = os.path.join(opt.data_dir, 'coco')
-        self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
+        self.img_dir = os.path.join(opt.data_dir, '{}2017'.format(split))
         if split == 'test':
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations', 'image_info_test-dev2017.json'
+                opt.data_dir, 'annotations', 'image_info_test-dev2017.json'
             ).format(split)
         else:
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations', 'instances_{}2017.json'
+                opt.data_dir, 'annotations', 'instances_{}2017.json'
             ).format(split)
         self.params = COCODefaultParams()
         self.split = split

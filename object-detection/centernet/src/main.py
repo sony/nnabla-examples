@@ -51,8 +51,7 @@ def main(opt):
     comm = init_nnabla(ext_name=opt.extension_module,
                        device_id='0', type_config=type_config)
     nn.set_auto_forward(True)
-    output_folder = os.path.join(
-        opt.save_dir, "tmp.monitor.{}_{}".format(opt.arch, opt.num_layers))
+    output_folder = os.path.join(opt.save_dir, "tmp.monitor")
     monitor = Monitor(output_folder)
     monitor_loss = None
     monitor_hm_loss = None
@@ -121,7 +120,7 @@ def main(opt):
     start_epoch = 0
     loss_func = CtdetLoss(opt)
     lr_sched = create_learning_rate_scheduler(
-        opt.train_config.learning_rate_config)
+        opt.config_file.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
     trainer = Trainer(
         model, loss_func, solver, train_loader, train_source,
@@ -129,12 +128,10 @@ def main(opt):
          monitor_val_wh_loss, monitor_val_off_loss],
         opt, comm)
 
-    root_dir = opt.save_dir
-
-    checkpoint_dir = os.path.join(root_dir, output_folder, 'checkpoints')
+    checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0
     if opt.resume_from is not None:
-        start_epoch = trainer.load_checkpoint(checkpoint_dir, opt.resume_from)
+        start_epoch = trainer.load_checkpoint(checkpoint_dir, opt.resume_from) + 1
         logger.info('resuming from the epoch {}'.format(start_epoch))
 
     for epoch in range(start_epoch, opt.num_epochs):
@@ -149,10 +146,10 @@ def main(opt):
         if epoch % opt.val_intervals == 0 or epoch == (opt.num_epochs - 1):
             model.training = False
             trainer.evaluate(val_loader, epoch)
-            if not opt.val_calc_map:
+            if not opt.disable_val_calc_map:
                 num_iters = val_loader.size
-                pbar = trange(num_iters, desc="[Test][exp_id:{} epoch:{}/{}]".format(
-                    opt.exp_id, epoch, opt.num_epochs), disable=comm.rank > 0)
+                pbar = trange(num_iters, desc="[Test][epoch:{}/{}]".format(
+                    epoch, opt.num_epochs), disable=comm.rank > 0)
                 if comm.rank == 0:
                     results = {}
                     for ind in pbar:

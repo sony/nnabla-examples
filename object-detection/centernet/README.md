@@ -50,10 +50,12 @@ pip install -r requirements.txt
 You can perform object detection by CenterNet with a pre-trained model as following.
 
 ```bash
-python src/demo.py ctdet --dataset <coco or pascal> --arch <resnet or dlav0> --num_layers <number of layers> --checkpoint <path to *.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
+python src/demo.py ctdet --config_file <config file> --checkpoint <path to params*.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
 ```
 
-The argument `--checkpoint` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that ```dataset```,  ```arch``` and  ```num_layers``` parameters must match with loaded weights.
+The argument `--config_file` will load the network architecture and dataset settings from the YAML file. Check `cfg/*.yaml` files for more details.
+
+The argument `--checkpoint` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that the parameters in the configuration file set by `--config_file` must match with loaded weights.
 
 Set the ```debug``` parameter controls the outputs from the detector:
  * 0 for no output
@@ -87,7 +89,7 @@ For PASCAL VOC, see the example script located on ```src/lib/tools/get_pascal_vo
 ## Training
 
 ### Availble pre-trained backbone networks.
-To use the pre-trained backbone weights, download the weight file corresponding to the model configuration and locate under the directory you specify by `pretrained_model_dir` in the `--train-config` file.
+To use the pre-trained backbone weights, download the weight file corresponding to the model configuration and locate under the directory you specify by `pretrained_model_dir` in the `--config_file` file.
 
 For example, if you want to use a pretrained weight file for DLAv0 with 34 layers for mixed precision training (NHWC memory layout), you can download it as following. It will locate the file in `weights/backbone` (default location of pretrained weights specified in YAML config files.).
 
@@ -109,8 +111,8 @@ The following example shows how to run DLAv0 training for Pascal VOC dataset wit
 ```bash
 mpirun -n 4 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
-    --train-config cfg/dlav0_34_pascal_fp.yaml \
-    -o <path to output training results & logs>
+    --config_file cfg/dlav0_34_pascal_fp.yaml \
+    --save_dir <path to output training results & logs>
 ```
 
 See config files in `cfg` for more details such as configurations for dataset, batch size, mixed precision training, and learninge rate scheduler. (**Note**: mixed precision training doesn't work at this moment for some reason. Any contribution to fix the issue is welcome!)
@@ -120,8 +122,8 @@ For a single GPU training, you can run the following.
 ```bash
 python src/main.py ctdet \
     --data_dir <Path to Pascal VOC dataset>
-    --train-config cfg/dlav0_34_pascal_fp.yaml \
-    -o <path to output training results & logs>
+    --config_file cfg/dlav0_34_pascal_fp.yaml \
+    --save_dir <path to output training results & logs>
 ```
 
 To specify a GPU to use, set `CUDA_VISIBLE_DEVICES=<gpu id>` as an environment variable. For example;
@@ -130,18 +132,34 @@ To specify a GPU to use, set `CUDA_VISIBLE_DEVICES=<gpu id>` as an environment v
 CUDA_VISIBLE_DEVICES=1 python src/main.py ...(arguments continue)...
 ```
 
+### Resume training from the checkpoint
+
+You can resume training from a specific checkpoint.
+
+The following example shows how to resume DLAv0 training for object detection task with COCO dataset.
+
+```bash
+# Resume training. Assume that the checkpoint is saved in temp/checkpoints
+# Using 4 GPUs in this case.
+mpirun -n 4 python src/main.py ctdet \
+    --data_dir <Path to COCO dataset>
+    --config_file cfg/dlav0_34_coco_fp.yaml \
+    --save_dir temp/ \
+    --resume-from <epoch number>
+```
+
 ## Validation
 
 You can use the ```test.py``` script for AP/mAP validation:
 
 ```bash
-python src/test.py ctdet --dataset <coco or pascal> --data_dir <coco or pascal root folder> --arch <resnet or dlav0> --num_layers <number layers> --checkpoint <path to checkpoint file> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint <path to params*.h5 file> --gpus <gpu to use>
 ```
 
 You can also recalculate the AP .txt files for a series using ```test.py```:
 
 ```bash
-python src/test.py ctdet --dataset <coco or pascal> --data_dir <coco or pascal root folder> --arch <resnet or dlav0> --num_layers <number layers> --checkpoint_dir <root folder of checkpoints> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint_dir <root folder of checkpoints> --gpus <gpu to use>
 ```
 
 ## Pretrained weights and benchmarks
@@ -173,11 +191,11 @@ The evaluation scripts from the official datasets is used to calculate AP/mAP.
 
 ## Export nnp file
 
-`src/save_nnp.py` provides the way to export nnp file. Specify the `--dataset`, `--arch` and `--num_layers` options and the output will be saved in `exp/ctdet/your_exp_id/`.
+`src/save_nnp.py` provides the way to export nnp file. The *.nnp output will be saved in `--save_dir` or `exp/ctdet_{dataset}_{arch}_{num_layers}_{timestamp}` by default.
 
 ```bash
-# For example, to export DLAv034 nnp file, use the following command.
-python src/save_nnp.py ctdet --dataset <coco or pascal> --arch dlav0 --num_layers 34
+# For example, to export DLAv034 nnp file for COCO dataset, use the following command.
+python src/save_nnp.py ctdet --config_file cfg/dlav0_34_coco_fp.yaml
 ```
 
 Please run `python src/save_nnp.py -h` to see which network is supported.
@@ -188,19 +206,6 @@ Please run `python src/save_nnp.py -h` to see which network is supported.
 
 Implemented architectures are located on the ```src/lib/models/network```.
 models are split between feature extractor and upsampling portion (ie:```dlav0_backbone.py``` and ```dlav0.py```).
-
-
-### How to generate and update requirements.txt ?
-
-requirements.txt is generated by [pip-compile command](https://github.com/jazzband/pip-tools). If you're going to use new Python package, first, add the package name to `install_requires` inside `setup.py`.
-
-Update requirements.txt by running,
-
-```bash
-pip-compile
-```
-
-and you will get new requirements.txt.
 
 ## TODO List
 * Add models with Deformable Convolution

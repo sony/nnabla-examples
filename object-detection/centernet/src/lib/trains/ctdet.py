@@ -111,6 +111,10 @@ class Trainer(object):
         self._reg = nn.Variable((opt.batch_size, max_objs, 2))
         self._reg_mask = nn.Variable((opt.batch_size, max_objs, 1))
 
+        # Construct the computation graph with dummy data.
+        _ = self.model(self._img)
+        self.solver.set_parameters(nn.get_parameters(), reset=False, retain_state=True)
+
     def compute_gradient(self, data):
         loss = self.compute_loss(data)
         total_loss = loss['loss']
@@ -179,8 +183,7 @@ class Trainer(object):
                     m_off_loss += off_loss.d.item() / self.iterations_per_epoch
 
                     pbar_text = (
-                        f"[Train][exp_id: {self.opt.exp_id}, "
-                        f"epoch:{epoch}/{self.opt.num_epochs}||"
+                        f"[Train] epoch:{epoch}/{self.opt.num_epochs}||"
                         f"loss:{total_loss.d.item():8.4f}, "
                         f"hm_loss:{hm_loss.d.item():8.4f}, "
                         f"wh_loss:{wh_loss.d.item():8.4f}, "
@@ -203,11 +206,11 @@ class Trainer(object):
         os.makedirs(path, exist_ok=True)
         cu.save_checkpoint(path, epoch, self.solver)
 
-    def load_checkpont(self, path, epoch):
+    def load_checkpoint(self, path, epoch):
         from neu import checkpoint_util as cu
         checkpoint_file = os.path.join(
             path, 'checkpoint_{}.json'.format(epoch))
-        cu.load_checkpoint(checkpoint_file, self.solver)
+        return cu.load_checkpoint(checkpoint_file, self.solver)
 
     def compute_loss(self, data):
         # Performs forward pass.
@@ -246,8 +249,7 @@ class Trainer(object):
             off_loss += loss['off_loss'].d.item()
 
             pbar_text = (
-                f"[Validation][exp_id: {self.opt.exp_id}, "
-                f"epoch:{epoch}/{self.opt.num_epochs}||"
+                f"[Validation] epoch:{epoch}/{self.opt.num_epochs}||"
                 f"loss:{loss['loss'].d.item():8.4f}, "
                 f"hm_loss:{loss['hm_loss'].d.item():8.4f}, "
                 f"wh_loss:{loss['wh_loss'].d.item():8.4f}, "
