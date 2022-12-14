@@ -131,7 +131,8 @@ def main(opt):
     checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0
     if opt.resume_from is not None:
-        start_epoch = trainer.load_checkpoint(checkpoint_dir, opt.resume_from) + 1
+        start_epoch = trainer.load_checkpoint(
+            checkpoint_dir, opt.resume_from) + 1
         logger.info('resuming from the epoch {}'.format(start_epoch))
 
     for epoch in range(start_epoch, opt.num_epochs):

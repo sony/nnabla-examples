@@ -113,7 +113,8 @@ class Trainer(object):
 
         # Construct the computation graph with dummy data.
         _ = self.model(self._img)
-        self.solver.set_parameters(nn.get_parameters(), reset=False, retain_state=True)
+        self.solver.set_parameters(
+            nn.get_parameters(), reset=False, retain_state=True)
 
     def compute_gradient(self, data):
         loss = self.compute_loss(data)

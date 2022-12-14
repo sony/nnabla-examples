@@ -93,7 +93,8 @@ class opts(object):
                                  help='input width. -1 for default from dataset.')
 
         # train
-        config_file_list = glob.glob(os.path.join(os.path.dirname(__file__), '..', '..', 'cfg', '*.yaml'))
+        config_file_list = glob.glob(os.path.join(
+            os.path.dirname(__file__), '..', '..', 'cfg', '*.yaml'))
         self.parser.add_argument('--config_file', type=str,
                                  help=f'YAML file for training/inference config. eg. {config_file_list}')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
