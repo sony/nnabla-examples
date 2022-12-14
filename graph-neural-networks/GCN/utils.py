@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import numpy as np
 import networkx as nx
 import pandas as pd
@@ -19,6 +20,9 @@ import os
 import tarfile
 from urllib.request import urlopen
 from sklearn.preprocessing import LabelEncoder
+
+sys.path.append("../../utils/")
+from neu.safe_extract import safe_extract
 
 CORA_URL = "https://linqs-data.soe.ucsc.edu/public/lbc/cora.tgz"
 
@@ -38,7 +42,7 @@ def download_cora(url=CORA_URL):
     if not os.path.exists('./cora'):
         print('Extracting cora dataset...')
         with tarfile.open('./cora.tgz', 'r') as f:
-            f.extractall('./')
+            safe_extract(f, './')
     else:
         print('Cora dataset is already extracted.')
 
