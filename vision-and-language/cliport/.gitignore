@@ -1,0 +1,10 @@
+*.h5
+*.egg-info
+scripts/data/**
+scripts/cliport_quickstart/**
+scripts/cliport_cfg/**
+scripts/.hydra/**
+scripts/*.log
+scripts/video/**
+cliport_quickstart.zip
+
