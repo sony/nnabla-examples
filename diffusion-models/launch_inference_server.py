@@ -14,14 +14,14 @@
 
 import hydra
 
-from config import InferenceServerScriptConfig
+from nnabla_diffusion.config import InferenceServerScriptConfig
 import ui
 
 from neu.misc import init_nnabla
 
 
 @hydra.main(version_base=None,
-            config_path="config/yaml",
+            config_path="yaml/",
             config_name="config_inference_server")
 def main(conf: InferenceServerScriptConfig):
     # initialize nnabla context

@@ -26,7 +26,7 @@ from omegaconf import MISSING, OmegaConf
 
 def get_output_channels(input_channels, var_type) -> int:
     # calc output channels from input and vartype
-    from diffusion_model.diffusion import is_learn_sigma
+    from nnabla_diffusion.diffusion_model.diffusion import is_learn_sigma
     if is_learn_sigma(var_type):
         return input_channels * 2
 
@@ -129,4 +129,5 @@ class ModelConfig:
 
 # expose config to enable loading from yaml file
 from .utils import register_config
+
 register_config(name="model", node=ModelConfig)

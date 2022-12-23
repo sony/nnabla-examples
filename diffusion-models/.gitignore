@@ -17,8 +17,15 @@ tmp/
 
 *.yaml
 *.h5
+*.npy
+*.png
 
+!imgs/*.png
+!yaml/*.yaml
+!yaml/*/*.yaml
+!yaml/*/*/*.yaml
 !config/*.yaml
 !config/**/*.yaml
+!ddpm_segmentation/config/*.yaml
 
 params/

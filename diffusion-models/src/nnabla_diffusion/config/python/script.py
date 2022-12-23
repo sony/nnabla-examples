@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from omegaconf import MISSING, OmegaConf
 
 from .dataset import DatasetConfig
+from .datasetddpm import DatasetDDPMConfig
 from .diffusion import DiffusionConfig
 from .generate import GenerateConfig
 from .model import ModelConfig
@@ -59,6 +60,14 @@ class InferenceServerScriptConfig:
 class LoadedConfig:
     diffusion: DiffusionConfig
     model: ModelConfig
+
+# config for ddpm-segmentation
+
+
+@dataclass
+class TrainDatasetDDPMScriptsConfig:
+    runtime: RuntimeConfig = MISSING
+    datasetddpm: DatasetDDPMConfig = MISSING
 
 
 def load_saved_conf(config_path: str) -> LoadedConfig:

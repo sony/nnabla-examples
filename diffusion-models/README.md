@@ -23,7 +23,11 @@ To install dependencies, run as below:
 pip install -r requirements.txt
 
 # install NEU
-cd /path/to/nnabla-examples/utils
+cd /path/to/nnabla-examples/
+pip install -e .
+
+# install nnabla_diffusion package
+cd /path/to/nnabla-examples/diffusion-models
 pip install -e .
 ```
 
@@ -38,8 +42,10 @@ Please munualy download them from the following list.
 | Improved DDPM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/celebAHQ_256/params.h5) | 30.73 | 300K |
 | ADM | Imagenet | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_ADM_imagenet_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_imagenet_256/params.h5) | 43.80 | 300K |
 | ADM | CelebA-HQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/hydra/config_ADM_celebAHQ_256x256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_celebAHQ_256/params.h5) | 27.69 | 300K |
+| ADM | FFHQ | 256 x 256 | [config](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_FFHQ_256/config_ADM_FFHQ256.yaml) / [weight](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_FFHQ_256/ADM_FFHQ256_ema_param.h5) | 8.608 | 200K |
 
-Note that the FID scores shown on the list are computed by 10K generated images against training data for all datasets except 50K generated images for cifar10.
+
+Note that the FID scores shown on the list are computed by 10K generated images against training data for all datasets except 50K generated images for cifar10 and FFHQ.
 
 After downloading them, you can generate images as follows:
 ```bash
@@ -91,8 +97,21 @@ Note that you should use the same resolution as or larger resolution than the on
 Then, you can train your model on CelebA-HQ by `python train.py dataset=celebahq dataset.data_dir <your data dir>/celeba-hq-{resolution}`.
 (You should specify the parent directory having `images` as sub-directory.)
 
+
+
+
+### FFHQ-256
+To download FFHQ-256 dataset, we use [the following link](https://www.kaggle.com/datasets/xhlulu/flickrfaceshq-dataset-nvidia-resized-256px).
+
+After downloading dataset, you will have the directory named `<your data dir>/ffhq-256/images` which has all images as jpg format.
+
+Then, you can train your model on FFHQ-256 by `python train.py dataset=ffhq256 dataset.data_dir <your data dir>/ffhq-256`.
+(You should specify the parent directory having `images` as sub-directory.)
+
+
+
 ## Training
-We prepare the training scripts for cifar-10, imagenet, and CelebA-HQ dataset, respectively.
+We prepare the training scripts for cifar-10, imagenet, CelebA-HQ and FFHQ-256 dataset, respectively.
 See `scripts/` directory for more detail.
 
 Note that all scripts assume multi-GPU training with 4 GPU.
@@ -102,3 +121,25 @@ As for the dataset path, `./data` is used as `dataset.data_dir` as default.
 In other words, we assume `./data` is a symbolic link for the path we describe in `Download data for training` section above.
 If you get some errors related to dataset, please check your dataset path is correct.
 
+
+# DDPM Segmentation
+A reproduction of [Label-Efficient Semantic Segmentation with Diffusion Models](https://openreview.net/forum?id=SlxSY2UZQT) implemented by nnabla.
+The code structure is inspired by the [original author's implementation](https://github.com/yandex-research/ddpm-segmentation).
+
+## Download data for training
+To download Dataset, please follow [the official github](https://github.com/yandex-research/ddpm-segmentation#datasets) and download file.  
+Then, unzip through  `tar -xzf datasets.tar.gz -C <your data dir>/datasetddpm`.
+
+## Training
+For FFHQ pre-trained diffusion model (.h5 file), you can download from [this link](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_FFHQ_256/ADM_FFHQ256_ema_param.h5).  
+For FFHQ pre-trained dataset ddpm model, you can download from [this link](https://nnabla.org/pretrained-models/nnabla-examples/diffusion-models/ADM_FFHQ_256/datasetddpm/nnabla/ffhq_gmulti.zip).  
+For another categories, you have to train ADM respectively.
+```
+## Example of FFHQ256
+python train_pixel_classifier.py datasetddpm.h5=<your h5 file path> datasetddpm.config=yaml/config_train_pixelclassifier.yaml datasetddpm.steps=[50,150,250] datasetddpm.dim=[256,256,8448] datasetddpm.training_path=<your data dir>/datasetddpm/ffhq_34/real/train  datasetddpm.testing_path=<your data dir>/datasetddpm/ffhq_34/real/test
+```
+
+default category was set to "ffhq_34", if you use another category, you have to change `datasetddpm.category=<category name>`.
+
+
+**Available dataset names**: bedroom_28, ffhq_34, cat_15, horse_21, celeba_19, ade_bedroom_30

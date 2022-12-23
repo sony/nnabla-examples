@@ -22,8 +22,7 @@ import nnabla.functions as F
 import numpy as np
 from neu.losses import gaussian_log_likelihood, kl_normal
 from neu.misc import AttrDict
-
-from config import DiffusionConfig
+from nnabla_diffusion.config import DiffusionConfig
 
 from .layers import chunk, sqrt
 from .utils import Shape4D, context_scope, force_float

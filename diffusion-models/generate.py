@@ -19,16 +19,15 @@ from threading import Thread
 
 import hydra
 import nnabla as nn
+import nnabla_diffusion.config as config
 import numpy as np
 from neu.misc import init_nnabla
 from neu.reporter import get_tiled_image, save_tiled_image
 from nnabla.logger import logger
 from nnabla.utils.image_utils import imsave
+from nnabla_diffusion.dataset.common import SimpleDataIterator
+from nnabla_diffusion.diffusion_model.model import Model
 from omegaconf import OmegaConf
-
-import config
-from dataset.common import SimpleDataIterator
-from diffusion_model.model import Model
 
 
 def save_img(q: Queue, channel_last: bool):
@@ -56,7 +55,7 @@ def save_img(q: Queue, channel_last: bool):
 
 
 @hydra.main(version_base=None,
-            config_path="config/yaml",
+            config_path="yaml/",
             config_name="config_generate")
 def main(conf: config.GenScriptConfig):
     # load diffusion and model config

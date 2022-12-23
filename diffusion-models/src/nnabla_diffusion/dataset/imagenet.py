@@ -17,15 +17,13 @@ import pathlib
 
 import click
 import numpy as np
+from neu.comm import CommunicatorWrapper
+from neu.datasets import _get_sliced_data_source
 from nnabla import logger
 from nnabla.utils.data_iterator import data_iterator
-
-from neu.datasets import _get_sliced_data_source
-from neu.comm import CommunicatorWrapper
+from nnabla_diffusion.config import DatasetConfig
 
 from .common import SimpleDatasource
-
-from config import DatasetConfig
 
 # ImagenetDataIterator uses label_wordnetid.csv, label_words.csv, and validation_data_label.txt
 DEFAULT_RESOURCE_DIR = os.path.join(os.path.dirname(__file__),  # nnabla-examples/diffusion-models/dataset
@@ -102,8 +100,8 @@ def ImagenetDataIterator(conf: DatasetConfig,
 
 
 def test_data_iterator(di, output_dir, comm=None, num_iters=100):
-    from nnabla.utils.image_utils import imsave
     from neu.reporter import KVReporter
+    from nnabla.utils.image_utils import imsave
 
     reporter = KVReporter(comm=comm)
 

@@ -15,8 +15,7 @@
 import nnabla as nn
 import nnabla.functions as F
 from neu.misc import AttrDict
-
-from config import DiffusionConfig, ModelConfig
+from nnabla_diffusion.config import DiffusionConfig, ModelConfig
 
 from .diffusion import is_learn_sigma, GaussianDiffusion
 from .unet import UNet, EfficientUNet

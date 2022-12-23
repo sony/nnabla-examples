@@ -16,10 +16,12 @@ from .python.dataset import DatasetConfig
 from .python.diffusion import DiffusionConfig
 from .python.generate import GenerateConfig
 from .python.model import ModelConfig
+from .python.datasetddpm import DatasetDDPMConfig
 from .python.script import (RuntimeConfig,
                             TrainScriptConfig,
                             GenScriptConfig,
                             InferenceServerScriptConfig,
+                            TrainDatasetDDPMScriptsConfig,
                             LoadedConfig,
                             load_saved_conf)
 from .python.train import TrainConfig
