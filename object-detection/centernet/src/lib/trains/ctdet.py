@@ -114,20 +114,30 @@ class Trainer(object):
         _ = self.model(self._img)
         self.solver.set_parameters(
             nn.get_parameters(), reset=False, retain_state=True)
-        self._train_monitor = {'loss': None, 'hm_loss': None, 'wh_loss': None, 'off_loss': None}
-        self._val_monitor = {'loss': None, 'hm_loss': None, 'wh_loss': None, 'off_loss': None}
+        self._train_monitor = {
+            'loss': None, 'hm_loss': None, 'wh_loss': None, 'off_loss': None}
+        self._val_monitor = {'loss': None, 'hm_loss': None,
+                             'wh_loss': None, 'off_loss': None}
 
         interval = 1
         if comm.rank == 0:
-            self._train_monitor['loss'] = MonitorSeries("Training Loss", monitor, interval=interval, verbose=False)
-            self._train_monitor['hm_loss'] = MonitorSeries("hm_loss", monitor, interval=interval, verbose=False)
-            self._train_monitor['wh_loss'] = MonitorSeries("wh_loss", monitor, interval=interval, verbose=False)
-            self._train_monitor['off_loss'] = MonitorSeries("off_loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['loss'] = MonitorSeries(
+                "Training Loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['hm_loss'] = MonitorSeries(
+                "hm_loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['wh_loss'] = MonitorSeries(
+                "wh_loss", monitor, interval=interval, verbose=False)
+            self._train_monitor['off_loss'] = MonitorSeries(
+                "off_loss", monitor, interval=interval, verbose=False)
 
-            self._val_monitor['loss'] = MonitorSeries("Validation Loss", monitor, interval=interval, verbose=False)
-            self._val_monitor['hm_loss'] = MonitorSeries("val_hm_loss", monitor, interval=interval, verbose=False)
-            self._val_monitor['wh_loss'] = MonitorSeries("val_wh_loss", monitor, interval=interval, verbose=False)
-            self._val_monitor['off_loss'] = MonitorSeries("val_off_loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['loss'] = MonitorSeries(
+                "Validation Loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['hm_loss'] = MonitorSeries(
+                "val_hm_loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['wh_loss'] = MonitorSeries(
+                "val_wh_loss", monitor, interval=interval, verbose=False)
+            self._val_monitor['off_loss'] = MonitorSeries(
+                "val_off_loss", monitor, interval=interval, verbose=False)
 
     def compute_gradient(self, data):
         loss = self.compute_loss(data)
@@ -272,7 +282,11 @@ class Trainer(object):
             del loss
 
         if self.comm.rank == 0:
-            self._val_monitor['loss'].add(epoch, total_loss / val_iterations_per_epoch)
-            self._val_monitor['hm_loss'].add(epoch, hm_loss / val_iterations_per_epoch)
-            self._val_monitor['wh_loss'].add(epoch, wh_loss / val_iterations_per_epoch)
-            self._val_monitor['off_loss'].add(epoch, off_loss / val_iterations_per_epoch)
+            self._val_monitor['loss'].add(
+                epoch, total_loss / val_iterations_per_epoch)
+            self._val_monitor['hm_loss'].add(
+                epoch, hm_loss / val_iterations_per_epoch)
+            self._val_monitor['wh_loss'].add(
+                epoch, wh_loss / val_iterations_per_epoch)
+            self._val_monitor['off_loss'].add(
+                epoch, off_loss / val_iterations_per_epoch)

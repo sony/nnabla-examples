@@ -216,7 +216,7 @@ def get_statistics_from_given_path(path, batch_size, faster_resize=False):
             if re.search("/*\.(jpg|jpeg|png)", str(p).lower()):
                 image_paths.append(p)
 
-        #image_paths = [p for p in glob.glob(f"{path}/**/*") if re.search("/*\.(jpg|jpeg|png)", str(p).lower())]
+        # image_paths = [p for p in glob.glob(f"{path}/**/*") if re.search("/*\.(jpg|jpeg|png)", str(p).lower())]
     elif ext == ".txt":
         assert os.path.isfile(path), "specified file is not found."
         with open(path, "r") as f:

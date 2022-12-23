@@ -59,8 +59,10 @@ def main(opt):
     detector = Detector(opt)
 
     if comm.rank == 0:
-        monitor_map = MonitorSeries("Val mAP", monitor, interval=1, verbose=False)
-        monitor_time = MonitorTimeElapsed("time", monitor, interval=1, verbose=False)
+        monitor_map = MonitorSeries(
+            "Val mAP", monitor, interval=1, verbose=False)
+        monitor_time = MonitorTimeElapsed(
+            "time", monitor, interval=1, verbose=False)
     '''
     Data Iterators
     '''
@@ -94,7 +96,8 @@ def main(opt):
     lr_sched = create_learning_rate_scheduler(
         opt.config_file.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
-    trainer = Trainer(model, solver, train_loader, train_source, monitor, opt, comm)
+    trainer = Trainer(model, solver, train_loader,
+                      train_source, monitor, opt, comm)
 
     checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0

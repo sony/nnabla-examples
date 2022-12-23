@@ -242,14 +242,14 @@ def resblock_d(h, y, scopename,
     with nn.parameter_scope(scopename):
         # LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
-            #h = F.leaky_relu(h, 0.2)
+            # h = F.leaky_relu(h, 0.2)
             h = F.relu(h)
             h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
 
         # LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            #h = F.leaky_relu(h, 0.2)
+            # h = F.leaky_relu(h, 0.2)
             h = F.relu(h)
             h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
@@ -280,7 +280,7 @@ def optblock_d(h, y, scopename,
 
         # ReLU -> Conv
         with nn.parameter_scope("conv2"):
-            #h = F.leaky_relu(h, 0.2)
+            # h = F.leaky_relu(h, 0.2)
             h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride,
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
@@ -336,7 +336,7 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16,
                        downsample=False, test=test, sn=sn)
         # Last affine
-        #h = F.leaky_relu(h, 0.2)
+        # h = F.leaky_relu(h, 0.2)
         h = F.relu(h)
         h = F.sum(h, axis=(2, 3))
         o0 = affine(h, 1, sn=sn, test=test)

@@ -134,6 +134,6 @@ if __name__ == '__main__':
         ch = cv.waitKey(3)
         if ch == 27:
             break
-    #import os
-    #print (os.environ['PYTHONPATH'])
+    # import os
+    # print (os.environ['PYTHONPATH'])
     cv.destroyAllWindows()

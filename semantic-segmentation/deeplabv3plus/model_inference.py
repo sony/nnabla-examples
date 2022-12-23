@@ -39,7 +39,7 @@ def visualize(label):
             else:
                 vis[y][x] = clr_map[label[y][x]]
 
-    #plt.imshow(vis, interpolation='none')
+    # plt.imshow(vis, interpolation='none')
     # plt.show()
     imageio.imwrite('output.png', vis)
 
@@ -83,7 +83,7 @@ def main():
 
     # preprocess image
     image = imageio.imread(args.test_image_file, as_gray=False, pilmode="RGB")
-    #image = imread(args.test_image_file).astype('float32')
+    # image = imread(args.test_image_file).astype('float32')
     orig_h, orig_w, orig_c = image.shape
     old_size = (orig_h, orig_w)
 

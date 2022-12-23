@@ -144,7 +144,7 @@ def convolution(x, maps, kernel=(3, 3), pad=(0, 0, 0, 0), stride=(1, 1),
         stride = tuple([stride] * 2)
 
     h = x
-    #s = nn.initializer.calc_normal_std_glorot(h.shape[1], maps, kernel=kernel)
+    # s = nn.initializer.calc_normal_std_glorot(h.shape[1], maps, kernel=kernel)
     s = nn.initializer.calc_normal_std_he_backward(
         h.shape[1], maps, kernel=kernel)
     init = nn.initializer.NormalInitializer(s)
@@ -267,7 +267,7 @@ def decoder(content, style, maps=256, num_res=4, num_layers=2, pad_mode="reflect
 def upsample(x, maps, norm="ln", pad_mode="reflect", name="upsample"):
     h = x
     with nn.parameter_scope(name):
-        #h = F.interpolate(h, (2, 2), mode="linear")
+        # h = F.interpolate(h, (2, 2), mode="linear")
         h = F.unpooling(h, (2, 2))
         h = convblock(h, maps, 5, 2, 1, norm=norm, pad_mode=pad_mode)
     return h

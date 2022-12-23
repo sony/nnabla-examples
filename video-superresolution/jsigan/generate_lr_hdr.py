@@ -79,14 +79,14 @@ def calculate_weights_indices(in_length, out_length, scale, kernel_width, antial
     # If a column in weights is all zero, get rid of it. only consider the first and last column.
     weights_zero_tmp = np.sum((weights == 0), 0)
     if not math.isclose(weights_zero_tmp[0], 0, rel_tol=1e-6):
-        #indices = indices.narrow(1, 1, P - 2)
+        # indices = indices.narrow(1, 1, P - 2)
         indices = indices[:, 1:P-1]
-        #weights = weights.narrow(1, 1, P - 2)
+        # weights = weights.narrow(1, 1, P - 2)
         weights = weights[:, 1:P-1]
     if not math.isclose(weights_zero_tmp[-1], 0, rel_tol=1e-6):
-        #indices = indices.narrow(1, 0, P - 2)
+        # indices = indices.narrow(1, 0, P - 2)
         indices = indices[:, 0:P-1]
-        #weights = weights.narrow(1, 0, P - 2)
+        # weights = weights.narrow(1, 0, P - 2)
         weights = weights[:, 0:P-1]
 
     weights = np.ascontiguousarray(weights)
@@ -121,19 +121,19 @@ def imresize_np(img, scale, antialiasing=True):
     # symmetric copying
     img_aug = np.ndarray((in_H + sym_len_Hs + sym_len_He,
                           in_W, in_C), dtype='float32')
-    #img = img_aug[sym_len_Hs:sym_len_Hs+in_H,:,:]
+    # img = img_aug[sym_len_Hs:sym_len_Hs+in_H,:,:]
     img_aug[sym_len_Hs:sym_len_Hs+in_H, :, :] = img
 
     sym_patch = img[:sym_len_Hs, :, :]
     inv_idx = np.arange(sym_patch.shape[0] - 1, -1, -1).astype('int64')
     sym_patch_inv = np.take(sym_patch, inv_idx, 0)
-    #sym_patch_inv = img_aug[0:sym_len_Hs:,:,:]
+    # sym_patch_inv = img_aug[0:sym_len_Hs:,:,:]
     img_aug[0:sym_len_Hs:, :, :] = sym_patch_inv
 
     sym_patch = img[-sym_len_He:, :, :]
     inv_idx = np.arange(sym_patch.shape[0] - 1, -1, -1).astype('int64')
     sym_patch_inv = np.take(sym_patch, inv_idx, 0)
-    #sym_patch_inv = img_aug[sym_len_Hs + in_H:sym_len_Hs + in_H + sym_len_He,:,:]
+    # sym_patch_inv = img_aug[sym_len_Hs + in_H:sym_len_Hs + in_H + sym_len_He,:,:]
     img_aug[sym_len_Hs + in_H:sym_len_Hs +
             in_H + sym_len_He, :, :] = sym_patch_inv
 
@@ -153,19 +153,19 @@ def imresize_np(img, scale, antialiasing=True):
     # symmetric copying
     out_1_aug = np.ndarray(
         (out_H, in_W + sym_len_Ws + sym_len_We, in_C), dtype='float32')
-    #out_1 = out_1_aug[:,sym_len_Ws:sym_len_Ws + in_W]
+    # out_1 = out_1_aug[:,sym_len_Ws:sym_len_Ws + in_W]
     out_1_aug[:, sym_len_Ws:sym_len_Ws + in_W] = out_1
 
     sym_patch = out_1[:, :sym_len_Ws, :]
     inv_idx = np.arange(sym_patch.shape[1] - 1, -1, -1).astype('int64')
     sym_patch_inv = np.take(sym_patch, inv_idx, 1)
-    #sym_patch_inv = out_1_aug[:,0:0+sym_len_Ws]
+    # sym_patch_inv = out_1_aug[:,0:0+sym_len_Ws]
     out_1_aug[:, 0:0+sym_len_Ws] = sym_patch_inv
 
     sym_patch = out_1[:, -sym_len_We:, :]
     inv_idx = np.arange(sym_patch.shape[1] - 1, -1, -1).astype('int64')
     sym_patch_inv = np.take(sym_patch, inv_idx, 1)
-    #sym_patch_inv = out_1_aug[:,sym_len_Ws + in_W:sym_len_Ws + in_W + sym_len_We]
+    # sym_patch_inv = out_1_aug[:,sym_len_Ws + in_W:sym_len_Ws + in_W + sym_len_We]
     out_1_aug[:, sym_len_Ws + in_W:sym_len_Ws +
               in_W + sym_len_We] = sym_patch_inv
 

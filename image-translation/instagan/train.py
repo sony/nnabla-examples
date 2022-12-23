@@ -204,7 +204,7 @@ def train(args):
 
     # Initial learning rates
     G_lr = args.learning_rate_G
-    #D_lr = args.learning_rate_D
+    # D_lr = args.learning_rate_D
     # As opposed to the description in the paper, D_lr is set the same as G_lr.
     D_lr = args.learning_rate_G
 

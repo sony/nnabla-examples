@@ -63,6 +63,7 @@ def main():
         for item in mean_iou:
             f2.write('%s\n' % item)
 
-    #plt.plot(iterations, mean_iou)
+
+    # plt.plot(iterations, mean_iou)
 if __name__ == '__main__':
     main()

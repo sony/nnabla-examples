@@ -330,7 +330,7 @@ def construct_architecture(image, num_class, operations, output_filter, test, co
     # e.g. [0, 0, 0, 1, 1, 1, ..., 2] : the 1st layer needs no pooling,
     # but the last needs 2 poolings, to get spatially reduced variables.
 
-    #required_indices = get_requirement_soft(ref_groups)
+    # required_indices = get_requirement_soft(ref_groups)
     required_indices = get_requirement_strict(
         ref_groups, connect_patterns, pool_layers)
 

@@ -140,7 +140,7 @@ def apply_nms(all_boxes, thresh):
             dets = np.array(all_boxes[cls_ind][im_ind], dtype=np.float32)
             if len(dets) == 0:
                 continue
-            #print('dets', dets)
+            # print('dets', dets)
             x1 = dets[:, 0]
             y1 = dets[:, 1]
             x2 = dets[:, 2]

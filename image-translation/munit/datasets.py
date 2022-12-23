@@ -29,7 +29,7 @@ from nnabla.utils.data_iterator import data_iterator, data_iterator_simple
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.data_source_loader import download, get_data_home
 
-#import cv2
+# import cv2
 import tarfile
 import glob
 
