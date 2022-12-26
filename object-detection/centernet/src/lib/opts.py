@@ -104,9 +104,10 @@ class opts(object):
         self.parser.add_argument('--channel_last', action='store_true',
                                  help='Channel last models. Currently only DLAv0 is supported')
         self.parser.add_argument('--trained_model_path', type=str, default='',
-                                 help='Trained weight file for inference or resuming training.')
-        self.parser.add_argument('--trained_model_dir', type=str, default='',
-                                 help='Root folder that includes trained weights of each epoch to perform inference.')
+                                 help='Trained weight file(params*.h5) for inference or resuming training.')
+        self.parser.add_argument(
+            '--trained_model_dir', type=str, default='',
+            help='Root folder that includes trained weights(params*.h5) of each epoch to perform inference.')
         self.parser.add_argument(
             '--resume-from', type=int, default=None,
             help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')
