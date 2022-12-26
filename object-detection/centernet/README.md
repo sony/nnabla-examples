@@ -134,7 +134,7 @@ CUDA_VISIBLE_DEVICES=1 python src/main.py ...(arguments continue)...
 
 ### Resume training from the checkpoint
 
-You can resume training from a specific checkpoint.
+You can resume training from a specific checkpoint. (Checkpoint includes learning information like the optimizer, trained weights and etc. The learning information is saved in `checkpoint_{epoch_number}.json`. The program will read this file and resume training.)
 
 The following example shows how to resume DLAv0 training for object detection task with COCO dataset.
 
@@ -159,7 +159,7 @@ python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal 
 You can also recalculate the AP .txt files for a series using ```test.py```:
 
 ```bash
-python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --trained_model_dir <root folder of checkpoints> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --trained_model_dir <root folder of params*.h5 files> --gpus <gpu to use>
 ```
 
 ## Pretrained weights and benchmarks
