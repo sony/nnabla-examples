@@ -32,12 +32,17 @@ class CtdetDetector(BaseDetector):
     def __init__(self, opt):
         super(CtdetDetector, self).__init__(opt)
 
-    def process(self, images, return_time=False):
-        """Apply detection to input images.
+    def process(self, images):
+        """ Apply detection to input images.
 
-        :param images: input images with "NCHW" format.
-        :param return_time: if True, return processing time.
-        :return:
+        Args:
+            images (numpy.ndarray): Input images with "NCHW" format.
+
+        Returns:
+            tuple: containing the following items
+              - outputs: Output of NN model.
+              - dets: Detection results with the same format of dataset.
+              - forward_time: Processing time.
         """
         inputs = nn.Variable.from_numpy_array(images)
         outputs = self.model(inputs)
@@ -52,10 +57,7 @@ class CtdetDetector(BaseDetector):
         forward_time = time.time()
         dets = ctdet_decode(hm, wh, reg=reg, K=self.opt.K)
 
-        if return_time:
-            return outputs, dets, forward_time
-        else:
-            return outputs, dets
+        return outputs, dets, forward_time
 
     def post_process(self, dets, meta, scale=1):
         dets = dets.reshape(1, -1, dets.shape[2])
@@ -73,6 +75,14 @@ class CtdetDetector(BaseDetector):
         return dets[0]
 
     def merge_outputs(self, detections):
+        """Merge detection results.
+
+        Args:
+            detections (list): List of detection results. Each 1-based detection result will be saved to dictionary.
+
+        Returns:
+            dict: Merged detection results. The keys will be [1, 2, ..., num_classes].
+        """
         results = {}
         for j in range(1, self.opt.num_classes + 1):
             results[j] = np.concatenate(

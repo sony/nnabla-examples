@@ -50,12 +50,12 @@ pip install -r requirements.txt
 You can perform object detection by CenterNet with a pre-trained model as following.
 
 ```bash
-python src/demo.py ctdet --config_file <config file> --checkpoint <path to params*.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
+python src/demo.py ctdet --config_file <config file> --trained_model_path <path to params*.h5 file> --demo <test_image.jpg> --gpus <gpu to use> --debug 1 --save_dir <path to output directory>
 ```
 
 The argument `--config_file` will load the network architecture and dataset settings from the YAML file. Check `cfg/*.yaml` files for more details.
 
-The argument `--checkpoint` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that the parameters in the configuration file set by `--config_file` must match with loaded weights.
+The argument `--trained_model_path` specifies the pre-trained weight file which can be obtained by either [donwloading it](#pretrained-weights-and-benchmarks) or [training it yourself](#training). Note that the parameters in the configuration file set by `--config_file` must match with loaded weights.
 
 Set the ```debug``` parameter controls the outputs from the detector:
  * 0 for no output
@@ -134,7 +134,7 @@ CUDA_VISIBLE_DEVICES=1 python src/main.py ...(arguments continue)...
 
 ### Resume training from the checkpoint
 
-You can resume training from a specific checkpoint.
+You can resume training from a specific checkpoint. (Checkpoint includes learning information like the optimizer, trained weights and etc. The learning information is saved in `checkpoint_{epoch_number}.json`. The program will read this file and resume training.)
 
 The following example shows how to resume DLAv0 training for object detection task with COCO dataset.
 
@@ -153,13 +153,13 @@ mpirun -n 4 python src/main.py ctdet \
 You can use the ```test.py``` script for AP/mAP validation:
 
 ```bash
-python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint <path to params*.h5 file> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --trained_model_path <path to params*.h5 file> --gpus <gpu to use>
 ```
 
 You can also recalculate the AP .txt files for a series using ```test.py```:
 
 ```bash
-python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --checkpoint_dir <root folder of checkpoints> --gpus <gpu to use>
+python src/test.py ctdet --config_file <config file> --data_dir <coco or pascal root folder> --trained_model_dir <root folder of params*.h5 files> --gpus <gpu to use>
 ```
 
 ## Pretrained weights and benchmarks

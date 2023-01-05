@@ -38,7 +38,7 @@ from utils import setup_neu
 setup_neu()
 from neu.misc import init_nnabla
 from neu.learning_rate_scheduler import create_learning_rate_scheduler
-from trains.ctdet import Trainer, CtdetLoss
+from trains.ctdet import Trainer
 from datasets.dataset_factory import get_data_source
 from detectors.detector_factory import detector_factory
 
@@ -53,41 +53,14 @@ def main(opt):
     nn.set_auto_forward(True)
     output_folder = os.path.join(opt.save_dir, "tmp.monitor")
     monitor = Monitor(output_folder)
-    monitor_loss = None
-    monitor_hm_loss = None
-    monitor_wh_loss = None
-    monitor_off_loss = None
-    monitor_val_loss = None
-    monitor_val_hm_loss = None
-    monitor_val_wh_loss = None
-    monitor_val_off_loss = None
     monitor_map = None
     monitor_time = None
     Detector = detector_factory[opt.task]
     detector = Detector(opt)
 
-    interval = 1
     if comm.rank == 0:
-        monitor_loss = MonitorSeries(
-            "Training Loss", monitor, interval=interval, verbose=False)
-        monitor_hm_loss = MonitorSeries(
-            "hm_loss", monitor, interval=interval, verbose=False)
-        monitor_wh_loss = MonitorSeries(
-            "wh_loss", monitor, interval=interval, verbose=False)
-        monitor_off_loss = MonitorSeries(
-            "off_loss", monitor, interval=interval, verbose=False)
-        monitor_val_loss = MonitorSeries(
-            "Validation Loss", monitor, interval=interval, verbose=False)
-        monitor_val_hm_loss = MonitorSeries(
-            "val_hm_loss", monitor, interval=interval, verbose=False)
-        monitor_val_wh_loss = MonitorSeries(
-            "val_wh_loss", monitor, interval=interval, verbose=False)
-        monitor_val_off_loss = MonitorSeries(
-            "val_off_loss", monitor, interval=interval, verbose=False)
-        monitor_map = MonitorSeries(
-            "Val mAP", monitor, interval=interval, verbose=False)
-        monitor_time = MonitorTimeElapsed(
-            "time", monitor, interval=1, verbose=False)
+        monitor_map = MonitorSeries("Val mAP", monitor, interval=1, verbose=False)
+        monitor_time = MonitorTimeElapsed("time", monitor, interval=1, verbose=False)
     '''
     Data Iterators
     '''
@@ -114,19 +87,14 @@ def main(opt):
     logger.info(f"batch size per gpu: {opt.batch_size}")
     model = create_model(opt.arch, opt.heads, opt.head_conv, opt.num_layers, training=True,
                          channel_last=opt.channel_last, pretrained_model_dir=opt.pretrained_model_dir)
-    if opt.checkpoint != '':
-        load_model(model, opt.checkpoint, clear=True)
+    if opt.trained_model_path != '':
+        load_model(model, opt.trained_model_path, clear=True)
 
     start_epoch = 0
-    loss_func = CtdetLoss(opt)
     lr_sched = create_learning_rate_scheduler(
         opt.config_file.learning_rate_config)
     solver = S.Adam(alpha=lr_sched.get_lr())
-    trainer = Trainer(
-        model, loss_func, solver, train_loader, train_source,
-        [monitor_loss, monitor_hm_loss, monitor_wh_loss, monitor_off_loss, monitor_val_loss, monitor_val_hm_loss,
-         monitor_val_wh_loss, monitor_val_off_loss],
-        opt, comm)
+    trainer = Trainer(model, solver, train_loader, train_source, monitor, opt, comm)
 
     checkpoint_dir = os.path.join(opt.save_dir, 'checkpoints')
     start_epoch = 0

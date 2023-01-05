@@ -13,10 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -37,10 +33,10 @@ if __name__ == '__main__':
     opt = opts().init()
     model = create_model(opt.arch, opt.heads, opt.head_conv,
                          opt.num_layers, training=False, channel_last=opt.channel_last)
-    if opt.checkpoint != '':
-        extension = os.path.splitext(opt.checkpoint)[1]
+    if opt.trained_model_path != '':
+        extension = os.path.splitext(opt.trained_model_path)[1]
         assert (extension == '.h5' or
                 extension == ".protobuf"), "incorrect file extension, should be .h5 or .protobuf"
-        load_model(model, opt.checkpoint, clear=True)
+        load_model(model, opt.trained_model_path, clear=True)
 
     debugger.save_nnp(opt, model)

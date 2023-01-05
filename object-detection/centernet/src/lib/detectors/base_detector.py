@@ -36,12 +36,12 @@ class BaseDetector(object):
             training=False,
             channel_last=opt.channel_last,
         )
-        if opt.checkpoint != '':
-            extension = os.path.splitext(opt.checkpoint)[1]
+        if opt.trained_model_path != '':
+            extension = os.path.splitext(opt.trained_model_path)[1]
             assert (
                 extension == '.h5' or extension == ".protobuf"
             ), "incorrect file extension, should be either .h5 or .protobuf"
-            load_model(self.model, opt.checkpoint, clear=True)
+            load_model(self.model, opt.trained_model_path, clear=True)
 
         self.mean = opt.mean
         self.std = opt.std
@@ -88,13 +88,21 @@ class BaseDetector(object):
         }
         return images, meta
 
-    def process(self, images, return_time=False):
+    def process(self, images):
         raise NotImplementedError
 
     def post_process(self, dets, meta, scale=1):
         raise NotImplementedError
 
     def merge_outputs(self, detections):
+        """Merge detection results
+
+        Args:
+            detections (list): List of detection results. Each 1-based detection result will be saved to dictionary.
+
+        Raises:
+            NotImplementedError: Abstract method.
+        """
         raise NotImplementedError
 
     def debug(self, debugger, images, dets, output, scale=1):
@@ -137,7 +145,7 @@ class BaseDetector(object):
             pre_process_time = time.time()
             pre_time += pre_process_time - scale_start_time
 
-            output, dets, forward_time = self.process(images, return_time=True)
+            output, dets, forward_time = self.process(images)
 
             net_time += forward_time - pre_process_time
             decode_time = time.time()

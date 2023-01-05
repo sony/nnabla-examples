@@ -99,14 +99,15 @@ class opts(object):
                                  help=f'YAML file for training/inference config. eg. {config_file_list}')
         self.parser.add_argument('--weight_decay', type=float, default=0.0,
                                  help='weight decay parameter.')
-        self.parser.add_argument('--checkpoint', type=str, default='',
-                                 help='checkpoint file to resume training.')
         self.parser.add_argument('--mixed_precision', action='store_true',
                                  help='Mixed Precision training using NVIDIA tensor cores.')
         self.parser.add_argument('--channel_last', action='store_true',
                                  help='Channel last models. Currently only DLAv0 is supported')
-        self.parser.add_argument('--checkpoint_dir', type=str, default='',
-                                 help='Root folder that includes checkpoint(s) for test.')
+        self.parser.add_argument('--trained_model_path', type=str, default='',
+                                 help='Trained weight file(params*.h5) for inference or resuming training.')
+        self.parser.add_argument(
+            '--trained_model_dir', type=str, default='',
+            help='Root folder that includes trained weights(params*.h5) of each epoch to perform inference.')
         self.parser.add_argument(
             '--resume-from', type=int, default=None,
             help='Resume training using a checkpoint state at the specified epoch. The training will start at an epoch `resume_epoch + 1`.')
@@ -234,6 +235,7 @@ class opts(object):
             opt.heads = {'hm': opt.num_classes,
                          'wh': 2}  # if not opt.cat_spec_wh else 2 * opt.num_classes}
             opt.heads.update({'reg': 2})
+            opt.dataset_info = {'max_objs': dataset.max_objs}
         else:
             assert 0, 'task {} not defined!'.format(opt.task)
         print('heads', opt.heads)

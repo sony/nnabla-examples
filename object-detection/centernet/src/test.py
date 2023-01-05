@@ -43,9 +43,9 @@ def recursive_glob(rootdir=".", pattern="*"):
 
 
 def test(opt):
-    """ Validate opt.checkpoint if opt.checkpoint is valid file.
-    Otherwise, if opt.checkpoint_dir is set, it will search all params.h5 files and validate all of them.
-    The mAP of each checkpoint will be monitored and output to opt.checkpoint_dir.
+    """ Validate opt.trained_model_path if opt.trained_model_path is valid file.
+    Otherwise, if opt.trained_model_dir is set, it will search all params.h5 files and validate all of them.
+    The mAP of each checkpoint will be monitored and output to opt.trained_model_dir.
 
     Args:
         opt: Options
@@ -54,7 +54,7 @@ def test(opt):
 
     """
     def test_cur_checkpoint(opt):
-        if opt.checkpoint == '':
+        if not os.path.exists(opt.trained_model_path):
             print("Please provide trained model")
             return
 
@@ -93,15 +93,15 @@ def test(opt):
                                with_file_cache=False
                                )
 
-    if os.path.isdir(opt.checkpoint_dir) and os.path.exists(opt.checkpoint_dir):
-        dir_path = opt.checkpoint_dir
+    if os.path.isdir(opt.trained_model_dir):
+        dir_path = opt.trained_model_dir
         checkpoints_to_run = recursive_glob(dir_path, "params*.h5")
         monitor = Monitor(dir_path)
         monitor_map = MonitorSeries(
             "Val mAP", monitor, interval=1, verbose=False)
 
         for cur_file in checkpoints_to_run:
-            opt.checkpoint = cur_file
+            opt.trained_model_path = cur_file
             mAP = test_cur_checkpoint(opt)
             # Format: cur_file = directory_name + f"params_{epoch_num}.h5"
             filename, extension = os.path.splitext(os.path.basename(cur_file))

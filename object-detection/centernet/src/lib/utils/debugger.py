@@ -30,9 +30,10 @@ from nnabla.utils.save import save
 class Debugger(object):
     def __init__(self, ipynb=False, theme='black', num_classes=-1, dataset=None, down_ratio=4):
         self.ipynb = ipynb
-        if not self.ipynb:
+        if self.ipynb:
             import matplotlib.pyplot as plt
-
+            from IPython import get_ipython
+            get_ipython().run_line_magic('matplotlib', 'inline')
             self.plt = plt
         self.imgs = {}
         self.theme = theme
