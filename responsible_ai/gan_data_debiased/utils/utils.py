@@ -213,7 +213,7 @@ def get_f1_threshold(targets_all, scores_all):
         thresh = (one_dec-0.1) + 0.01*t
         curr_scores = np.where(scores_all > thresh, 1, 0)
         acc = f1_score(targets_all, curr_scores)
-        #print(thresh, acc, best_acc, flush=True)
+        # print(thresh, acc, best_acc, flush=True)
         if acc > best_acc:
             best_acc = acc
             best_t = thresh

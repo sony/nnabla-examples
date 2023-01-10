@@ -74,7 +74,7 @@ def inference():
             inf_time.append(time.time() - st)
             test_pred_t = trim_patch_boundary(test_pred_temp, PATCH_BOUNDARY, data_sz[1], data_sz[2],
                                               pH, sH, pW, sW, conf.scaling_factor)
-            #pred_sz = test_pred_t.shape
+            # pred_sz = test_pred_t.shape
             test_pred_t = np.squeeze(test_pred_t)
             test_pred_full[pH * sH * conf.scaling_factor: (pH + 1) * sH * conf.scaling_factor,
                            pW * sW * conf.scaling_factor: (pW + 1) * sW * conf.scaling_factor, :] = test_pred_t

@@ -56,7 +56,7 @@ def compute_pts_vol(model, mins, maxs, step, sub_batch_size, bias=None, V=None):
                   desc="compute-volume"):
         p = pts[b:b+sub_batch_size, :]
         p = (p - bias) @ V.T if V is not None else p
-        #p = p @ V.T if V is not None else p
+        # p = p @ V.T if V is not None else p
         v = model(nn.NdArray.from_numpy_array(p))
         v = v.data.copy().reshape(-1)
         vol.append(v)

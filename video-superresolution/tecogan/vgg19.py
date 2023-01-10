@@ -26,7 +26,7 @@ def get_vgg_feat(input_var):
         Exactly the same architecture used for LPIPS.
                 Returns output features from conv1 to relu5_4, classification layers are dropped.
     """
-    #assert input_var.shape[1] == 3
+    # assert input_var.shape[1] == 3
     act1 = F.relu(PF.convolution(input_var, outmaps=64,
                                  kernel=(3, 3), pad=(1, 1), channel_last=True, fix_parameters=True, name="conv1"), True)
     act1 = F.relu(PF.convolution(act1, outmaps=64, kernel=(

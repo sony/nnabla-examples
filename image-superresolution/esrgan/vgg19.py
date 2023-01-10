@@ -46,8 +46,8 @@ def vgg_prediction(image, test=False, ncls=1000, nmaps=64, act=F.relu, config="V
 
     # Preprocess
     # if not test:
-        #image = F.image_augmentation(image, contrast=1.0,angle=0.25,flip_lr=True)
-        #image.need_grad = False
+        # image = F.image_augmentation(image, contrast=1.0,angle=0.25,flip_lr=True)
+        # image.need_grad = False
     # image = PF.mean_subtraction(image)
 
     h = convblock(image, 64, layer_indices[0], with_bias, with_bn)

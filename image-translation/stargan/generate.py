@@ -76,7 +76,7 @@ def get_user_input(used_config):
                 break
             else:
                 print("type 'yes' or 'no'.")
-        #label[i] = int(bool(input("if yes, type 1, if not, just press enter:")))
+        # label[i] = int(bool(input("if yes, type 1, if not, just press enter:")))
     return np.array(label)
 
 

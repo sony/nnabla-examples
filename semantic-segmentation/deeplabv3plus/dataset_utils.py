@@ -36,8 +36,8 @@ def encode_label(label):
     cls_to_clr_map = get_color()
 
     for i in range(cls_to_clr_map.shape[0]):
-        #new_label[(label == cls_to_clr_map[i])[:,:,0]] = i
-        #new_label[np.argwhere((label.astype(np.int32) == cls_to_clr_map[i]).all(axis=2))]=i
+        # new_label[(label == cls_to_clr_map[i])[:,:,0]] = i
+        # new_label[np.argwhere((label.astype(np.int32) == cls_to_clr_map[i]).all(axis=2))]=i
         print(np.where((label.astype(np.int32) == [120, 0, 128]).all(axis=2)))
         if i == 21:
             new_label[np.where(

@@ -44,10 +44,10 @@ def data_iterator_segmentation(num_examples, batch_size, image_path_file, label_
         if lab.ndim == 2:
             lab = lab[..., None]
         # Compute image preprocessing time
-        #t = time.time()
+        # t = time.time()
         img, lab, mask = image_preprocess.preprocess_image_and_label(
             img, lab, target_width, target_height, train=train)
-        #elapsed = time.time() - t
+        # elapsed = time.time() - t
 
         return np.rollaxis(img, 2), np.rollaxis(lab, 2), np.rollaxis(mask, 2)
 

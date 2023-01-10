@@ -88,7 +88,7 @@ class Validator(object):
         total_rewards = []
         for episode in range(self.num_episodes):
             total_rewards += [self.step_episode()]
-            #print('episode{} ended in {} steps'.format(str(episode), self.steps))
+            # print('episode{} ended in {} steps'.format(str(episode), self.steps))
         mean_reward = np.mean(total_rewards)
         if cur_train_steps >= 0:
             if self.monitor:

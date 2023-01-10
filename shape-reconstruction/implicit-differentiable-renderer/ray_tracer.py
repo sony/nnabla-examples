@@ -268,16 +268,16 @@ class RayTrace(PythonFunction):
             t_b += mask_revert_b * s_b_prev
             s_b = mask_revert_b * s_b_prev + (1 - mask_revert_b) * s_b
 
-            ## print("s_f neg", np.sum(s_f.data < 0))
-            ## print("s_b neg", np.sum(s_b.data < 0))
+            # print("s_f neg", np.sum(s_f.data < 0))
+            # print("s_b neg", np.sum(s_b.data < 0))
 
         # Fine grained start/finish points
         t_f0 = t_f
         t_f1 = t_f + mask_revert_f * s_f_prev
         x_hit_st0 = camloc + t_f0 * raydir
-        ## x0, x1 = self.post_method(x_hit_st0, camloc + t_f1 * raydir)
-        ## t_f0 = F.norm((x0 - camloc), axis=(x0.ndim - 1), keepdims=True)
-        ## t_f1 = F.norm((x1 - camloc), axis=(x1.ndim - 1), keepdims=True)
+        # x0, x1 = self.post_method(x_hit_st0, camloc + t_f1 * raydir)
+        # t_f0 = F.norm((x0 - camloc), axis=(x0.ndim - 1), keepdims=True)
+        # t_f1 = F.norm((x1 - camloc), axis=(x1.ndim - 1), keepdims=True)
         mask_hit_f1b = mask_revert_f * F.less(t_f1, t_b)
         t_b = t_f1 * mask_hit_f1b + t_b * (1 - mask_hit_f1b)
 

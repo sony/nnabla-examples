@@ -116,10 +116,10 @@ def decode(input_feature, output_nc, n_downsampling, ngf, norm_layer, use_bias):
 def generator(imgseg, input_nc=3, output_nc=3, ngf=64, norm_layer=functools.partial(PF.instance_normalization, fix_parameters=True), use_dropout=False, n_blocks=9, padding_type='reflect'):
 
     if type(norm_layer) == functools.partial:
-        #use_bias = norm_layer.func == PF.instance_normalization
+        # use_bias = norm_layer.func == PF.instance_normalization
         use_bias = norm_layer.func != PF.batch_normalization
     else:
-        #use_bias = norm_layer == PF.instance_normalization
+        # use_bias = norm_layer == PF.instance_normalization
         use_bias = norm_layer != PF.batch_normalization
 
     n_downsampling = 2
@@ -205,10 +205,10 @@ def classifier(input_feature, ndf, n_layers, kw, padw, norm_layer, use_sigmoid):
 def discriminator(imgseg, input_nc=3, ndf=64, n_layers=3, norm_layer=functools.partial(PF.instance_normalization, fix_parameters=True), use_sigmoid=False):
 
     if type(norm_layer) == functools.partial:
-        #use_bias = norm_layer.func == PF.instance_normalization
+        # use_bias = norm_layer.func == PF.instance_normalization
         use_bias = norm_layer.func != PF.batch_normalization
     else:
-        #use_bias = norm_layer == PF.instance_normalization
+        # use_bias = norm_layer == PF.instance_normalization
         use_bias = norm_layer != PF.batch_normalization
 
     kw = 4

@@ -63,9 +63,9 @@ def weight_normalization(w, dim=1, eps=1e-12, fix_parameters=False):
 def weight_normalization_backward(inputs, dim=1, eps=1e-12):
     # We do not need the gradients wrt weight and scale by nn.grad,
     # since nn.grad is performed wrt the intersection point.
-    ## dw_wn = inputs[0]
-    ## w0 = inputs[1]
-    ## g0 = inputs[2]
+    # dw_wn = inputs[0]
+    # w0 = inputs[1]
+    # g0 = inputs[2]
     return None, None
 
 

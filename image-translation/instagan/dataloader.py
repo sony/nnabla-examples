@@ -134,7 +134,7 @@ class InstaGANDataSource(DataSource):
         self._size = len(self._images)
         self._variables = ('x', 'y')  # y is dummy
         self.rng = rng
-        #self.filename_list = filename_list
+        # self.filename_list = filename_list
         self.reset()
 
     def reset(self):
