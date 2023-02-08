@@ -200,6 +200,18 @@ python src/save_nnp.py ctdet --config_file cfg/dlav0_34_coco_fp.yaml
 
 Please run `python src/save_nnp.py -h` to see which network is supported.
 
+## Memory layout conversion
+
+You may want to change the memory layout of trained parameters from NHWC (trained with `channel_last=True`) to NCHW and vice versa, for fine-tuning on differnt tasks for example. You may also want to the remove the 4-th channel in the first convolution which was padded to RGB input during training for speed advantage.
+
+The following command converts a parameter file to a desired configuration.
+
+```bash
+python convert_parameter_format.py {input h5 file} {output h5 file} -m {layout either nchw or nhwc} -3
+```
+
+See options with `python convert_parameter_format.py -h`.
+
 ## Development/Extensions
 
 ### Adding new models
