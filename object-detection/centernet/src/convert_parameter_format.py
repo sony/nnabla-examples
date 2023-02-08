@@ -31,7 +31,7 @@ def get_args():
         "output", help='Path to an output h5 paramter file which will be created.')
     parser.add_argument('--affine-to-conv', '-a', action='store_true', default=False,
                         help='convert affine layer to 1x1 convolution')
-    parser.add_argument('--memory-layout', '-m',
+    parser.add_argument('--memory-layout', '-m', choices=['nhwc', 'nchw'],
                         help='Convert weight to "NHWC" or "NCHW".', default=None)
     parser.add_argument('--force-4-channels', '-4', action='store_true', default=False,
                         help='Add padded 4-th channel in first layer convolution.')
