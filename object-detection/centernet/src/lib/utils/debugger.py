@@ -596,11 +596,7 @@ color_list = color_list.reshape((-1, 3)) * 255
 def save_nnp(opt, model, extension='nnp'):
 
     input_variable = nn.Variable([1, 3, opt.input_h, opt.input_w])
-    output_list = model(input_variable)
-
-    pred_dict = dict()
-    for i, key in enumerate(opt.heads):
-        pred_dict[key] = output_list[i]
+    pred_dict = model(input_variable)
 
     runtime_contents = {
         'networks': [{'name': 'runtime', 'batch_size': 1, 'outputs': pred_dict, 'names': {'x': input_variable}}],

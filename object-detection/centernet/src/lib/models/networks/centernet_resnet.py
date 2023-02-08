@@ -192,8 +192,8 @@ class PoseResNet(object):
                 )
             )
 
-        output = []
-        for head in sorted(self.heads):
+        output = dict()
+        for head in self.heads:
             num_output = self.heads[head]
             rng = np.random.RandomState(313)
             b_init_param = -2.19 if head == 'hm' else 0.0
@@ -241,7 +241,7 @@ class PoseResNet(object):
                         b_init=ConstantInitializer(b_init_param),
                         channel_last=self.channel_last,
                     )
-            output.append(out)
+            output.update({head: out})
         return output
 
 

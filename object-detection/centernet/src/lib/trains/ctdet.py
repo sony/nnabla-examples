@@ -237,7 +237,10 @@ class Trainer(object):
     def compute_loss(self, data):
         # Performs forward pass.
         self._img.d, self._hm.d, self._inds.d, self._wh.d, self._reg.d, self._reg_mask.d, _ = data
-        pred_hm, pred_wh, pred_reg = self.model(self._img)
+        pred_dict = self.model(self._img)
+        pred_hm = pred_dict['hm']
+        pred_wh = pred_dict['wh']
+        pred_reg = pred_dict['reg']
         loss = self.loss_func(
             pred_hm, pred_wh, pred_reg, self._hm, self._inds,
             self._wh, self._reg, self._reg_mask, self.comm,

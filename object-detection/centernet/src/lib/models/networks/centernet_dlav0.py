@@ -90,8 +90,8 @@ class PoseDLA(object):
         features = self.backbone_model(
             input_variable, test=not self.training, channel_last=self.channel_last)
 
-        output = []
-        for head in sorted(self.heads):
+        output = dict()
+        for head in self.heads:
             num_output = self.heads[head]
             if self.head_conv > 0:
                 with nn.parameter_scope(head + "_conv1"):
@@ -138,7 +138,7 @@ class PoseDLA(object):
                         with_bias=True,
                         channel_last=self.channel_last,
                     )
-            output.append(out)
+            output.update({head: out})
         return output
 
 

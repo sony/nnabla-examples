@@ -232,9 +232,7 @@ class opts(object):
         opt.output_res = max(opt.output_h, opt.output_w)
         if opt.task == 'ctdet':
             # assert opt.dataset in ['pascal', 'coco']
-            opt.heads = {'hm': opt.num_classes,
-                         'wh': 2}  # if not opt.cat_spec_wh else 2 * opt.num_classes}
-            opt.heads.update({'reg': 2})
+            opt.heads = {'hm': opt.num_classes, 'reg': 2, 'wh': 2}
             opt.dataset_info = {'max_objs': dataset.max_objs}
         else:
             assert 0, 'task {} not defined!'.format(opt.task)

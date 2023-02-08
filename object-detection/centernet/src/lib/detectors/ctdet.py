@@ -46,10 +46,10 @@ class CtdetDetector(BaseDetector):
         """
         inputs = nn.Variable.from_numpy_array(images)
         outputs = self.model(inputs)
-        hm = outputs[0]
+        hm = outputs['hm']
         hm = F.sigmoid(hm)
-        wh = outputs[1]
-        reg = outputs[2]
+        wh = outputs['wh']
+        reg = outputs['reg']
         if self.opt.channel_last:
             hm = F.transpose(hm, (0, 3, 1, 2))
             wh = F.transpose(wh, (0, 3, 1, 2))
@@ -102,7 +102,7 @@ class CtdetDetector(BaseDetector):
     def debug(self, debugger, images, dets, output, scale=1):
         detection = dets.copy()
         detection[:, :, :4] *= self.opt.down_ratio
-        hm = output[0]
+        hm = output['hm']
         hm = F.sigmoid(hm)
         if self.opt.channel_last:
             hm = F.transpose(hm, (0, 3, 1, 2))
