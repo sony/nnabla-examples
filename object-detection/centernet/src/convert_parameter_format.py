@@ -58,8 +58,6 @@ def convert_memory_layout(params, layout):
     for key in params.keys():
         if key.endswith('conv/b'):
             continue
-        if key.endswith('deconv/W'):
-            continue
         param = params[key]
         array = param.d
         if layout == 'nhwc':
