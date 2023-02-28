@@ -84,7 +84,7 @@ done
 
 ### PASCAL VOC
 
-For PASCAL VOC, see the example script located on ```src/lib/tools/get_pascal_voc.sh```. It downloads the dataset, the annotations already in COCO format and merges them.
+For PASCAL VOC, see the example script located on ```src/tools/get_pascal_voc.sh```. It downloads the dataset, the annotations already in COCO format and merges them.
 
 ## Training
 
