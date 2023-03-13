@@ -207,10 +207,10 @@ You may want to change the memory layout of trained parameters from NHWC (traine
 The following command converts a parameter file to a desired configuration.
 
 ```bash
-python convert_parameter_format.py {input h5 file} {output h5 file} -m {layout either nchw or nhwc} -3
+python src/convert_parameter_format.py {input h5 file} {output h5 file} -m {layout either nchw or nhwc} -3
 ```
 
-See options with `python convert_parameter_format.py -h`.
+See options with `python src/convert_parameter_format.py -h`.
 
 ## Development/Extensions
 
