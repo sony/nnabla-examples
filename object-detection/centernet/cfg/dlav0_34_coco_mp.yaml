@@ -33,4 +33,4 @@ mixed_precision:
   mixed_precision: true
   channel_last: true
   loss_scaling: 4.0
-  use_dynamic_loss_scaling: false
+  use_dynamic_loss_scaling: true
