@@ -74,13 +74,13 @@ In order to utilize AI technology to enrich human's life style and contribute to
 
 # 3. Fairness
 ## Evaluation Measure
-### Three Metrics [code](./three_metrics/)
+### Fairness Metrics [code](./fairness_metrics/)
 > **The Impossibility Theorem of Machine Fairness -- A Causal Perspective**
 > Kailash Karthik Saravanakumar.
 > *arXiv technical report ([arXiv 2007.06024](https://arxiv.org/abs/2007.06024)*
 
 <p align="center">
-<img src="./three_metrics/images/three_metrics_work_flow_diagram.png" width="70%">
+<img src="./fairness_metrics/images/fairness_meric_workflow_daigram.png" width="70%">
 </p>
 
 ### Facial evaluation for skin color [code](./face_evaluation/)
