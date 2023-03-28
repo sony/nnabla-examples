@@ -90,90 +90,51 @@ def preprocess_dataset(dataframe, label_name, protected_attribute_names=["sex"],
     return dataframe
 
 
-def train_model_and_get_test_results(model, x_train, y_train, x_test, y_test, **kwargs):
+def train_model(clf, x_train, y_train, **kwargs):
     """
-    Train the model on given training data and evaluate its performance on test set
-
+    Train the model on given training data
     Args:
-        model: various ML models
+        clf: various ML models
         x_train: Training data
         y_train: Training targets
-        x_test: Testing data
-        y_test: Testing targets
         kwargs: dictionary that maps each keyword to the value that we pass alongside it
-
     Returns:
-        Accuracy and predictions made by the specified model
+        classifier model
     """
     # Instantiate the classification model
     if "sample_weight" in kwargs:
-        model.fit(x_train, y_train.ravel(),
-                  sample_weight=kwargs["sample_weight"])
+        clf.fit(x_train, y_train.ravel(),
+                sample_weight=kwargs["sample_weight"])
     else:
-        model.fit(x_train, y_train)
-
-    predicted = model.predict(x_test)
-
-    # compute the accuracy of the model
-    accuracy = model.score(x_test, y_test.ravel())
-
-    return accuracy, predicted
+        clf.fit(x_train, y_train)
+    return clf
 
 
-def visualize_model_comparison(ml_models, base_fairness, mitigated_fairness, base_accuracy,
-                               mitigated_accuracy):
+def plot_fairness_comp(original, mitigated, metric="SPD"):
     """
-    Graphical Comparison of fairness & performance
-
     Args:
-        ml_models: list the name of the ML models
-        base_fairness: list the fairness values of the ML models, before bias mitigation
-        mitigated_fairness: list the fairness values of the ML models, after bias mitigation
-        base_accuracy: list the accuracy values of the ML models, before bias mitigation
-        mitigated_accuracy: list the fairness values of the ML models, after bias mitigation
+        original: original bias of the dataset
+        mitigated: mitigated bias of the dataset
+        metric: name of the fairness metric
+
+    Returns:
+        plot the fairness comparison
 
     """
-
-    def autolabel(rects, axes):
-        for rect in rects:
-            h = rect.get_height()
-            if h < 0:
-                axes.text(rect.get_x() + rect.get_width() / 2., h - 0.04, '%.2f' % float(h),
-                          ha='center', va='bottom')
-            else:
-                axes.text(rect.get_x() + rect.get_width() / 2., 1.02 * h, '%.2f' % float(h),
-                          ha='center', va='bottom')
-
-    ind = np.arange(len(ml_models))  # the x locations for the groups
-    width = 0.27  # the width of the bars
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
-
-    fairness_base_bar = ax1.bar(ind, base_fairness, width, color='r',
-                                label='Before bias mitigation')
-    fairness_mitigated_bar = ax1.bar(ind + width, mitigated_fairness, width, color='g',
-                                     label='After bias mitigation')
-    ax1.axhline(y=0.0, color='r', linestyle='-')
-    ax1.set_xlabel("ML models")
-    ax1.set_ylabel('Fairness(SPD)')
-    ax1.set_ylim(-0.5, 0.5)
-    ax1.set_xticks(ind + width)
-    ax1.set_xticklabels(ml_models)
-    ax1.title.set_text('(a) Fairness of ML model')
-    ax1.legend()
-    autolabel(fairness_base_bar, axes=ax1)
-    autolabel(fairness_mitigated_bar, axes=ax1)
-
-    base_accuracy_bar = ax2.bar(ind, base_accuracy, width, color='r',
-                                label='Before bias mitigation')
-    mitigated_accuracy_bar = ax2.bar(ind + width, mitigated_accuracy, width, color='g',
-                                     label='After bias mitigation')
-    ax2.set_xlabel("ML models")
-    ax2.set_ylabel('Accuracy')
-    ax2.set_ylim(0.0, 1.0)
-    ax2.set_xticks(ind + width)
-    ax2.set_xticklabels(ml_models)
-    ax2.title.set_text('(b) Performance of ML model')
-    ax2.legend()
-    autolabel(base_accuracy_bar, axes=ax2)
-    autolabel(mitigated_accuracy_bar, axes=ax2)
+    plt.figure(facecolor='#FFFFFF', figsize=(4, 4))
+    plt.bar(["Original", "Mitigated"], [
+            original, mitigated], color=["blue", "green"])
+    plt.ylabel(metric)
+    plt.title("Before vs After Bias Mitigation", fontsize=15)
+    y = [original, mitigated]
+    for index, value in enumerate(y):
+        if value < 0:
+            plt.text(index, value - 0.001,
+                     str(round(value, 3)), fontweight='bold', color='red',
+                     bbox=dict(facecolor='red', alpha=0.4))
+        else:
+            plt.text(index, value + 0.001,
+                     str(round(value, 3)), fontweight='bold', color='red',
+                     bbox=dict(facecolor='red', alpha=0.4))
+    plt.grid(None, axis="y")
     plt.show()
