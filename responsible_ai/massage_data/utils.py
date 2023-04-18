@@ -20,11 +20,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix
 
 
-def get_num_pos_neg(X, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond):
+def get_num_pos_neg(X, Y, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond):
     """
 
     Args:
         X (pandas DataFrame): input dataset
+        Y (pandas DataFrame) : target attribute
         target_attribute: target attribute of the dataset
         target_class_cond (int): target class label (1/0)
         sensitive_attribute (string): sensitive attribute of the dataset
@@ -34,7 +35,7 @@ def get_num_pos_neg(X, target_attribute, target_class_cond, sensitive_attribute,
         number of instances in the dataset where the target attribute satisfies the given sensitive attribute condition.
 
     """
-    return len(X[(X[sensitive_attribute] == sensitive_class_cond) & (X[target_attribute] == target_class_cond)])
+    return len(X[(X[sensitive_attribute] == sensitive_class_cond) & (Y[target_attribute] == target_class_cond)])
 
 
 def get_num_instances(X, attribute, condition):
@@ -52,26 +53,28 @@ def get_num_instances(X, attribute, condition):
     return len(X[(X[attribute] == condition)])
 
 
-def get_base_rate(X, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond):
+def get_base_rate(X, Y, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond):
     """
     Compute the base rate : Pr(Y = 1) = P/(P+N)
     Args:
         X (pandas DataFrame): input dataset
+        Y (pandas DataFrame) : target attribute
         target_attribute (string): target attribute of the dataset
         target_class_cond (int): target class label (1/0)
         sensitive_attribute (string): sensitive attribute of the dataset
         sensitive_class_cond (int): sensitive class condition (1/0)
     """
-    return (get_num_pos_neg(X, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond)
+    return (get_num_pos_neg(X, Y, target_attribute, target_class_cond, sensitive_attribute, sensitive_class_cond)
             / get_num_instances(X, sensitive_attribute, sensitive_class_cond))
 
 
-def statistical_parity_difference(X, target_attribute, target_class_cond,
+def statistical_parity_difference(X, Y, target_attribute, target_class_cond,
                                   sensitive_attribute, privileged_class, unprivileged_class):
     """
     Compute difference in the metric between unprivileged and privileged groups.
     Args:
         X (pandas DataFrame): input dataset
+        Y (pandas DataFrame) : target attribute
         target_attribute (string): target attribute of the dataset
         target_class_cond (int): target class label
         sensitive_attribute (string): sensitive attribute of the dataset
@@ -82,14 +85,14 @@ def statistical_parity_difference(X, target_attribute, target_class_cond,
     """
 
     positive_privileged = get_base_rate(
-        X, target_attribute, target_class_cond, sensitive_attribute, privileged_class)
-    positive_unprivileged = get_base_rate(X, target_attribute, target_class_cond, sensitive_attribute,
+        X, Y, target_attribute, target_class_cond, sensitive_attribute, privileged_class)
+    positive_unprivileged = get_base_rate(X, Y, target_attribute, target_class_cond, sensitive_attribute,
                                           unprivileged_class)
 
     return positive_unprivileged - positive_privileged
 
 
-def disparate_impact(X, target_attribute, target_class_cond,
+def disparate_impact(X, Y, target_attribute, target_class_cond,
                      sensitive_attribute, privileged_class, unprivileged_class):
     """
     Compute the ratio of the metric between unprivileged and privileged groups.
@@ -107,8 +110,8 @@ def disparate_impact(X, target_attribute, target_class_cond,
     """
 
     positive_privileged = get_base_rate(
-        X, target_attribute, target_class_cond, sensitive_attribute, privileged_class)
-    positive_unprivileged = get_base_rate(X, target_attribute, target_class_cond, sensitive_attribute,
+        X, Y, target_attribute, target_class_cond, sensitive_attribute, privileged_class)
+    positive_unprivileged = get_base_rate(X, Y, target_attribute, target_class_cond, sensitive_attribute,
                                           unprivileged_class)
 
     return positive_unprivileged / positive_privileged
@@ -192,11 +195,11 @@ def plot_fairness_comp(original, mitigated, metric="DPD"):
     y = [original, mitigated]
     for index, value in enumerate(y):
         if value < 0:
-            plt.text(index, value - 0.01,
+            plt.text(index, value - 0.001,
                      str(round(value, 3)), fontweight='bold', color='red',
                      bbox=dict(facecolor='red', alpha=0.4))
         else:
-            plt.text(index, value + 0.01,
+            plt.text(index, value + 0.001,
                      str(round(value, 3)), fontweight='bold', color='red',
                      bbox=dict(facecolor='red', alpha=0.4))
     plt.grid(None, axis="y")
