@@ -1,0 +1,4 @@
+defaults:
+  - /proto_configs/model@_here_
+  - adm_256
+  - _self_

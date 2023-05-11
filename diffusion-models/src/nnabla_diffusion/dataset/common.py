@@ -15,21 +15,18 @@
 import math
 import os
 import queue
-
 from typing import List
 
 import numpy as np
+from neu.comm import CommunicatorWrapper
 from neu.datasets import _get_sliced_data_source
 from nnabla import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
-from nnabla.utils.image_utils import imread, imresize
-
-from config import DatasetConfig
-from neu.comm import CommunicatorWrapper
-
 # set pillow as a backend so that we can use box sampling
-from nnabla.utils.image_utils import backend_manager
+from nnabla.utils.image_utils import backend_manager, imread, imresize
+from nnabla_diffusion.config import DatasetConfig
+
 backend_manager.set_backend("PilBackend")
 
 

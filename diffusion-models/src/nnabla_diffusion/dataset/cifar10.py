@@ -18,15 +18,13 @@ import sys
 import tarfile
 
 import numpy as np
+from neu.comm import CommunicatorWrapper
+from neu.datasets import _get_sliced_data_source
 from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.download import download
-
-from config import DatasetConfig
-
-from neu.datasets import _get_sliced_data_source
-from neu.comm import CommunicatorWrapper
+from nnabla_diffusion.config import DatasetConfig
 
 
 class Cifar10DataSource(DataSource):

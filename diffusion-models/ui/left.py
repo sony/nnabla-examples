@@ -16,7 +16,7 @@ from dataclasses import dataclass, fields
 from typing import List, Union
 import gradio as gr
 
-from config import LoadedConfig
+from nnabla_diffusion.config import LoadedConfig
 
 
 @dataclass

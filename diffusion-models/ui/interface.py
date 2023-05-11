@@ -14,7 +14,7 @@
 
 import gradio as gr
 
-from config import load_saved_conf, InferenceServerConfig
+from nnabla_diffusion.config import load_saved_conf, InferenceServerConfig
 
 from .inference_model import InferenceModel, SequentialInferenceModel
 

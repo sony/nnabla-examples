@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from neu.comm import CommunicatorWrapper
+from nnabla_diffusion.config import DatasetConfig
+
 from .cifar10 import Cifar10DataIterator
+from .common import SimpleDataIterator
 from .imagenet import ImagenetDataIterator
 from .laion import Laion400mDataIterator
-from .common import SimpleDataIterator
-
-from config import DatasetConfig
-from neu.comm import CommunicatorWrapper
 
 # avoid an error for loading trancated image with pillow
 try:

@@ -20,8 +20,7 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from nnabla.parameter import get_parameter_or_create
-
-from config import TrainConfig
+from nnabla_diffusion.config import TrainConfig
 
 # Shape handler
 
