@@ -112,6 +112,25 @@ In order to utilize AI technology to enrich human's life style and contribute to
 <img src="./gan_data_debiased/images/gan_data_debiasing_workflow.png" width="70%">
 </p>
 
+### Massage Data [code](./massage_data/)
+> **Data preprocessing techniques for classification without discrimination**
+> Faisal Kamiran, and Toon Calders. 
+> *[Knowledge and information systems 33, no. 1 (2012): 1-33](https://link.springer.com/article/10.1007/s10115-011-0463-8)* 
+
+<p align="center">
+<img src="./massage_data/images/massage_data_workflow_diagram.png" width="70%">
+</p>
+
+
+### Preferential Sampling [code](./preferential_sampling/)
+> **Classification with No Discrimination by Preferential Sampling**
+> Faisal Kamiran, and Toon Calders. 
+> *[In Proc. 19th Machine Learning Conf. Belgium and The Netherlands, vol. 1, no. 6. Citeseer, 2010](https://dtai.cs.kuleuven.be/events/Benelearn2010/submissions/benelearn2010_submission_18.pdf)* 
+
+<p align="center">
+<img src="./preferential_sampling/images/preferential_sampling_workflow_diagram.png" width="70%">
+</p>
+
 ## In Processing
 ### PRR: Prejudice Remover Regularizer [code](./prejudice_remover_regularizer/)
 > **Fairness-aware classifier with prejudice remover regularizer.**
