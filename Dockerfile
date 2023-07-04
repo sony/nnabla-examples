@@ -15,7 +15,7 @@
 ARG CUDA_VER=11.0
 ARG CUDNN_VER=8
 
-FROM nvidia/cuda:${CUDA_VER}-cudnn${CUDNN_VER}-runtime-ubuntu18.04
+FROM nvidia/cuda:${CUDA_VER}-cudnn${CUDNN_VER}-runtime-ubuntu20.04
 
 ARG PIP_INS_OPTS
 ARG PYTHONWARNINGS
