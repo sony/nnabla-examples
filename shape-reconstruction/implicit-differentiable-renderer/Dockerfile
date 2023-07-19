@@ -17,7 +17,7 @@
 # - pip/apt install dependencys
 # - build softplus cuda
 
-FROM ubuntu:18.04 as openmpi
+FROM ubuntu:20.04 as openmpi
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
@@ -41,7 +41,7 @@ RUN cd tmp/openmpi/openmpi-3.1.6 \
     && make -j8 \
     && make install
 
-FROM nvidia/cuda:11.0-cudnn8-devel-ubuntu18.04
+FROM nvidia/cuda:11.0-cudnn8-devel-ubuntu20.04
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

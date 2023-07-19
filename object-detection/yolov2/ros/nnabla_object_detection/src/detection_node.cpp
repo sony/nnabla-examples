@@ -29,8 +29,8 @@
 #include <chrono>
 #include <fstream>
 
-using std::string;
 using std::shared_ptr;
+using std::string;
 using std::vector;
 
 static const std::string OPENCV_WINDOW = "Image window";
@@ -153,11 +153,10 @@ public:
     auto start = std::chrono::steady_clock::now();
     executor_->execute();
     auto end = std::chrono::steady_clock::now();
-    ROS_INFO(
-        "Input=%dx%dx%d FPS = %.1lf", H, W, C,
-        1e+6 /
-            std::chrono::duration_cast<std::chrono::microseconds>(end - start)
-                .count());
+    ROS_INFO("Input=%dx%dx%d FPS = %.1lf", H, W, C,
+             1e+6 / std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                          start)
+                        .count());
 
     // Get output as a CPU array;
     nbla::CgVariablePtr y = executor_->get_output_variables().at(0).variable;
