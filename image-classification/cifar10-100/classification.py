@@ -257,7 +257,7 @@ def train(args):
                 'name': 'Runtime',
                 'network': 'Validation',
                 'data': ['x'],
-                'output':['y']
+                'output': ['y']
             }]
         }
         iter = args.epochs * iter_per_epoch

@@ -25,5 +25,5 @@ def save_nnp(input, output, batchsize):
             {'name': 'Runtime',
              'network': 'Validation',
              'data': [k for k, _ in input.items()],
-             'output':[k for k, _ in output.items()]}]}
+             'output': [k for k, _ in output.items()]}]}
     return runtime_contents
