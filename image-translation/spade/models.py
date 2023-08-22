@@ -115,7 +115,7 @@ class SpadeResidualBlock(object):
 class SpadeGenerator(object):
     def __init__(self, nf, image_shape, ext_upsamples=0):
         ext_upsamples = int(ext_upsamples)
-        assert isinstance(ext_upsamples, int) and 0 <= ext_upsamples <= 2,\
+        assert isinstance(ext_upsamples, int) and 0 <= ext_upsamples <= 2, \
             "ext_upsamples must be in the range of [0, 2]."
 
         self.nf = nf
