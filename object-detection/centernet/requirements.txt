@@ -4,4 +4,4 @@ matplotlib
 numpy
 tqdm
 Pillow
-easydict
+addict

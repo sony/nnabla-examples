@@ -19,8 +19,8 @@ from __future__ import print_function
 import os
 import os.path as osp
 import numpy as np
-# `pip install easydict` if you don't have it
-from easydict import EasyDict as edict
+# `pip install addict` if you don't have it
+from addict import Dict as edict
 
 __C = edict()
 # Consumers can get config by:
