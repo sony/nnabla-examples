@@ -280,7 +280,7 @@ def train(model, conf, loaded_conf, comm):
         nn.save_parameters(model_path, save_params)
 
 
-@ hydra.main(version_base=None, config_path="yaml/", config_name="config_seg_train")
+@hydra.main(version_base=None, config_path="yaml/", config_name="config_seg_train")
 def main(conf: config.TrainDatasetDDPMScriptsConfig):
     comm = init_nnabla(ext_name="cudnn",
                        device_id=conf.runtime.device_id,
