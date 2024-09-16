@@ -1,0 +1,84 @@
+nnabla_context:
+  ext_name: cudnn
+  device_id: "0"
+  type_config: float
+
+train:
+  batch_size: 16
+  save_path: ./results
+  data_set: tcvc_dataset
+
+  # Path to pre-trained weight file (.h5)
+  load_path:
+
+  # Total number of epochs training performed
+  max_epochs: 100
+  # Epoch number where linear learning rate decay starts at.
+  # The learning rate will be linearly approaching to 0 at max_epochs.
+  lr_decay_starts: 100
+
+  # Generator Base learning rate
+  G_base_lr: 1e-4
+  # Discriminator Base learning rate
+  D_base_lr: 1e-5
+  
+  # Do not use previous frame
+  no_prev: False
+
+  # Use VGG feature extraction for generator
+  gen_geat: False
+
+  # Number of mini-batch iterations per epoch.
+  # If omitted, dataset size will be used.
+  samples_per_epoch: 5000
+
+  # Number of epochs where the global generator's parameters are fixed.
+  fix_global_epoch: 0
+
+  # Coefficient of feature matching loss
+  lambda_feat: 10.0
+  # Coefficient of perceptual loss by VGG16
+  #lambda_perceptual: 10.0
+  lambda_perceptual: 1.0
+
+  # Coefficient of style loss by VGG16
+  lambda_style: 1000.0
+
+  # Coefficient of l1 loss 
+  lambda_l1: 10.0
+
+  # Whether random image horizontal flipping is employed
+  flip: True
+
+  # Random seed
+  random_seed: 726
+
+model:
+  # Image resolution for generator 
+  # [height, width]
+  base_image_shape: [256, 256]
+
+  # A number of generator resolution stacks
+  g_n_scales: 1
+
+  # Number of layers of discriminator pyramids
+  d_n_scales: 1
+
+  # Generator
+  # Number of channels at each resolution
+  gg_channels: [64, 128, 256]
+  # Number of residual block loops
+  gg_num_residual_loop: 8
+
+
+  # Upsampling function "deconv" or "interp"
+  # If "interp", bilinear interpolation + conv3x3 is used rather than deconv4x4
+  upsampler: deconv
+
+  # The kernel size of the last convolution in each generator
+  last_conv_kernel: 7
+
+
+tcvc_dataset:
+  # dataset directory. 
+  data_dir: ./datasets/GUNDAM
