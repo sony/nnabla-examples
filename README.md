@@ -1,3 +1,7 @@
+***Notice: nnabla is under maintenance phase and we will not be actively developing.***
+
+----
+
 # Neural Network Libraries - Examples
 
 This repository contains working examples of [Neural Network Libraries](https://github.com/sony/nnabla/).
