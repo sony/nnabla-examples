@@ -59,7 +59,7 @@ def load(name, jit=False, download_root=None):
     Parameters
     ----------
     name : str
-        A model name or the path to the checkopoint 
+        A model name or the path to the checkopoint
     jit : bool, optional
         [description], by default False
     download_root : [type], optional
@@ -132,7 +132,7 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
     eot_token = _tokenizer.encoder["<|endoftext|>"]
     all_tokens = [[sot_token] +
                   _tokenizer.encode(text) + [eot_token] for text in texts]
-    result = np.zeros((len(all_tokens), context_length), dtype=np.long)
+    result = np.zeros((len(all_tokens), context_length), dtype=np.longlong)
 
     for i, tokens in enumerate(all_tokens):
         if len(tokens) > context_length:
