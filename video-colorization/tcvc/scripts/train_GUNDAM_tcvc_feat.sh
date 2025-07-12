@@ -1,0 +1,1 @@
+python train.py --device-id 0 --fix-global-epoch 0 --d-n-scales 1 --g-n-scales 1 --save-path ./results/tcvc_01 --gen_feat
