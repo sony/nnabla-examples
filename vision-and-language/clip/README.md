@@ -40,9 +40,9 @@ with nn.auto_forward():
 ## Download trained models
 
 Trained models are available as:
-- [ViT-B/32](https://nnabla.org/pretrained-models/nnabla-examples/vision-and-language/clip/ViT-B-32.h5)(default) to `data/`
-- [ViT-B/16](https://nnabla.org/pretrained-models/nnabla-examples/vision-and-language/clip/ViT-B-16.h5) to `data/`
-- [ViT-L/14](https://nnabla.org/pretrained-models/nnabla-examples/vision-and-language/clip/ViT-L-14.h5) to `data/`  
+- [ViT-B/32](https://zenodo.org/records/16973930/files/ViT-B-32.h5?download=1)(default) to `data/`
+- [ViT-B/16](https://zenodo.org/records/16973930/files/ViT-B-16.h5?download=1) to `data/`
+- [ViT-L/14](https://zenodo.org/records/16973930/files/ViT-L-14.h5?download=1) to `data/`  
 
 These models are converted from the [official models](https://github.com/openai/CLIP) under MIT License.
 You can also refer to the [conversion code](notebook-examples/convert_weights.ipynb) in case you'd like to know how PyTorch weights are converted to nnabla.
