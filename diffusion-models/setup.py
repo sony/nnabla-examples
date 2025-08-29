@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",
     url='https://github.com/sony/nnabla-examples/',
     project_urls={
-        "nnabla": "https://nnabla.org/",
+        "nnabla": "https://github.com/sony/nnabla",
     },
     classifiers=[
         "Programming Language :: Python :: 3",

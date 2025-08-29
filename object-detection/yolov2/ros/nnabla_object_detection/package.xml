@@ -5,7 +5,7 @@
   <description>The nnabla_object_detection package</description>
   <maintainer email="Takuya.Narihira@sony.com">Takuya.Narihira</maintainer>
   <license>Apache 2.0</license>
-  <url type="website">https://nnabla.org/</url>
+  <url type="website">https://github.com/sony/nnabla</url>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_transport</build_depend>

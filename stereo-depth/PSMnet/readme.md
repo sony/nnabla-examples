@@ -25,7 +25,7 @@ And rename the folder as: "driving_frames_cleanpass", "driving_disparity", "monk
 ### Dependencies
 
 - [Python3.x](https://www.python.org/downloads/)
-- [NNabla](https://nnabla.org/)
+- [NNabla](https://github.com/sony/nnabla)
 - [KITTI Stereo](http://www.cvlibs.net/datasets/kitti/eval_stereo.php)
 - [Scene Flow](https://lmb.informatik.uni-freiburg.de/resources/datasets/SceneFlowDatasets.en.html)
 
