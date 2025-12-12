@@ -27,9 +27,11 @@ If you have CUDA environment, we highly recommend to install `nnabla-ext-cuda` a
 See [NNabla CUDA extension package installation guild](https://nnabla.readthedocs.io/en/latest/python/pip_installation_cuda.html).
 
 ### System environment
-In this example, We use [PySoundFile](https://pysoundfile.readthedocs.io/en/latest/) to load FLAC format file
+In this example, We use [PySoundFile](https://pypi.org/project/PySoundFile/) to load FLAC format file
 (This is also included in requirements.txt).
 To use PySoundFile, you have to install [libsndfile](http://www.mega-nerd.com/libsndfile/) on your environment.
+
+**WARNING**: PySoundFile is deprecated. Please use [`soundfile`](https://pypi.org/project/soundfile/) instead.
 
 In the case of Ubuntu, you can install libsndfile by apt-get. Try:
 ```bash
